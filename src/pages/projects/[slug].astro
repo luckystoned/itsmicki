@@ -9,8 +9,19 @@ export function getStaticPaths() {
 }
 const { project } = Astro.props;
 const coverDimensions = project.cover ? imageMetadata[project.cover] : undefined;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: project.title,
+  description: project.summary,
+  dateCreated: project.year,
+  url: new URL(`/projects/${project.slug}`, Astro.site),
+  image: project.cover ? new URL(project.cover, Astro.site) : undefined,
+  creator: { '@type': 'Person', '@id': `${Astro.site}#person`, name: 'Micaela Galimberti' },
+  keywords: ['Creative Direction', 'Art Direction', 'Visual Design', 'Product Design'],
+};
 ---
-<BaseLayout title={`${project.title} — Itsmicki`} active="projects">
+<BaseLayout title={`${project.title} — Itsmicki`} description={project.summary} active="projects" ogType="article" structuredData={structuredData}>
   <article class="case-study" style={`--accent:${project.accent}`}>
     <header class="case-hero page-gutter" data-reveal>
       <div><h1>({project.title})</h1><span>{project.year}</span></div>

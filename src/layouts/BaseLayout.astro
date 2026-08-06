@@ -1,14 +1,46 @@
 ---
 import Header from '@/components/Header.astro';
 import Footer from '@/components/Footer.astro';
+import { DEFAULT_DESCRIPTION, DEFAULT_SOCIAL_IMAGE, DEFAULT_TITLE, SITE_NAME, socialProfiles } from '@/data/seo';
 import '@/styles/global.css';
 
 const {
-  title = 'Itsmicki — Creative Director & Designer',
-  description = 'Selected work by Micaela Galimberti, creative director and designer based in Buenos Aires.',
+  title = DEFAULT_TITLE,
+  description = DEFAULT_DESCRIPTION,
   active = '',
   theme = 'light',
+  image = DEFAULT_SOCIAL_IMAGE,
+  imageAlt = 'Itsmicki — Creative Director and Designer in Buenos Aires',
+  ogType = 'website',
+  structuredData,
 } = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
+const socialImageURL = new URL(image, Astro.site ?? Astro.url.origin);
+const globalStructuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${Astro.site}#website`,
+      url: Astro.site,
+      name: SITE_NAME,
+      description: DEFAULT_DESCRIPTION,
+      inLanguage: 'en',
+    },
+    {
+      '@type': 'Person',
+      '@id': `${Astro.site}#person`,
+      name: 'Micaela Galimberti',
+      alternateName: 'Micki',
+      url: Astro.site,
+      jobTitle: 'Creative Director and Multidisciplinary Designer',
+      email: 'mailto:hey@itsmicki.com',
+      homeLocation: { '@type': 'Place', name: 'Buenos Aires, Argentina' },
+      sameAs: socialProfiles,
+    },
+  ],
+};
 ---
 <!doctype html>
 <html lang="en" data-theme={theme}>
@@ -16,8 +48,29 @@ const {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
+    <meta name="author" content="Micaela Galimberti" />
+    <meta name="creator" content="Micaela Galimberti" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content={theme === 'dark' ? '#111111' : '#f3f0e9'} />
+    <link rel="canonical" href={canonicalURL} />
+    <link rel="alternate" type="text/plain" href={new URL('/llms.txt', Astro.site)} title="LLM-readable site overview" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✳</text></svg>" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={socialImageURL} />
+    <meta property="og:image:alt" content={imageAlt} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageURL} />
+    <meta name="twitter:image:alt" content={imageAlt} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(globalStructuredData)} />
+    {structuredData && <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />}
     <title>{title}</title>
   </head>
   <body>

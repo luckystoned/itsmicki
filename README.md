@@ -122,12 +122,25 @@ El proyecto puede desplegarse en Vercel con el preset estático de Astro:
 
 No conectar ni desplegar el proyecto hasta que la validación local y la aprobación visual estén completas.
 
+## SEO e indexación
+
+El dominio canónico configurado es `https://itsmicki.com`. El build genera automáticamente `sitemap-index.xml` y `sitemap-0.xml`; `robots.txt` referencia ese índice. Todas las páginas incluyen canonical autorreferencial, descripción, directivas de robots, Open Graph, Twitter Cards y datos estructurados Schema.org. `llms.txt` y `llms-full.txt` ofrecen una descripción curada para asistentes y herramientas compatibles con esa propuesta.
+
+Después del despliegue:
+
+1. Verificar el dominio `itsmicki.com` en Google Search Console, preferentemente mediante un registro DNS.
+2. Enviar `https://itsmicki.com/sitemap-index.xml` desde la sección Sitemaps.
+3. Inspeccionar la portada y solicitar indexación cuando el dominio responda públicamente.
+4. Confirmar que la versión con `www` redirija permanentemente al dominio canónico sin `www`, o invertir la configuración si se decide usar `www`.
+
+`llms.txt` es complementario: no reemplaza `robots.txt`, el sitemap ni el contenido HTML indexable.
+
 ## Próximos pasos
 
-1. Implementar SEO técnico: sitemap, robots, canonicals, datos estructurados y metadatos sociales.
-2. Comparar visualmente todas las vistas con Figma.
-3. Confirmar licencias tipográficas y revisar el copy definitivo.
-4. Completar los casos marcados como próximos.
-5. Incorporar imagen social/OG y favicon definitivos.
-6. Ejecutar una auditoría de accesibilidad y rendimiento.
-7. Crear un preview de Vercel para aprobación.
+1. Comparar visualmente todas las vistas con Figma.
+2. Confirmar licencias tipográficas y revisar el copy definitivo.
+3. Completar los casos marcados como próximos.
+4. Reemplazar el favicon provisional si la diseñadora entrega uno definitivo.
+5. Ejecutar una auditoría de accesibilidad y rendimiento.
+6. Crear un preview de Vercel para aprobación.
+7. Verificar el dominio y enviar el sitemap en Google Search Console.

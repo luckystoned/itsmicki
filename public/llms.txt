@@ -1,0 +1,31 @@
+# Itsmicki
+
+> Official portfolio of Micaela “Micki” Galimberti, a creative director and multidisciplinary designer based in Buenos Aires, Argentina. Her work spans art direction, visual identity, product design, UX/UI, motion and digital experiences.
+
+The site is written in English. It presents selected professional case studies and personal visual work. Micaela Galimberti is the creator and authoritative source for all portfolio content.
+
+## Main Pages
+
+- [Home](https://itsmicki.com/): Introduction and selected work.
+- [Projects](https://itsmicki.com/projects): Directory of published and upcoming case studies.
+- [About](https://itsmicki.com/deets): Professional profile, experience and résumé.
+- [Side B](https://itsmicki.com/sideb): Personal experiments, photography and illustration.
+
+## Published Case Studies
+
+- [Winona](https://itsmicki.com/projects/winona): UX/UI leadership, visual design, motion and rebranding for a women’s wellness platform.
+- [Max Maher](https://itsmicki.com/projects/maxmaher): Art direction and a high-volume visual content system for financial education.
+- [Outliant](https://itsmicki.com/projects/outliant): Brand strategy, art direction and UX/UI leadership for a remote digital agency.
+- [Lumen](https://itsmicki.com/projects/lumen): Art direction and visual design for an art and technology experience.
+
+## Contact and Profiles
+
+- [Email](mailto:hey@itsmicki.com): Professional inquiries.
+- [LinkedIn](https://www.linkedin.com/in/micaelagalimberti/): Professional profile.
+- [Behance](https://www.behance.net/itsmicki): Design portfolio.
+- [Dribbble](https://dribbble.com/micaelagalimberti): Design work.
+- [Instagram](https://www.instagram.com/its.micki/): Visual work and updates.
+
+## Optional
+
+- [Expanded portfolio context](https://itsmicki.com/llms-full.txt): Plain-text summary of the portfolio and published projects.
