@@ -1,7 +1,9 @@
 ---
 import type { Project } from '@/data/projects';
+import { imageMetadata } from '@/data/imageMetadata';
 const { project } = Astro.props as { project: Project };
 const href = project.comingSoon ? undefined : `/projects/${project.slug}`;
+const coverDimensions = project.cover ? imageMetadata[project.cover] : undefined;
 ---
 <article class:list={['project-row', { 'is-coming': project.comingSoon }]} data-project-row>
   {href ? (
@@ -19,5 +21,5 @@ const href = project.comingSoon ? undefined : `/projects/${project.slug}`;
       <span class="project-status">COMING SOON</span>
     </div>
   )}
-  {project.cover && <img class="project-peek" src={project.cover} alt="" loading="lazy" />}
+  {project.cover && coverDimensions && <img class="project-peek" src={project.cover} alt="" width={coverDimensions.width} height={coverDimensions.height} loading="lazy" decoding="async" />}
 </article>

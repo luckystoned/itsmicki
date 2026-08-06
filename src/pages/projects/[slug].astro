@@ -2,11 +2,13 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import VideoPlaceholder from '@/components/VideoPlaceholder.astro';
 import { projects } from '@/data/projects';
+import { imageMetadata } from '@/data/imageMetadata';
 
 export function getStaticPaths() {
   return projects.filter((project) => !project.comingSoon).map((project) => ({ params: { slug: project.slug }, props: { project } }));
 }
 const { project } = Astro.props;
+const coverDimensions = project.cover ? imageMetadata[project.cover] : undefined;
 ---
 <BaseLayout title={`${project.title} — Itsmicki`} active="projects">
   <article class="case-study" style={`--accent:${project.accent}`}>
@@ -17,7 +19,7 @@ const { project } = Astro.props;
         <div><dt>In a nutshell</dt><dd>{project.summary}</dd></div>
       </dl>
     </header>
-    {project.cover && <figure class="case-cover" data-reveal><img src={project.cover} alt={`${project.title} project cover`} /></figure>}
+    {project.cover && coverDimensions && <figure class="case-cover" data-reveal><img src={project.cover} alt={`${project.title} project cover`} width={coverDimensions.width} height={coverDimensions.height} fetchpriority="high" decoding="async" /></figure>}
     <section class="case-copy page-gutter" data-reveal>
       <h2>(synopsis)</h2><p>{project.synopsis}</p>
     </section>
@@ -25,7 +27,7 @@ const { project } = Astro.props;
       {project.media.map((media) => media.type === 'video' ? (
         <div class:list={['media-item', media.ratio || 'wide']} data-reveal><VideoPlaceholder label={media.alt} vimeoId={media.vimeoId} /></div>
       ) : (
-        <figure class:list={['media-item', media.ratio || 'wide']} data-reveal><img src={media.src} alt={media.alt} loading="lazy" /></figure>
+        <figure class:list={['media-item', media.ratio || 'wide']} data-reveal><img src={media.src} alt={media.alt} width={imageMetadata[media.src].width} height={imageMetadata[media.src].height} loading="lazy" decoding="async" /></figure>
       ))}
     </section>
     {project.conclusion && <section class="case-copy conclusion page-gutter" data-reveal><h2>(conclusion)</h2><p>{project.conclusion}</p></section>}

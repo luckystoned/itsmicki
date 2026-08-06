@@ -2,6 +2,14 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import ProjectRow from '@/components/ProjectRow.astro';
 import { projects } from '@/data/projects';
+import { imageMetadata } from '@/data/imageMetadata';
+
+const collageImages = [
+  { className: 'c1', src: '/02_Projects/06_Lumen/01_Lumen_Drag.webp', alt: 'Lumen art and technology project' },
+  { className: 'c2', src: '/02_Projects/01_Winona/01_Winona_Drag.webp', alt: 'Winona wellness brand project' },
+  { className: 'c3', src: '/02_Projects/04_MaxMaher/02_MaxMaher_Drag.webp', alt: 'Max Maher visual design project' },
+  { className: 'c4', src: '/02_Projects/05_Outliant/01_OTL_Drag.webp', alt: 'Outliant brand project' },
+];
 ---
 <BaseLayout>
   <section class="home-intro page-gutter" data-reveal>
@@ -10,10 +18,10 @@ import { projects } from '@/data/projects';
   </section>
 
   <section class="home-collage" aria-label="Selected work collage" data-reveal>
-    <figure class="collage-item c1"><img src="/02_Projects/06_Lumen/01_Lumen_Drag.png" alt="Lumen art and technology project" /></figure>
-    <figure class="collage-item c2"><img src="/02_Projects/01_Winona/01_Winona_Drag.png" alt="Winona wellness brand project" /></figure>
-    <figure class="collage-item c3"><img src="/02_Projects/04_MaxMaher/02_MaxMaher_Drag.png" alt="Max Maher visual design project" /></figure>
-    <figure class="collage-item c4"><img src="/02_Projects/05_Outliant/01_OTL_Drag.png" alt="Outliant brand project" /></figure>
+    {collageImages.map((image, index) => {
+      const dimensions = imageMetadata[image.src];
+      return <figure class={`collage-item ${image.className}`}><img src={image.src} alt={image.alt} width={dimensions.width} height={dimensions.height} fetchpriority={index === 0 ? 'high' : undefined} decoding="async" /></figure>;
+    })}
     <p class="collage-note">Drag me around<br />or keep scrolling ↓</p>
   </section>
 

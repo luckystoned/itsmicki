@@ -9,7 +9,7 @@ Portfolio editorial de Miki, desarrollado en Astro a partir del diseño original
 - Genova, Amazon y Blend360 se conservan como próximos casos.
 - Los videos se reproducen desde Vimeo; no se versionan archivos de video.
 - Las referencias y fuentes HTML originales viven fuera del repositorio, en `../Referencias originales`.
-- La optimización final de imágenes queda pendiente para una etapa posterior.
+- Las imágenes de producción están optimizadas en WebP, con dimensiones explícitas y carga diferida donde corresponde.
 
 ## Tecnología
 
@@ -90,7 +90,7 @@ Perfil de referencia: [Miki en Vimeo](https://vimeo.com/user173432758).
 - `public/` debe contener solo recursos utilizados por el sitio.
 - Conservar los originales pesados en `../Referencias originales`, fuera del repositorio.
 - No comprimir ni reemplazar originales sin conservar una fuente recuperable.
-- Al optimizar, priorizar AVIF/WebP, dimensiones acordes al render y una alternativa segura cuando sea necesaria.
+- Para nuevos recursos, priorizar WebP, dimensiones acordes al render y conservar la fuente recuperable fuera del repositorio.
 - Revisar la licencia de las tipografías antes del despliegue público.
 
 ## Diseño y accesibilidad
@@ -124,10 +124,10 @@ No conectar ni desplegar el proyecto hasta que la validación local y la aprobac
 
 ## Próximos pasos
 
-1. Optimizar imágenes y medir el peso final.
+1. Implementar SEO técnico: sitemap, robots, canonicals, datos estructurados y metadatos sociales.
 2. Comparar visualmente todas las vistas con Figma.
 3. Confirmar licencias tipográficas y revisar el copy definitivo.
 4. Completar los casos marcados como próximos.
-5. Incorporar metadatos sociales/OG y favicon definitivos.
+5. Incorporar imagen social/OG y favicon definitivos.
 6. Ejecutar una auditoría de accesibilidad y rendimiento.
 7. Crear un preview de Vercel para aprobación.

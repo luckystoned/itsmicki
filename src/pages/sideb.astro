@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-const images = Array.from({ length: 20 }, (_, index) => `/04_SideB/${String(index + 1).padStart(2, '0')}_SideB.png`);
+import { imageMetadata } from '@/data/imageMetadata';
+const images = Array.from({ length: 20 }, (_, index) => `/04_SideB/${String(index + 1).padStart(2, '0')}_SideB.webp`);
 ---
 <BaseLayout title="Side B — Itsmicki" active="sideb" theme="dark">
   <section class="sideb-intro page-gutter" data-reveal>
@@ -8,6 +9,9 @@ const images = Array.from({ length: 20 }, (_, index) => `/04_SideB/${String(inde
     <p>Experiments, scraps, photographs, illustrations and everything that doesn’t need a case study to exist.</p>
   </section>
   <section class="sideb-gallery page-gutter" aria-label="Personal work gallery">
-    {images.map((src, index) => <figure data-reveal><img src={src} alt={`Side B personal work ${index + 1}`} loading="lazy" /></figure>)}
+    {images.map((src, index) => {
+      const dimensions = imageMetadata[src];
+      return <figure data-reveal><img src={src} alt={`Side B personal work ${index + 1}`} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" /></figure>;
+    })}
   </section>
 </BaseLayout>
