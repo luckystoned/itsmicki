@@ -1,0 +1,4 @@
+interface:
+  display_name: "Itsmicki Portfolio"
+  short_description: "Maintain the Itsmicki Astro portfolio safely"
+  default_prompt: "Use $itsmicki-portfolio to update and validate the Itsmicki portfolio."
