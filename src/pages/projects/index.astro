@@ -1,0 +1,13 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectRow from '@/components/ProjectRow.astro';
+import { projects } from '@/data/projects';
+---
+<BaseLayout title="Projects — Itsmicki" active="projects">
+  <section class="page-title page-gutter" data-reveal>
+    <h1>(Picked<br />projects)</h1><span>2020—today</span>
+  </section>
+  <section class="page-gutter project-directory" data-reveal>
+    {projects.map((project) => <ProjectRow project={project} />)}
+  </section>
+</BaseLayout>

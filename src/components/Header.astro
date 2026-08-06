@@ -1,0 +1,11 @@
+---
+const { active = '' } = Astro.props;
+---
+<header class="site-header" data-header>
+  <a class="wordmark" href="/" aria-label="Itsmicki home">(SIDE A)</a>
+  <nav aria-label="Main navigation">
+    <a class:list={{ active: active === 'projects' }} href="/projects">(projects)</a>
+    <a class:list={{ active: active === 'deets' }} href="/deets">(deets)</a>
+    <a class:list={{ active: active === 'sideb' }} href="/sideb">(SIDE B)</a>
+  </nav>
+</header>

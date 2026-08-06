@@ -1,0 +1,20 @@
+---
+const { label = 'Vimeo video coming soon', vimeoId } = Astro.props;
+---
+{vimeoId ? (
+  <div class="vimeo-player">
+    <iframe
+      src={`https://player.vimeo.com/video/${vimeoId}?title=0&byline=0&portrait=0&badge=0&controls=1&volume=1&pip=0&transcript=0&chapters=0&cc=0&vimeo_logo=0&autopause=0&player_id=0&app_id=58479`}
+      title={label}
+      loading="lazy"
+      allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+      allowfullscreen
+    ></iframe>
+  </div>
+) : (
+  <div class="video-placeholder" role="img" aria-label={label}>
+    <span class="video-label">(motion)</span>
+    <span class="play-mark" aria-hidden="true">▶</span>
+    <span>{label}</span>
+  </div>
+)}

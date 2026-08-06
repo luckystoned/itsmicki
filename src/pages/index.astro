@@ -1,0 +1,44 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectRow from '@/components/ProjectRow.astro';
+import { projects } from '@/data/projects';
+---
+<BaseLayout>
+  <section class="home-intro page-gutter" data-reveal>
+    <p>I’m Micki, a creative director <sup>①</sup>, designer <sup>②</sup>, and mom of two insane cats <sup>③</sup>. Born and raised in Buenos Aires, Argentina, surviving my late twenties.</p>
+    <p>I’ve had the chance to explore all kinds of supports during the past 9 years—from analog craft and digital to print, to my favorite: web and product design. Occasionally, you can catch me illustrating, taking photos, editing them or animating when inspiration strikes <sup>(+)</sup>.</p>
+  </section>
+
+  <section class="home-collage" aria-label="Selected work collage" data-reveal>
+    <figure class="collage-item c1"><img src="/02_Projects/06_Lumen/01_Lumen_Drag.png" alt="Lumen art and technology project" /></figure>
+    <figure class="collage-item c2"><img src="/02_Projects/01_Winona/01_Winona_Drag.png" alt="Winona wellness brand project" /></figure>
+    <figure class="collage-item c3"><img src="/02_Projects/04_MaxMaher/02_MaxMaher_Drag.png" alt="Max Maher visual design project" /></figure>
+    <figure class="collage-item c4"><img src="/02_Projects/05_Outliant/01_OTL_Drag.png" alt="Outliant brand project" /></figure>
+    <p class="collage-note">Drag me around<br />or keep scrolling ↓</p>
+  </section>
+
+  <section class="projects-section page-gutter" data-reveal>
+    <div class="section-heading"><h1>(Picked projects)</h1><span>2020—today</span></div>
+    <div class="project-list">{projects.map((project) => <ProjectRow project={project} />)}</div>
+  </section>
+
+  <script>
+    document.querySelectorAll<HTMLElement>('.collage-item').forEach((item) => {
+      let startX = 0, startY = 0, originX = 0, originY = 0;
+      item.addEventListener('pointerdown', (event: PointerEvent) => {
+        item.setPointerCapture(event.pointerId);
+        startX = event.clientX; startY = event.clientY;
+        originX = Number(item.dataset.x || 0); originY = Number(item.dataset.y || 0);
+        item.classList.add('is-dragging');
+      });
+      item.addEventListener('pointermove', (event: PointerEvent) => {
+        if (!item.hasPointerCapture(event.pointerId)) return;
+        const x = originX + event.clientX - startX;
+        const y = originY + event.clientY - startY;
+        item.dataset.x = String(x); item.dataset.y = String(y);
+        item.style.transform = `translate(${x}px, ${y}px) rotate(var(--rotate))`;
+      });
+      item.addEventListener('pointerup', () => item.classList.remove('is-dragging'));
+    });
+  </script>
+</BaseLayout>

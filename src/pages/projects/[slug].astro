@@ -1,0 +1,36 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import VideoPlaceholder from '@/components/VideoPlaceholder.astro';
+import { projects } from '@/data/projects';
+
+export function getStaticPaths() {
+  return projects.filter((project) => !project.comingSoon).map((project) => ({ params: { slug: project.slug }, props: { project } }));
+}
+const { project } = Astro.props;
+---
+<BaseLayout title={`${project.title} — Itsmicki`} active="projects">
+  <article class="case-study" style={`--accent:${project.accent}`}>
+    <header class="case-hero page-gutter" data-reveal>
+      <div><h1>({project.title})</h1><span>{project.year}</span></div>
+      <dl>
+        <div><dt>Role</dt><dd>{project.role}</dd></div>
+        <div><dt>In a nutshell</dt><dd>{project.summary}</dd></div>
+      </dl>
+    </header>
+    {project.cover && <figure class="case-cover" data-reveal><img src={project.cover} alt={`${project.title} project cover`} /></figure>}
+    <section class="case-copy page-gutter" data-reveal>
+      <h2>(synopsis)</h2><p>{project.synopsis}</p>
+    </section>
+    <section class="media-grid page-gutter">
+      {project.media.map((media) => media.type === 'video' ? (
+        <div class:list={['media-item', media.ratio || 'wide']} data-reveal><VideoPlaceholder label={media.alt} vimeoId={media.vimeoId} /></div>
+      ) : (
+        <figure class:list={['media-item', media.ratio || 'wide']} data-reveal><img src={media.src} alt={media.alt} loading="lazy" /></figure>
+      ))}
+    </section>
+    {project.conclusion && <section class="case-copy conclusion page-gutter" data-reveal><h2>(conclusion)</h2><p>{project.conclusion}</p></section>}
+    <nav class="next-project page-gutter" aria-label="Project navigation">
+      <a href="/projects">Pss, let’s continue <span>See all (+)</span></a>
+    </nav>
+  </article>
+</BaseLayout>

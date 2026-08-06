@@ -1,0 +1,23 @@
+---
+import type { Project } from '@/data/projects';
+const { project } = Astro.props as { project: Project };
+const href = project.comingSoon ? undefined : `/projects/${project.slug}`;
+---
+<article class:list={['project-row', { 'is-coming': project.comingSoon }]} data-project-row>
+  {href ? (
+    <a href={href} aria-label={`View ${project.title} case study`}>
+      <span class="project-index">{project.number}</span>
+      <span class="project-name">{project.title}</span>
+      <span class="project-role">{project.role}</span>
+      <span class="project-status">↗</span>
+    </a>
+  ) : (
+    <div>
+      <span class="project-index">{project.number}</span>
+      <span class="project-name">{project.title}</span>
+      <span class="project-role">{project.role}</span>
+      <span class="project-status">COMING SOON</span>
+    </div>
+  )}
+  {project.cover && <img class="project-peek" src={project.cover} alt="" loading="lazy" />}
+</article>
