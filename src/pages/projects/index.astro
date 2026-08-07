@@ -104,18 +104,18 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       <ProjectGridItem project={blend360.project} label={blend360.label} style={blend360.style} />
     </section>
 
-    <footer class="projects-footer">
+    <footer class="projects-footer" id="projects-footer">
       <div class="projects-footer-wordmark" aria-label="Itsmicki, copyright 2026">
-        <span>Itsmicki</span>
-        <span>©2026</span>
+        <span data-footer-reveal>Itsmicki</span>
+        <span data-footer-reveal>©2026</span>
       </div>
-      <div class="projects-footer-info">
-        <span>DEV BY</span>
-        <a href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">@LUCKYSTONED</a>
-        <span>SAY HI</span>
-        <a href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
-        <span>ALL RIGHTS RESERVED.</span>
-        <span class="projects-footer-socials">
+      <div class="projects-footer-info" id="projects-footer-info">
+        <span data-footer-reveal style="--reveal-delay:0ms">DEV BY</span>
+        <a data-footer-reveal style="--reveal-delay:70ms" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">@LUCKYSTONED</a>
+        <span data-footer-reveal style="--reveal-delay:140ms">SAY HI</span>
+        <a data-footer-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
+        <span data-footer-reveal style="--reveal-delay:280ms">ALL RIGHTS RESERVED.</span>
+        <span class="projects-footer-socials" data-footer-reveal style="--reveal-delay:350ms">
           SOCIALS <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noreferrer">LINKEDIN</a>,
           <a href="https://www.behance.net/itsmicki" target="_blank" rel="noreferrer">BEHANCE</a>,
           <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noreferrer">DRIBBBLE</a>,
@@ -184,7 +184,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach(function (anchor) {
         anchor.addEventListener('click', function (event) {
           const href = anchor.getAttribute('href');
-          if (!href) return;
+          if (!href || href === '#') return;
           const target = document.querySelector<HTMLElement>(href);
           if (!target) return;
           event.preventDefault();
@@ -196,6 +196,14 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
         });
       });
     })();
+
+    const footerReveals = document.querySelectorAll<HTMLElement>('.projects-page [data-footer-reveal]');
+    if (footerReveals.length) {
+      const footerObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => entry.target.classList.toggle('is-visible', entry.isIntersecting));
+      }, { threshold: .02, rootMargin: '-2% 0px -6% 0px' });
+      footerReveals.forEach((node) => footerObserver.observe(node));
+    }
   </script>
 </BaseLayout>
 
@@ -466,6 +474,19 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     text-underline-offset: .08em;
   }
 
+  .projects-page [data-footer-reveal] {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity .85s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms),
+      transform .95s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms);
+  }
+
+  .projects-page [data-footer-reveal].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   @media (max-width: 760px) {
     body:has(.projects-page) {
       padding-bottom: calc(58px + env(safe-area-inset-bottom));
@@ -606,6 +627,11 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
   @media (prefers-reduced-motion: reduce) {
     .project-visual img {
       transition: none !important;
+    }
+
+    .projects-page [data-footer-reveal] {
+      opacity: 1 !important;
+      transform: none !important;
     }
   }
 </style>
