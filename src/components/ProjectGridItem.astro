@@ -1,0 +1,55 @@
+---
+import type { Project } from '@/data/projects';
+import { imageMetadata } from '@/data/imageMetadata';
+
+type Props = {
+  project: Project;
+  label: string;
+  style: string;
+  eager?: boolean;
+};
+
+const { project, label, style, eager = false } = Astro.props;
+const href = project.comingSoon ? undefined : `/projects/${project.slug}`;
+const cover = project.cover;
+const dimensions = cover ? imageMetadata[cover] : undefined;
+
+if (!cover || !dimensions) {
+  throw new Error(`Missing project cover metadata for ${project.slug}`);
+}
+
+---
+
+<article class:list={['project-card', { 'is-coming': project.comingSoon }]} style={style}>
+  {href ? (
+    <a class="project-card-inner" href={href} aria-label={`View ${project.title} case study`}>
+      <span class="project-visual">
+        <img
+          src={cover}
+          alt={`${project.title} project cover`}
+          width={dimensions.width}
+          height={dimensions.height}
+          loading={eager ? 'eager' : 'lazy'}
+          fetchpriority={eager ? 'high' : undefined}
+          decoding="async"
+        />
+      </span>
+      <span class="project-label">{label}</span>
+    </a>
+  ) : (
+    <div class="project-card-inner" aria-label={`${project.title}, coming soon`}>
+      <span class="project-visual">
+        <img
+          src={cover}
+          alt={`${project.title} project cover`}
+          width={dimensions.width}
+          height={dimensions.height}
+          loading={eager ? 'eager' : 'lazy'}
+          fetchpriority={eager ? 'high' : undefined}
+          decoding="async"
+        />
+      </span>
+      <span class="project-label">{label}</span>
+    </div>
+  )}
+</article>

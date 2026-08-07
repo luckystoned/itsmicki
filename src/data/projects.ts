@@ -55,6 +55,7 @@ export const projects: Project[] = [
   {
     slug: 'amazon', number: '03', title: 'Amazon', year: '2024',
     role: 'UX/UI Lead + Art Direction + Visual Design', accent: '#f0c54b', comingSoon: true,
+    cover: '/02_Projects/03_Amazon/01_Amazon_Portada.jpg',
     summary: 'A product and visual design project currently being prepared for publication.',
     synopsis: 'Full case study coming soon.', media: [{ type: 'video', vimeoId: '1215371786', alt: 'Amazon project cover' }],
   },

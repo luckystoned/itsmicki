@@ -17,6 +17,7 @@ const {
   themeColor = theme === 'dark' ? '#111111' : '#f3f0e9',
   preconnectOrigins = [],
   preloadFonts = [],
+  customCursor = false,
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
@@ -81,7 +82,7 @@ const globalStructuredData = {
   </head>
   <body>
     <a class="skip-link" href="#content">Skip to content</a>
-    <div class="cursor" data-cursor aria-hidden="true"><span>view</span></div>
+    {!customCursor && <div class="cursor" data-cursor aria-hidden="true"><span>view</span></div>}
     <Header active={active} />
     <main id="content"><slot /></main>
     {!hideFooter && <Footer />}
