@@ -1,52 +1,233 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import ProjectRow from '@/components/ProjectRow.astro';
 import { projects } from '@/data/projects';
 import { imageMetadata } from '@/data/imageMetadata';
 
-const collageImages = [
-  { className: 'c1', src: '/02_Projects/06_Lumen/01_Lumen_Drag.webp', alt: 'Lumen art and technology project' },
-  { className: 'c2', src: '/02_Projects/01_Winona/01_Winona_Drag.webp', alt: 'Winona wellness brand project' },
-  { className: 'c3', src: '/02_Projects/04_MaxMaher/02_MaxMaher_Drag.webp', alt: 'Max Maher visual design project' },
-  { className: 'c4', src: '/02_Projects/05_Outliant/01_OTL_Drag.webp', alt: 'Outliant brand project' },
-];
+const carouselLayout: Record<string, { width: number; height: number; label: string; fallbackCover?: string }> = {
+  winona: { width: 352.398, height: 350.263, label: '01_Winona_UX—UI Lead, Visual & Motion Designer' },
+  genova: { width: 353.11, height: 467.729, label: '02_Genova_Art Direction+Visual Design' },
+  amazon: { width: 350.263, height: 231.373, label: '03_Amazon_UXUI Lead+Art Direction+Visual Design', fallbackCover: 'https://vumbnail.com/1215371786.jpg' },
+  maxmaher: { width: 352.398, height: 349.551, label: '04_MaxMaher_Art Direction+Visual Design' },
+  outliant: { width: 352, height: 417, label: '05_Outliant_Art Direction+Visual Design+UXUI Lead' },
+  lumen: { width: 352.398, height: 210.876, label: '06_Lumen_Art Direction+Visual Design' },
+  blend360: { width: 353.11, height: 467.729, label: '07_Blend360_UX—UI Lead, Visual & Motion Designer' },
+};
+const carouselProjects = projects.flatMap((project) => {
+  const layout = carouselLayout[project.slug];
+  if (!layout || (!project.cover && !layout.fallbackCover)) return [];
+  return [{ ...project, carouselCover: project.cover ?? layout.fallbackCover!, carouselLayout: layout }];
+});
+const desktopLength = (value: number) => `min(${value}px, ${(value / 16).toFixed(6)}vw, ${(value / 10.33).toFixed(6)}svh)`;
+const loops = [0, 1, 2];
 ---
-<BaseLayout>
-  <section class="home-intro page-gutter" data-reveal>
-    <p>I’m Micki, a creative director <sup>①</sup>, designer <sup>②</sup>, and mom of two insane cats <sup>③</sup>. Born and raised in Buenos Aires, Argentina, surviving my late twenties.</p>
-    <p>I’ve had the chance to explore all kinds of supports during the past 9 years—from analog craft and digital to print, to my favorite: web and product design. Occasionally, you can catch me illustrating, taking photos, editing them or animating when inspiration strikes <sup>(+)</sup>.</p>
-  </section>
+<BaseLayout
+  hideFooter
+  themeColor="#fafafa"
+  preconnectOrigins={['https://vumbnail.com']}
+  preloadFonts={['/fonts/OTNeueMontreal-MediumSemiSqueezed.otf', '/fonts/OTNeueMontreal-MediumExtraSqueezed.otf']}
+>
+  <div class="home-stage">
+    <section class="home-intro" data-reveal>
+      <p>I'm micki, a creative director ①, designer ②, and mom of two insane cats ③. Born and raised in Buenos Aires, Argentina, surviving my late twenties<span class="desktop-period"> .</span><span class="mobile-plus"> <u>(+)</u>.</span></p>
+      <p>I've had the chance to explore all kinds of supports during the past 9 years—analog craft, digital to print, and my favorite, web/product design. Occasionally,  you can catch me illustrating, taking photos and editing them, or animating when inspiration strikes (+).</p>
+    </section>
 
-  <section class="home-collage" aria-label="Selected work collage" data-reveal>
-    {collageImages.map((image, index) => {
-      const dimensions = imageMetadata[image.src];
-      return <figure class={`collage-item ${image.className}`}><img src={image.src} alt={image.alt} width={dimensions.width} height={dimensions.height} fetchpriority={index === 0 ? 'high' : undefined} decoding="async" /></figure>;
-    })}
-    <p class="collage-note">Drag me around<br />or keep scrolling ↓</p>
-  </section>
+    <section class="home-carousel" aria-label="Selected projects" data-carousel data-reveal>
+      <div class="carousel-track" data-carousel-track>
+        {loops.map((loop) => carouselProjects.map((project, index) => {
+          const dimensions = project.cover ? imageMetadata[project.cover] : project.slug === 'amazon' ? { width: 640, height: 360 } : undefined;
+          const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${desktopLength(project.carouselLayout.width)}`;
+          const content = (
+            <>
+              <span class="carousel-name">{project.carouselLayout.label}</span>
+              <span class="carousel-picture">
+                <img src={project.carouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading={index < 3 && loop === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 && loop === 0 ? 'high' : undefined} decoding="async" />
+              </span>
+            </>
+          );
+          return project.comingSoon
+            ? <div class="carousel-card" style={cardStyle} aria-hidden={loop !== 0 ? 'true' : undefined}>{content}</div>
+            : <a class="carousel-card" style={cardStyle} href={`/projects/${project.slug}`} aria-hidden={loop !== 0 ? 'true' : undefined} tabindex={loop !== 0 ? -1 : undefined}>{content}</a>;
+        }))}
+      </div>
+    </section>
 
-  <section class="projects-section page-gutter" data-reveal>
-    <div class="section-heading"><h1>(Picked projects)</h1><span>2020—today</span></div>
-    <div class="project-list">{projects.map((project) => <ProjectRow project={project} />)}</div>
-  </section>
+    <footer class="home-footer" data-reveal>
+      <div class="home-footer-meta">
+        <span class="footer-dev-label">DEV BY</span>
+        <a class="footer-dev-name" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">@luckystoned</a>
+        <span class="footer-say-one">SAY HI</span>
+        <span class="footer-say-two">SAY HI</span>
+        <a class="footer-mail" href="mailto:hey@itsmicki.com">hey@itsmicki.com</a>
+        <span class="footer-rights">All rights reserved.</span>
+        <span class="home-socials"><span class="socials-label">SOCIALS</span> <span class="socials-links"><a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noreferrer">LinkedIn</a>, <a href="https://www.behance.net/itsmicki" target="_blank" rel="noreferrer">Behance</a>, <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noreferrer">Dribbble</a>, <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noreferrer">Instagram</a>, <span class="tiktok">Tiktok</span></span></span>
+      </div>
+      <div class="home-subfooter" aria-label="Itsmicki copyright 2026"><span>Itsmicki</span><span>©2026</span></div>
+    </footer>
+  </div>
 
   <script>
-    document.querySelectorAll<HTMLElement>('.collage-item').forEach((item) => {
-      let startX = 0, startY = 0, originX = 0, originY = 0;
-      item.addEventListener('pointerdown', (event: PointerEvent) => {
-        item.setPointerCapture(event.pointerId);
-        startX = event.clientX; startY = event.clientY;
-        originX = Number(item.dataset.x || 0); originY = Number(item.dataset.y || 0);
-        item.classList.add('is-dragging');
-      });
-      item.addEventListener('pointermove', (event: PointerEvent) => {
-        if (!item.hasPointerCapture(event.pointerId)) return;
-        const x = originX + event.clientX - startX;
-        const y = originY + event.clientY - startY;
-        item.dataset.x = String(x); item.dataset.y = String(y);
-        item.style.transform = `translate(${x}px, ${y}px) rotate(var(--rotate))`;
-      });
-      item.addEventListener('pointerup', () => item.classList.remove('is-dragging'));
+    const homeCursor = 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAuCAYAAADdlrJ2AAAABmJLR0QA/wD/AP+gvaeTAAAEoklEQVRYhbWXTUgjZxjH/+/M5IONiE4dsyrVIu0qdXdAWLVsVSi60lSUdW3tFgq2l9KLx4IaD0UR9tJTWJa1YNnL1lZ6ULq3HpaVQmvqV6KUCqsEaqLRTcqYTESdeXrYTPAjiYnJ/iEwM88z7y//d97nfWaYLMsEABzHfbC8vPwMr0Hc6xj0rHi73f4tANy4caOUiArsdjuCwWAgn5CEE4/H8xFj7BFjrCufAAAQjIOSkhJYLBay2+3vElG1IAgHS0tL/nxAEk7Gx8cxMzPDbt682csYe6Fp2pN8AE5Bzl6TJKk0XxDh7IV79+6hs7MT6+vrNdFodEdV1YjH43kHgJ43SGFhIQoLC7G9vc2pqloKIGdH5yCGqqurcf/+fei6rj148OC53+/3E9Gox+NZzRaSshiLi4vR3t6Ojo4OPhAIvE9En+CSrlI6Oak7d+6AiPRAIPA5Eb1NRIurq6t/ZQrJaFsZHh6G0+nkjo+P++MF250pAMjQiSFJkriKigoSRfEagIwLNqsNcmxsDDMzM+zWrVsfxwt2KpP7LrULM8Z4ABBFUcwkP6vpMtTX1weHw4H19fWaWCwWiMViak1NzbXp6WktbxCjYIPBoBCLxa5elJ/oJ11dXSgvL88KZjKZUFlZiebm5uOVlZX3rFZrqyRJL4LB4N7JvJw6Y0lJCe7evYve3l7B5/N9SERfMcYqzuZdarqSqaenB5qmaVtbW58BqOZ5fml5edkN5LHHDw0NYWRkhAfwBWPsERElCjZvTgxJksSVl5dTUVHRW7quVwuCcJD3t5XR0VHMzs6ylpaWT+MF+3NOTubn50FESWM+n+8QgAnIcboGBgagaUnrDwUFBT8R0bggCAd5fyaGotGo3+v1bgBpnITDYSwsLAAA2trawBhLOSAR3fZ6vb+liqeEbGxsYHBwEMCruU8HMZvNaRfQOYiiKNjf30c4HI5YLBbFbDZb/H7/G4wx4wUwketyuUBEcLlczqOjo2+I6InX6/3hQsjU1BQmJiZw5cqVv91udyMRWevr62O6ruPhw4doaGhI5DY2NgIAJicnmwBYGGN/JnNyzmYkEvkXAFRVVQGAMXZAqdap8U8FwZI2bhw4nU4AiCqK8piIJgVBODBicUjqhxKXzWZLCktA9vb2AMAG4NhYepmqtrbWgDRGIpF2Ivrv5NtMop8A+I6IHgN4dvb7pLS0NMBx3FOz2dwwNzdXQESoqqpKxJuamtDZ2YnNzc2yxcXFLxljdTs7O5PnnHAc92uqzzmv1/s9ABQXF38dCoXsoiiitbX1XB7P8+Zk9wtEdBsANE1bSTsnAEKhUOiiHACwWq3WU5B0lZpKFyw2lJWVvXkKkuX4EQDhUCi0qyjKNZ7nYbPZEkGHw4Hr169jd3dXevny5R+KouyLoujIkvFK3d3dLlmWqb+/nw4PD8/93G43ybJMsixTXV1d+j0nlXw+XzCb/Jw6IxFl9PWVEyQcDm9nkneppkVET4loR1XVq2NjYyM8z5uMmK7r2tbW1hwR/QgAa2trxxfuR+kky3ILgOdJQr97PJ5m4ySn9qvr+p7JZPqF4joR+udk3v/GI/7Q191CKAAAAABJRU5ErkJggg==) 0 0, auto';
+    const homeCursorHover = 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAzCAYAAACE92h3AAAABmJLR0QA/wD/AP+gvaeTAAAEtklEQVRYhcWXX0hbdxTHv+fem6a1GtNhTdA2IpM1GKMsi4WBiIXiMtfB6thgIKPgYIzuZW/DQjtYCYwJe5hPg5XRFw3ajRYpy4MVHNsoAyH5mY3NIbqu1FTRafpnTe79nT3UO6Im8cYk2/cp955z8sk5v5Pf+f2ovb2dAYCZPxZCXESFpVQasFOa+aG9vf15AEcAQAixXikgmSXNlmEY9kQika4E8P8raVdXF7q7u8HMxvj4+A1N05YARGOx2NcVAXq9XvT39wOAOjw8/BIzg4jWAVQGmC2Hw4F0Og2Px9MipTQb6S8Au9a7WOVcw2g0iunpafT09LxGRGtEtObz+Q6XCssLNEVEajkg2VJdLtdHABAIBBAMBrcZNU3DsWPH0NnZaTx+/NirqmrA7XYfTCaTv+0XmHMNTbW1taGtrQ0A1CtXrry+1UgHAExWBJitmpoaaJqGxsbG5lIayfIf/+bNm5ienkYoFHrVbCS/3+8sBlYU0FSpjVSwaXJpq6zo7OzUHz161KKq6gv19fWH79+//6sVoOU1NNXa2orW1lYA0K5evfoGM0NRlBEA163El7R5ExEAoLm5+bjVmKIzzNatW7cAAKOjo30LCwsMAFJK99zcXDJfTFnGk6IoNqu+RTdNLmmahoaGBgSDwUwqlTpus9lOut1uRzKZ/GWX774IO+T1euH1egHANjY29hYzExF9gRyjrewTn7Y6yePxNOSylyXDbEWjUQDAxMRE79LSktlInrm5uTtABc80iqIcyPW+7BmaOnHiBM6dOwcpZWZ2dvYiEf0OQFQM6PP54PP5AMDW19c3SE/1VcnA1dVVzMzMFHLhzc3NJwAOAmUo6eLiIsLhcCEXklI+V/GmyaeCGa6urmJlZQXA0yZQlMK/j5kHAPy4831dXd09S8DJyUmMjIwAAGZmZlBVVVUQSET34vH4QiGfgkAiYgBUyOfo0aPmiZ0TicQrzNxCRMvxePyGZeCFCxeg67qxvr5+nZnHOjo6Gi5fvvyZlJK6urpw5syZf32bmpowNDQEADQwMPA2EdUB+B6AdeDU1BR0XVeJaF4IMS6EQDAY/DSdTttcLlfebGtqauryGncCU6kU7t69C13X/yAiCUBKKddMeyaTSQOwPPf2BEYiEUQiEQDw5LqQMrPl86fT6XxmT6BVGYaRBpBzYw4EAqitrYXdbq/f2Nh4U0rJUsrvEonEsumTfeW+xswRABBCXAMgs7+so6PjrJRSC4VC7xmGcQoALl26hEOHDu0Cx2IxDA4Omo8vx+Pxb3dlyMw/CyHG82UWi8W+AYDq6upnHz58eAoAhoaGcgILSWPmDwGAiH6wEvDgwYMn5vFwP9KEEJ/sO9qCXC7XthJUZB46nU6cPn0aAOBwON5ZXl7WiGgtHo9PFV0bv9/vB/CipmlKKBQK2+32I8FgEL29vTn9z58/b9y+fVtl5p+EECeLzlAIIQAIAFAUZTiTycBms+UFqqq67bZV0jzc2n2K0n8+gMsC3Nzc/DOfTdf1bVUotUs/YGb7/Px8IBwOv7vTmEql7i0uLn7JzHcURVkB9hiuVuX3+98nos/zmHNvbaWIiP5WFGUDeDrTdpgz2Q//AFjRxcLkkNdIAAAAAElFTkSuQmCC) 0 0, pointer';
+    document.body.style.cursor = homeCursor;
+    document.querySelector<HTMLElement>('.cursor')?.style.setProperty('display', 'none', 'important');
+    document.querySelectorAll<HTMLElement>('a, [data-carousel]').forEach((element) => {
+      element.addEventListener('mouseenter', () => { element.style.cursor = homeCursorHover; });
+      element.addEventListener('mouseleave', () => { element.style.cursor = homeCursor; });
     });
+    const carousel = document.querySelector<HTMLElement>('[data-carousel]');
+    const track = document.querySelector<HTMLElement>('[data-carousel-track]');
+    if (carousel && track) {
+      const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let offset = 0, cycle = 0, dragging = false, hovered = false, lastX = 0, moved = 0, velocity = 0;
+      const measure = () => { cycle = track.scrollWidth / 3; };
+      const wrap = () => { if (offset <= -cycle) offset += cycle; if (offset > 0) offset -= cycle; };
+      const frame = () => {
+        const autoSpeed = matchMedia('(max-width: 760px)').matches ? .5 : .6;
+        const designWidth = matchMedia('(max-width: 760px)').matches ? 390 : 1600;
+        const scale = Math.min(innerWidth / designWidth, innerHeight / (designWidth === 390 ? 844 : 1033));
+        if (!reduceMotion && !dragging) offset -= autoSpeed * scale * (hovered ? .16 : 1);
+        if (!dragging && Math.abs(velocity) > .05) { offset += velocity; velocity *= .91; }
+        wrap(); track.style.transform = `translate3d(${offset}px, 0, 0)`; requestAnimationFrame(frame);
+      };
+      measure(); addEventListener('resize', measure); requestAnimationFrame(frame);
+      carousel.addEventListener('mouseenter', () => { hovered = true; });
+      carousel.addEventListener('mouseleave', () => { hovered = false; });
+      carousel.addEventListener('pointerdown', (event) => { dragging = true; moved = 0; lastX = event.clientX; carousel.setPointerCapture(event.pointerId); });
+      carousel.addEventListener('pointermove', (event) => { if (!dragging) return; const dx = event.clientX - lastX; lastX = event.clientX; moved += Math.abs(dx); offset += dx; velocity = dx * 1.15; wrap(); });
+      const release = () => { dragging = false; };
+      carousel.addEventListener('pointerup', release); carousel.addEventListener('pointercancel', release);
+      carousel.addEventListener('click', (event) => { if (moved > 6) event.preventDefault(); }, true);
+      carousel.addEventListener('wheel', (event) => {
+        const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+        velocity -= delta * .12; offset -= delta * 1.1; wrap(); event.preventDefault();
+      }, { passive: false });
+    }
   </script>
 </BaseLayout>
+
+<style>
+  @font-face { font-family: 'OT Neue Montreal Home'; src: url('/fonts/OTNeueMontreal-MediumSemiSqueezed.otf') format('opentype'); font-style: normal; font-weight: 400 600; font-display: swap; }
+  @font-face { font-family: 'OT Neue Montreal Home Extra'; src: url('/fonts/OTNeueMontreal-MediumExtraSqueezed.otf') format('opentype'); font-style: normal; font-weight: 400 600; font-display: swap; }
+  :global(body:has(.home-carousel)) { background: #fafafa; color: #2e2e2e; }
+  :global(body:has(.home-carousel) .cursor) { display: none !important; }
+  :global(body:has(.home-carousel) .site-header) { background: color-mix(in srgb, #fafafa 90%, transparent); color: #2e2e2e; font-family: 'OT Neue Montreal Home', 'Arial Narrow', sans-serif; font-weight: 500; }
+  .home-intro, .home-carousel, .home-footer { font-family: 'OT Neue Montreal Home', 'Arial Narrow', sans-serif; font-weight: 500; }
+  .home-intro { grid-template-columns: 29% 46%; justify-content: space-between; min-height: clamp(250px, 17.4vw, 278px); padding-top: clamp(36px, 4.35vw, 70px); font-size: clamp(13px, 1.42vw, 24px); line-height: 1.24; letter-spacing: -.01em; }
+  .home-intro sup { font-size: .55em; }
+  .home-carousel { position: relative; z-index: 2; height: clamp(315px, 29.25vw, 468px); overflow: visible; padding-left: 0; touch-action: pan-y; user-select: none; }
+  .carousel-track { isolation: isolate; display: flex; align-items: flex-start; width: max-content; overflow: visible; will-change: transform; }
+  .carousel-card { position: relative; z-index: 0; flex: 0 0 clamp(210px, 22vw, 352px); aspect-ratio: var(--card-aspect); margin-right: clamp(9px, .8vw, 13px); overflow: visible; }
+  .carousel-name { position: absolute; z-index: 3; top: -7px; left: 0; max-width: 140%; opacity: 0; transform: translateY(6px); color: #2e2e2e; font-size: clamp(17px, 1.5vw, 24px); line-height: 1.24; letter-spacing: -.01em; white-space: nowrap; pointer-events: none; transition: opacity .4s cubic-bezier(.16,1,.3,1), transform .4s cubic-bezier(.16,1,.3,1); }
+  .carousel-picture { position: absolute; z-index: 1; inset: 0; display: block; overflow: hidden; border-radius: 0; transition: border-radius .5s cubic-bezier(.16,1,.3,1), transform .5s cubic-bezier(.16,1,.3,1); }
+  .carousel-picture img { pointer-events: none; transition: transform .5s cubic-bezier(.16,1,.3,1); }
+  .carousel-card:is(:hover, :focus-visible, :focus-within) .carousel-name { opacity: 1; transform: none; }
+  .carousel-card:is(:hover, :focus-visible, :focus-within) { z-index: 1000; }
+  .carousel-card:hover .carousel-picture, .carousel-card:focus-visible .carousel-picture { border-radius: 220px; transform: translateY(clamp(32px, 2.93vw, 47px)); }
+  .carousel-card:hover img, .carousel-card:focus-visible img { transform: scale(1.394); }
+  .home-footer { position: relative; z-index: 1; height: clamp(315px, 36vw, 576px); margin-top: max(-160px, -10vw); padding-top: 0; padding-bottom: 0; overflow: hidden; }
+  .home-footer-meta { position: absolute; z-index: 3; right: var(--gutter); bottom: 14.4%; left: var(--gutter); display: grid; grid-template-columns: 1.05fr .55fr 1.25fr 1fr 2.1fr; align-items: end; gap: 18px; padding: 0; font-size: clamp(11px, 1.3vw, 21px); line-height: 1; text-transform: uppercase; }
+  .home-footer-meta > * { justify-self: start; width: fit-content; background: #2e2e2e; color: #fafafa; padding-top: 1px; white-space: nowrap; }
+  .home-footer-meta a { color: #fafafa; }
+  .footer-dev-name:is(:hover, :focus-visible), .footer-mail:is(:hover, :focus-visible), .socials-links a:is(:hover, :focus-visible), .tiktok:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .08em; }
+  .home-socials { text-align: right; }
+  .home-subfooter { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; display: flex; justify-content: space-between; align-items: flex-end; color: #2e2e2e; font-family: 'OT Neue Montreal Home Extra', Impact, sans-serif; font-size: clamp(150px, 36.45vw, 583px); font-weight: 500; line-height: .8; letter-spacing: -.04em; text-transform: none; white-space: nowrap; }
+  .home-subfooter span:first-child { margin-left: -.035em; }
+  .home-subfooter span:last-child { margin-right: -.03em; }
+  .mobile-plus { display: none; }
+  @media (hover: none) {
+    .footer-dev-name:active, .footer-mail:active, .socials-links a:active, .tiktok:active { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .08em; }
+  }
+  @media (max-width: 760px) {
+    .home-intro { grid-template-columns: 1fr; gap: 24px; min-height: 0; padding-top: 34px; padding-bottom: 68px; font-size: clamp(20px, 5.65vw, 25px); line-height: 1.08; overflow-wrap: anywhere; }
+    .home-carousel { height: min(105vw, 410px); }
+    .carousel-card { flex-basis: min(64vw, 270px); margin-right: 8px; }
+    .carousel-name { font-size: 15px; }
+    .home-footer { height: 330px; margin-top: -72px; }
+    .home-footer-meta { right: var(--gutter); bottom: 36px; left: var(--gutter); grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 11px; line-height: 1.15; }
+    .home-socials { grid-column: 1 / -1; text-align: left; }
+    .home-subfooter { flex-direction: column; align-items: flex-start; padding-top: 12px; font-size: clamp(96px, 29vw, 180px); line-height: .72; white-space: normal; }
+    .home-subfooter span:last-child { align-self: flex-end; }
+  }
+  :global(html:has(.home-stage)), :global(body:has(.home-stage)) { --bg: #fafafa; --fg: #2e2e2e; background: #fafafa; color: #2e2e2e; -webkit-font-smoothing: antialiased; }
+  @media (min-width: 761px) {
+    :global(body:has(.home-stage)) { height: 100svh; overflow: hidden; }
+    :global(body:has(.home-stage) > main) { position: fixed; inset: 0; width: 100vw; height: 100svh; max-height: none; overflow: hidden; background: #fafafa; transform: none; }
+    .home-stage { position: relative; width: 100%; height: 100%; overflow: hidden; background: #fafafa; container-type: inline-size; }
+    .home-stage [data-reveal] { transform: none; transition: opacity .9s cubic-bezier(.16, 1, .3, 1); }
+
+    :global(body:has(.home-stage) .site-header) { position: fixed; inset: 0; display: block; width: 100vw; height: 100svh; max-height: none; min-height: 0; padding: 0; background: transparent; backdrop-filter: none; transform: none; pointer-events: none; }
+    :global(body:has(.home-stage) .site-header .wordmark) { position: absolute; top: min(23.21px, 1.450625vw, 2.246854svh); left: min(25.2px, 1.575vw, 2.439497svh); font-size: min(27.117px, 1.694813vw, 2.625073svh); font-weight: 400; line-height: normal; letter-spacing: -.02em; text-decoration: underline; pointer-events: auto; }
+    :global(body:has(.home-stage) .site-header nav) { position: absolute; top: min(23.21px, 1.450625vw, 2.246854svh); right: min(25.2px, 1.575vw, 2.439497svh); display: flex; gap: min(10px, .625vw, .968054svh); font-size: min(27.117px, 1.694813vw, 2.625073svh); font-weight: 400; line-height: normal; letter-spacing: -.02em; pointer-events: auto; }
+    :global(body:has(.home-stage) .site-header a::after) { display: none; }
+    :global(body:has(.home-stage) .site-header a:hover) { text-decoration: underline; }
+
+    .home-intro { position: absolute; inset: 0; display: block; min-height: 0; padding: 0; color: #2e2e2e; font-size: min(24px, 1.5vw, 2.32333svh); font-weight: 400; line-height: 1.24; letter-spacing: -.01em; }
+    .home-intro p { position: absolute; top: min(78.63px, 4.914375vw, 7.61181svh); }
+    .home-intro p:first-child { left: min(25.2px, 1.575vw, 2.439497svh); width: min(441.914px, 27.619625vw, 42.779671svh); }
+    .home-intro p:nth-child(2) { left: min(500.45px, 31.278125vw, 48.446273svh); width: min(704.492px, 44.03075vw, 68.198645svh); white-space: pre-wrap; }
+
+    .home-carousel { position: absolute; z-index: 2; top: min(278.13px, 17.383125vw, 26.924492svh); left: max(-33.35px, -2.084375vw, -3.228461svh); width: calc(100vw + min(33.35px, 2.084375vw, 3.228461svh)); height: min(468px, 29.25vw, 45.304937svh); overflow: visible; }
+    .carousel-card { z-index: 0; flex-basis: var(--card-width); margin-right: min(13px, .8125vw, 1.25847svh); overflow: visible; }
+    .carousel-name { z-index: 2; top: max(-6.9px, -.43125vw, -.667957svh); width: max-content; max-width: none; overflow: visible; color: #2e2e2e; font-size: min(24px, 1.5vw, 2.32333svh); font-weight: 400; line-height: 1.24; letter-spacing: -.01em; }
+    .carousel-card:is(:hover, :focus-visible, :focus-within) { z-index: 1000; }
+    .carousel-card:hover .carousel-picture, .carousel-card:focus-visible .carousel-picture { border-radius: min(220px, 13.75vw, 21.297193svh); transform: translateY(min(46.81px, 2.925625vw, 4.531462svh)); }
+    .carousel-card:hover img, .carousel-card:focus-visible img { transform: none; }
+
+    .home-footer { position: absolute; z-index: auto; inset: 0; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; pointer-events: none; }
+    .home-subfooter { position: absolute; z-index: 1; inset: 0; display: block; color: #2e2e2e; font-size: min(583.223px, 36.451437vw, 56.459148svh); font-weight: 400; line-height: .8; letter-spacing: -.04em; }
+    .home-subfooter span { position: absolute; bottom: 0; }
+    .home-subfooter span:first-child { left: max(-22.69px, -1.418125vw, -2.196515svh); margin: 0; }
+    .home-subfooter span:last-child { right: max(-22px, -1.375vw, -2.129719svh); margin: 0; }
+
+    .home-footer-meta { position: absolute; z-index: 3; inset: auto 0 min(86.46px, 5.40375vw, 8.369797svh); display: block; padding: 0; font-size: min(21px, 1.3125vw, 2.032914svh); font-weight: 400; line-height: 1; letter-spacing: -.02em; pointer-events: auto; }
+    .home-footer-meta > * { position: absolute; bottom: 0; justify-self: auto; padding: min(1px, .0625vw, .096805svh) 0 0; }
+    .footer-dev-label { left: 0; }
+    .footer-dev-name { left: min(66.03px, 4.126875vw, 6.392062svh); }
+    .footer-say-one { left: min(415.49px, 25.968125vw, 40.221684svh); }
+    .footer-say-two { left: min(560.17px, 35.010625vw, 54.227493svh); }
+    .footer-mail { left: min(731.02px, 45.68875vw, 70.766699svh); }
+    .footer-rights { left: min(1261.94px, 78.87125vw, 122.162633svh); }
+    .home-socials { right: 0; text-align: left; }
+  }
+  @media (max-width: 760px) {
+    :global(body:has(.home-stage)) { height: 100svh; overflow: hidden; }
+    :global(body:has(.home-stage) > main) { position: fixed; inset: 0; width: 100vw; height: 100svh; max-height: none; overflow: hidden; background: #fafafa; transform: none; }
+    .home-stage { position: relative; width: 100%; height: 100%; overflow: hidden; background: #fafafa; container-type: inline-size; }
+    .home-stage [data-reveal] { transform: none; transition: opacity .9s cubic-bezier(.16, 1, .3, 1); }
+
+    :global(body:has(.home-stage) .site-header) { position: fixed; z-index: 20; inset: auto 0 max(13px, env(safe-area-inset-bottom)); display: flex; justify-content: center; align-items: flex-start; gap: min(12px, 3.076923cqw); width: 100vw; height: auto; max-height: none; min-height: 0; padding: 0; background: transparent; backdrop-filter: none; color: #2e2e2e; font-size: min(26.498px, 6.794359cqw); font-weight: 400; line-height: normal; letter-spacing: -.02em; transform: none; container-type: inline-size; pointer-events: none; }
+    :global(body:has(.home-stage) .site-header .wordmark) { position: static; flex: 0 0 auto; text-decoration: underline; pointer-events: auto; }
+    :global(body:has(.home-stage) .site-header nav) { display: flex; flex: 0 0 auto; gap: 3.076923cqw; min-width: 0; pointer-events: auto; }
+    :global(body:has(.home-stage) .site-header a) { white-space: nowrap; }
+    :global(body:has(.home-stage) .site-header a::after) { display: none; }
+
+    .home-intro { position: absolute; inset: 0; display: block; min-height: 0; padding: 0; color: #2e2e2e; font-size: min(26px, 6.666667cqw); font-weight: 400; line-height: 1; letter-spacing: -.015em; }
+    .home-intro p:first-child { position: absolute; top: min(64px, 16.394872cqw); left: min(9px, 2.307692cqw); width: calc(100% - min(18px, 4.615385cqw)); transform: none; overflow-wrap: normal; }
+    .home-intro p:nth-child(2), .desktop-period { display: none; }
+    .mobile-plus { display: inline; }
+
+    .home-carousel { --mobile-card-height: min(255px, 65.384615cqw); position: absolute; z-index: 2; top: min(300px, 76.923077cqw); left: 0; width: 100%; height: var(--mobile-card-height); padding: 0; overflow: visible; touch-action: pan-y; }
+    .carousel-track { padding-left: min(8px, 2.051282cqw); }
+    .carousel-card { flex: 0 0 auto; width: calc(var(--mobile-card-height) * var(--card-aspect)); height: var(--mobile-card-height); margin-right: min(14px, 3.589744cqw); aspect-ratio: auto; overflow: visible; }
+    .carousel-name { top: max(-15px, -3.846154cqw); width: max-content; max-width: none; overflow: visible; color: #2e2e2e; font-size: min(12px, 3.076923cqw); font-weight: 400; line-height: normal; letter-spacing: -.01em; transform: none; }
+    .carousel-card:active { z-index: 100; }
+    .carousel-card:active .carousel-name { opacity: 1; transform: none; }
+    .carousel-card:active .carousel-picture { border-radius: min(120px, 30.769231cqw); transform: translateY(min(24px, 6.153846cqw)); }
+    .carousel-card:active img { transform: scale(1.394); }
+
+    .home-footer { position: absolute; z-index: auto; inset: 0; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; pointer-events: none; }
+    .home-footer-meta { position: absolute; z-index: 3; inset: 0; display: block; padding: 0; color: #2e2e2e; font-size: min(16px, 4.102564cqw); font-weight: 400; line-height: normal; letter-spacing: -.02em; pointer-events: auto; }
+    .home-footer-meta > * { position: absolute; width: fit-content; padding: 0; white-space: nowrap; }
+    .footer-dev-label, .footer-dev-name, .footer-say-two, .footer-rights { display: none; }
+    .home-footer-meta > .footer-say-one { top: min(8px, 2.051282cqw); left: 0; background: transparent; color: #2e2e2e; }
+    .home-footer-meta > .footer-mail { top: min(8px, 2.051282cqw); right: 0; background: #2e2e2e; color: #fafafa; }
+    .home-footer-meta > .home-socials { top: min(28px, 7.179487cqw); left: 0; display: block; background: transparent; color: #2e2e2e; text-align: left; }
+    .socials-links { background: #2e2e2e; color: #fafafa; }
+    .socials-links a { color: #fafafa; }
+
+    .home-subfooter { position: absolute; z-index: 1; bottom: max(min(76px, 19.487179cqw), calc(env(safe-area-inset-bottom) + 42px)); left: max(-8px, -2.051282cqw); display: block; width: max-content; height: auto; padding: 0; color: #2e2e2e; font-size: 45.322051cqw; font-weight: 400; line-height: .8; letter-spacing: -.04em; white-space: nowrap; transform: none; }
+    .home-subfooter span, .home-subfooter span:first-child, .home-subfooter span:last-child { position: static; margin: 0; }
+    .home-subfooter span + span::before { content: ' '; }
+  }
+</style>

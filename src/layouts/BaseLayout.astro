@@ -13,6 +13,10 @@ const {
   imageAlt = 'Itsmicki — Creative Director and Designer in Buenos Aires',
   ogType = 'website',
   structuredData,
+  hideFooter = false,
+  themeColor = theme === 'dark' ? '#111111' : '#f3f0e9',
+  preconnectOrigins = [],
+  preloadFonts = [],
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
@@ -51,7 +55,9 @@ const globalStructuredData = {
     <meta name="author" content="Micaela Galimberti" />
     <meta name="creator" content="Micaela Galimberti" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <meta name="theme-color" content={theme === 'dark' ? '#111111' : '#f3f0e9'} />
+    <meta name="theme-color" content={themeColor} />
+    {preconnectOrigins.map((origin: string) => <link rel="preconnect" href={origin} crossorigin />)}
+    {preloadFonts.map((font: string) => <link rel="preload" href={font} as="font" type="font/otf" crossorigin />)}
     <link rel="canonical" href={canonicalURL} />
     <link rel="alternate" type="text/plain" href={new URL('/llms.txt', Astro.site)} title="LLM-readable site overview" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✳</text></svg>" />
@@ -78,7 +84,7 @@ const globalStructuredData = {
     <div class="cursor" data-cursor aria-hidden="true"><span>view</span></div>
     <Header active={active} />
     <main id="content"><slot /></main>
-    <Footer />
+    {!hideFooter && <Footer />}
     <script>
       const cursor = document.querySelector<HTMLElement>('[data-cursor]');
       const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
