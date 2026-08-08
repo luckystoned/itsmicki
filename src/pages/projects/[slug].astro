@@ -1,49 +1,47 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import VideoPlaceholder from '@/components/VideoPlaceholder.astro';
+import ProjectCase from '@/components/ProjectCase.astro';
 import { projects } from '@/data/projects';
-import { imageMetadata } from '@/data/imageMetadata';
+import { projectCases } from '@/data/projectCases';
 
 export function getStaticPaths() {
-  return projects.filter((project) => !project.comingSoon).map((project) => ({ params: { slug: project.slug }, props: { project } }));
+  return Object.values(projectCases).map((caseStudy) => {
+    const project = projects.find((entry) => entry.slug === caseStudy.slug);
+    if (!project) throw new Error(`Missing project metadata for ${caseStudy.slug}`);
+    return { params: { slug: caseStudy.slug }, props: { project, caseStudy } };
+  });
 }
-const { project } = Astro.props;
-const coverDimensions = project.cover ? imageMetadata[project.cover] : undefined;
+
+const { project, caseStudy } = Astro.props;
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'CreativeWork',
-  name: project.title,
+  name: caseStudy.title,
   description: project.summary,
-  dateCreated: project.year,
-  url: new URL(`/projects/${project.slug}`, Astro.site),
+  dateCreated: caseStudy.year,
+  url: new URL(`/projects/${caseStudy.slug}`, Astro.site),
   image: project.cover ? new URL(project.cover, Astro.site) : undefined,
   creator: { '@type': 'Person', '@id': `${Astro.site}#person`, name: 'Micaela Galimberti' },
   keywords: ['Creative Direction', 'Art Direction', 'Visual Design', 'Product Design'],
 };
 ---
-<BaseLayout title={`${project.title} — Itsmicki`} description={project.summary} active="projects" ogType="article" structuredData={structuredData}>
-  <article class="case-study" style={`--accent:${project.accent}`}>
-    <header class="case-hero page-gutter" data-reveal>
-      <div><h1>({project.title})</h1><span>{project.year}</span></div>
-      <dl>
-        <div><dt>Role</dt><dd>{project.role}</dd></div>
-        <div><dt>In a nutshell</dt><dd>{project.summary}</dd></div>
-      </dl>
-    </header>
-    {project.cover && coverDimensions && <figure class="case-cover" data-reveal><img src={project.cover} alt={`${project.title} project cover`} width={coverDimensions.width} height={coverDimensions.height} fetchpriority="high" decoding="async" /></figure>}
-    <section class="case-copy page-gutter" data-reveal>
-      <h2>(synopsis)</h2><p>{project.synopsis}</p>
-    </section>
-    <section class="media-grid page-gutter">
-      {project.media.map((media) => media.type === 'video' ? (
-        <div class:list={['media-item', media.ratio || 'wide']} data-reveal><VideoPlaceholder label={media.alt} vimeoId={media.vimeoId} /></div>
-      ) : (
-        <figure class:list={['media-item', media.ratio || 'wide']} data-reveal><img src={media.src} alt={media.alt} width={imageMetadata[media.src].width} height={imageMetadata[media.src].height} loading="lazy" decoding="async" /></figure>
-      ))}
-    </section>
-    {project.conclusion && <section class="case-copy conclusion page-gutter" data-reveal><h2>(conclusion)</h2><p>{project.conclusion}</p></section>}
-    <nav class="next-project page-gutter" aria-label="Project navigation">
-      <a href="/projects">Pss, let’s continue <span>See all (+)</span></a>
-    </nav>
-  </article>
+
+<BaseLayout
+  title={`${caseStudy.title} — Itsmicki`}
+  description={project.summary}
+  image={project.cover}
+  imageAlt={`${caseStudy.title} project by Micaela Galimberti`}
+  active="projects"
+  ogType="article"
+  structuredData={structuredData}
+  hideFooter
+  customCursor
+  themeColor="#fafafa"
+  preconnectOrigins={['https://player.vimeo.com', 'https://i.vimeocdn.com']}
+  preloadFonts={[
+    '/fonts/OTNeueMontreal-MediumSemiSqueezed.otf',
+    '/fonts/OTNeueMontreal-MediumExtraSqueezed.otf',
+  ]}
+>
+  <ProjectCase caseStudy={caseStudy} />
 </BaseLayout>

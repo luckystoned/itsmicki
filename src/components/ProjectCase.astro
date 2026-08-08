@@ -1,0 +1,929 @@
+---
+import ProjectCaseFooter from '@/components/ProjectCaseFooter.astro';
+import { imageMetadata } from '@/data/imageMetadata';
+import type { CaseMedia, ProjectCase } from '@/data/projectCases';
+
+interface Props {
+  caseStudy: ProjectCase;
+}
+
+const { caseStudy } = Astro.props;
+
+const mediaStyle = (media: CaseMedia) => `--media-ratio:${media.ratio}`;
+const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
+  `--cell-width:${media.width};--cell-height:${media.height};--media-ratio:${media.ratio}`;
+const vimeoUrl = (id: string) =>
+  `https://player.vimeo.com/video/${id}?background=1&autoplay=1&muted=1&loop=1&autopause=0&controls=0&dnt=1`;
+---
+
+<div class="project-case-page" data-case={caseStudy.slug}>
+  <aside class="case-mobile-meta" aria-label="Contact and social links">
+    <span class="case-mobile-column">
+      <span>SAY HI</span>
+      <a href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
+    </span>
+    <span class="case-mobile-column case-mobile-column-right">
+      <span>SOCIALS</span>
+      <span>
+        <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noreferrer">LINKEDIN</a>,
+        <a href="https://www.behance.net/itsmicki" target="_blank" rel="noreferrer">BEHANCE</a>,<br />
+        <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noreferrer">DRIBBBLE</a>,
+        <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noreferrer">INSTAGRAM</a>, TIKTOK
+      </span>
+    </span>
+  </aside>
+
+  <article class="project-case-canvas" aria-labelledby="case-title">
+    <header class="editorial-case-hero">
+      <div class="case-title-line" data-case-text-reveal>
+        <h1 class="case-title" id="case-title">({caseStudy.title})</h1>
+        <span class="case-year">{caseStudy.year}</span>
+      </div>
+
+      {caseStudy.drags.map((drag) => (
+        <div
+          class="case-drag"
+          data-case-drag
+          style={`left:${drag.left};top:${drag.top};width:${drag.width};--drag-rotation:${drag.rotation}`}
+          aria-hidden="true"
+        >
+          <img src={drag.src} alt="" width={imageMetadata[drag.src].width} height={imageMetadata[drag.src].height} draggable="false" />
+        </div>
+      ))}
+    </header>
+
+    <section class="case-intro" aria-label="Project overview">
+      <div>
+        <h2 class="case-label" data-case-text-reveal>Role</h2>
+        <p class="case-intro-large" data-case-text-reveal set:html={caseStudy.role} />
+      </div>
+      <div>
+        <h2 class="case-label" data-case-text-reveal>In a nutshell</h2>
+        <p class="case-intro-large case-nutshell" data-case-text-reveal set:html={caseStudy.nutshell} />
+        {caseStudy.nutshellColumns && (
+          <div class="case-intro-columns">
+            {caseStudy.nutshellColumns.map((paragraph, index) => (
+              <p data-case-text-reveal style={`--reveal-delay:${index * 70}ms`}>{paragraph}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+
+    <div class="case-flow">
+      {caseStudy.blocks.map((block) => {
+        if (block.type === 'text') {
+          return (
+            <section class:list={['case-text', `case-text-${block.variant ?? 'columns'}`]}>
+              <h2 data-case-text-reveal>{block.title}</h2>
+              {block.variant === 'wide' ? (
+                <p class="case-text-wide-copy" data-case-text-reveal>{block.wide}</p>
+              ) : (
+                <div class="case-text-content">
+                  {block.lead && <p class="case-text-lead" data-case-text-reveal>{block.lead}</p>}
+                  <div class="case-text-columns">
+                    {block.columns?.map((paragraph, index) => (
+                      <p data-case-text-reveal style={`--reveal-delay:${index * 70}ms`}>{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          );
+        }
+
+        if (block.layout === 'single') {
+          const item = block.item;
+          const dimensions = item.type === 'image' && item.src ? imageMetadata[item.src] : undefined;
+          return (
+            <section class="case-media-block case-media-single" style={mediaStyle(item)}>
+              <div class="case-media-surface" data-case-media-reveal>
+                <div class="case-media-content">
+                  {item.type === 'image' && item.src && dimensions ? (
+                    <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
+                  ) : item.vimeoId ? (
+                    <iframe
+                      src={vimeoUrl(item.vimeoId)}
+                      title={item.alt}
+                      loading="lazy"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      referrerpolicy="strict-origin-when-cross-origin"
+                    ></iframe>
+                  ) : null}
+                </div>
+              </div>
+              {item.caption && <p class="case-media-caption" data-case-text-reveal>{item.caption}</p>}
+            </section>
+          );
+        }
+
+        return (
+          <section class:list={['case-media-block', 'case-media-pair', { 'case-media-pair-end': block.align === 'end' }]}>
+            {block.items.map((item, itemIndex) => {
+              const dimensions = item.type === 'image' && item.src ? imageMetadata[item.src] : undefined;
+              return (
+                <div class="case-media-cell" style={cellStyle(item)}>
+                  <div class="case-media-surface" data-case-media-reveal style={`--reveal-delay:${itemIndex * 70}ms`}>
+                    <div class="case-media-content">
+                      {item.type === 'image' && item.src && dimensions ? (
+                        <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
+                      ) : item.vimeoId ? (
+                        <iframe
+                          src={vimeoUrl(item.vimeoId)}
+                          title={item.alt}
+                          loading="lazy"
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          referrerpolicy="strict-origin-when-cross-origin"
+                        ></iframe>
+                      ) : null}
+                    </div>
+                  </div>
+                  {item.caption && <p class="case-media-caption" data-case-text-reveal>{item.caption}</p>}
+                </div>
+              );
+            })}
+          </section>
+        );
+      })}
+    </div>
+
+    <section class="case-credits">
+      <h2 data-case-text-reveal>(credits)</h2>
+      <div class="case-credit-list">
+        {caseStudy.credits.map((credit, index) => (
+          <p data-case-text-reveal style={`--reveal-delay:${index * 70}ms`} set:html={credit} />
+        ))}
+      </div>
+    </section>
+  </article>
+
+  <ProjectCaseFooter currentSlug={caseStudy.slug} />
+</div>
+
+<script>
+  /* Native scroll plus the same frame-rate-independent damping as the reference. */
+  (function () {
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || !matchMedia('(pointer: fine)').matches) return;
+
+    let targetY = window.scrollY;
+    let currentY = targetY;
+    let running = false;
+    let frame: number | null = null;
+    let locked = false;
+    let previousTime = 0;
+
+    const maxScroll = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+    function tick(now: number) {
+      if (!previousTime) previousTime = now;
+      const deltaTime = Math.min(64, now - previousTime) / 1000;
+      previousTime = now;
+      currentY += (targetY - currentY) * (1 - Math.exp(-6.5 * deltaTime));
+      if (Math.abs(targetY - currentY) < .12) {
+        currentY = targetY;
+        running = false;
+        previousTime = 0;
+      }
+      locked = true;
+      window.scrollTo(0, currentY);
+      locked = false;
+      frame = running ? requestAnimationFrame(tick) : null;
+    }
+
+    addEventListener('wheel', (event) => {
+      if (event.ctrlKey) return;
+      event.preventDefault();
+      let delta = event.deltaY;
+      if (event.deltaMode === 1) delta *= 16;
+      else if (event.deltaMode === 2) delta *= window.innerHeight;
+      targetY = Math.max(0, Math.min(maxScroll(), targetY + delta));
+      if (!running) {
+        running = true;
+        if (!frame) frame = requestAnimationFrame(tick);
+      }
+    }, { passive: false });
+
+    addEventListener('scroll', () => {
+      if (!locked && !running) targetY = currentY = window.scrollY;
+    });
+
+    addEventListener('resize', () => {
+      targetY = currentY = window.scrollY;
+    });
+  })();
+
+  const reduceCaseMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const revealNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-case-text-reveal], [data-case-media-reveal], [data-case-footer-reveal]'));
+
+  if (reduceCaseMotion) {
+    revealNodes.forEach((node) => node.classList.add('is-visible'));
+  } else if (revealNodes.length) {
+    const revealMap = new Map<Element, HTMLElement[]>();
+    revealNodes.forEach((node) => {
+      const usesParentTrigger = node.hasAttribute('data-case-media-reveal') || node.hasAttribute('data-case-footer-reveal');
+      const trigger = usesParentTrigger ? node.parentElement ?? node : node;
+      const targets = revealMap.get(trigger) ?? [];
+      targets.push(node);
+      revealMap.set(trigger, targets);
+    });
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        revealMap.get(entry.target)?.forEach((node) => node.classList.toggle('is-visible', entry.isIntersecting));
+      });
+    }, { threshold: .02, rootMargin: '-2% 0px -6% 0px' });
+    revealMap.forEach((_, trigger) => revealObserver.observe(trigger));
+  }
+
+  const dragNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-case-drag]'));
+  dragNodes.forEach((node) => {
+    let dragging = false;
+    let pointerId = -1;
+    let startX = 0;
+    let startY = 0;
+    let originX = 0;
+    let originY = 0;
+    let translateX = 0;
+    let translateY = 0;
+
+    node.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      dragging = true;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startY = event.clientY;
+      originX = translateX;
+      originY = translateY;
+      node.setPointerCapture(pointerId);
+      node.classList.add('is-dragging');
+    });
+
+    node.addEventListener('pointermove', (event) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      translateX = originX + event.clientX - startX;
+      translateY = originY + event.clientY - startY;
+      node.style.setProperty('--drag-x', `${translateX}px`);
+      node.style.setProperty('--drag-y', `${translateY}px`);
+    });
+
+    const endDrag = (event: PointerEvent) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      dragging = false;
+      node.classList.remove('is-dragging');
+      if (node.hasPointerCapture(pointerId)) node.releasePointerCapture(pointerId);
+    };
+
+    node.addEventListener('pointerup', endDrag);
+    node.addEventListener('pointercancel', endDrag);
+  });
+
+  if (!reduceCaseMotion && dragNodes.length) {
+    let lift = 0;
+    const updateDragLift = () => {
+      lift += (window.scrollY * .45 - lift) * .11;
+      dragNodes.forEach((node) => node.style.setProperty('--drag-lift', `${lift.toFixed(2)}px`));
+      requestAnimationFrame(updateDragLift);
+    };
+    updateDragLift();
+  }
+
+  const strip = document.querySelector<HTMLElement>('[data-case-strip]');
+  const stripTrack = strip?.querySelector<HTMLElement>('[data-case-strip-track]');
+  const stripSet = strip?.querySelector<HTMLElement>('[data-case-strip-set]');
+
+  if (strip && stripTrack && stripSet) {
+    let setWidth = 0;
+    let offset = 0;
+    let lastTime = performance.now();
+    let hovering = false;
+    let dragging = false;
+    let pointerId = -1;
+    let pointerStart = 0;
+    let offsetStart = 0;
+    let moved = false;
+
+    const measure = () => {
+      setWidth = stripSet.getBoundingClientRect().width;
+      if (setWidth) {
+        offset %= setWidth;
+        stripTrack.style.transform = `translate3d(${offset}px, 0, 0)`;
+      }
+    };
+
+    const animate = (now: number) => {
+      const deltaTime = Math.min(64, now - lastTime);
+      lastTime = now;
+      if (!reduceCaseMotion && !dragging && setWidth) {
+        offset -= deltaTime * (hovering ? .006 : .03);
+        while (offset <= -setWidth) offset += setWidth;
+        while (offset > 0) offset -= setWidth;
+        stripTrack.style.transform = `translate3d(${offset}px, 0, 0)`;
+      }
+      requestAnimationFrame(animate);
+    };
+
+    strip.addEventListener('mouseenter', () => { hovering = true; });
+    strip.addEventListener('mouseleave', () => { hovering = false; });
+    strip.addEventListener('pointerdown', (event) => {
+      dragging = true;
+      moved = false;
+      pointerId = event.pointerId;
+      pointerStart = event.clientX;
+      offsetStart = offset;
+      strip.setPointerCapture(pointerId);
+    });
+    strip.addEventListener('pointermove', (event) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      const distance = event.clientX - pointerStart;
+      moved ||= Math.abs(distance) > 6;
+      offset = offsetStart + distance;
+      if (setWidth) {
+        while (offset <= -setWidth) offset += setWidth;
+        while (offset > 0) offset -= setWidth;
+      }
+      stripTrack.style.transform = `translate3d(${offset}px, 0, 0)`;
+    });
+    const endStripDrag = (event: PointerEvent) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      dragging = false;
+      if (strip.hasPointerCapture(pointerId)) strip.releasePointerCapture(pointerId);
+    };
+    strip.addEventListener('pointerup', endStripDrag);
+    strip.addEventListener('pointercancel', endStripDrag);
+    strip.addEventListener('click', (event) => {
+      if (moved) {
+        event.preventDefault();
+        event.stopPropagation();
+        moved = false;
+      }
+    }, true);
+
+    new ResizeObserver(measure).observe(stripSet);
+    measure();
+    requestAnimationFrame(animate);
+  }
+</script>
+
+<style is:global>
+  @font-face {
+    font-family: 'OT Neue Montreal Cases';
+    src: url('/fonts/OTNeueMontreal-MediumSemiSqueezed.otf') format('opentype');
+    font-style: normal;
+    font-weight: 400 600;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'OT Neue Montreal Cases Extra';
+    src: url('/fonts/OTNeueMontreal-MediumExtraSqueezed.otf') format('opentype');
+    font-style: normal;
+    font-weight: 400 600;
+    font-display: swap;
+  }
+
+  html:has(.project-case-page),
+  body:has(.project-case-page) {
+    --case-ink: #2e2e2e;
+    --case-paper: #fafafa;
+    --case-placeholder: #efece7;
+    --case-sans: 'OT Neue Montreal Cases', 'Arial Narrow', sans-serif;
+    --case-display: 'OT Neue Montreal Cases Extra', 'Arial Narrow', sans-serif;
+    color: var(--case-ink);
+    background: var(--case-paper);
+    cursor: url('/cursors/view.png') 0 0, auto;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  html:has(.project-case-page) {
+    scroll-behavior: auto;
+  }
+
+  body:has(.project-case-page) a,
+  body:has(.project-case-page) [data-case-drag],
+  body:has(.project-case-page) [data-case-strip] {
+    cursor: url('/cursors/view.png') 0 0, auto;
+  }
+
+  body:has(.project-case-page) a:is(:hover, :focus-visible) {
+    cursor: url('/cursors/view-hover.png') 0 0, pointer;
+  }
+
+  body:has(.project-case-page) ::selection {
+    color: var(--case-paper);
+    background: var(--case-ink);
+  }
+
+  body:has(.project-case-page) .site-header {
+    position: relative;
+    top: auto;
+    z-index: 20;
+    padding: 24px clamp(14px, 1.42vw, 22px) 0;
+    color: var(--case-ink);
+    background: transparent;
+    backdrop-filter: none;
+    font-family: var(--case-sans);
+    font-size: clamp(14px, 1.74vw, 27.117px);
+    font-weight: 500;
+    line-height: normal;
+    letter-spacing: -.02em;
+  }
+
+  body:has(.project-case-page) .site-header nav {
+    gap: 10px;
+  }
+
+  body:has(.project-case-page) .site-header a::after {
+    display: none;
+  }
+
+  body:has(.project-case-page) .site-header a:is(:hover, :focus-visible, .active) {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .08em;
+  }
+
+  .project-case-page {
+    position: relative;
+    display: flow-root;
+    min-height: 100vh;
+    color: var(--case-ink);
+    background: var(--case-paper);
+    font-family: var(--case-sans);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -.01em;
+  }
+
+  .project-case-page a {
+    color: inherit;
+  }
+
+  .case-mobile-meta {
+    display: none;
+  }
+
+  .project-case-canvas {
+    width: 97.2668vw;
+    margin: 0 auto;
+  }
+
+  .editorial-case-hero {
+    position: relative;
+    margin-top: 2.85vw;
+  }
+
+  .case-title-line {
+    display: flex;
+    align-items: baseline;
+    white-space: nowrap;
+  }
+
+  .case-title {
+    font-family: var(--case-display);
+    font-size: 20.2vw;
+    font-weight: 500;
+    line-height: .855;
+    letter-spacing: -.04em;
+  }
+
+  .case-year {
+    margin-left: .33vw;
+    font-family: var(--case-display);
+    font-size: 6.44vw;
+    line-height: 1;
+    letter-spacing: -.04em;
+  }
+
+  .case-drag {
+    --drag-x: 0px;
+    --drag-y: 0px;
+    --drag-lift: 0px;
+    position: absolute;
+    z-index: 8;
+    user-select: none;
+    touch-action: none;
+    transform: translate3d(var(--drag-x), calc(var(--drag-y) - var(--drag-lift)), 0) rotate(var(--drag-rotation));
+    cursor: grab !important;
+    will-change: transform;
+  }
+
+  .case-drag.is-dragging {
+    cursor: grabbing !important;
+  }
+
+  .case-drag img {
+    display: block;
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+  }
+
+  .case-intro {
+    display: grid;
+    grid-template-columns: 34.72vw 1fr;
+    margin-top: 2.5vw;
+  }
+
+  .case-label {
+    margin-bottom: 2.92vw;
+    font-size: 1.5vw;
+    font-weight: 500;
+    letter-spacing: -.01em;
+  }
+
+  .case-intro-large {
+    max-width: 62.12vw;
+    font-size: 4.03vw;
+    line-height: .87;
+    letter-spacing: -.03em;
+  }
+
+  .case-intro-large a {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .08em;
+  }
+
+  .case-intro-columns,
+  .case-text-columns {
+    display: flex;
+    justify-content: space-between;
+    gap: 1vw;
+  }
+
+  .case-intro-columns {
+    margin-top: 1.5vw;
+  }
+
+  .case-intro-columns p,
+  .case-text-columns p {
+    width: 38.01vw;
+    font-size: 2.22vw;
+    line-height: 1;
+    letter-spacing: -.01em;
+  }
+
+  .case-flow {
+    display: flow-root;
+  }
+
+  .case-media-block {
+    margin-top: 1.81vw;
+  }
+
+  .case-intro + .case-flow > .case-media-block:first-child,
+  .case-text + .case-media-block {
+    margin-top: 2.72vw;
+  }
+
+  .case-media-single {
+    width: 100%;
+  }
+
+  .case-media-pair {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.81vw;
+    width: 100%;
+  }
+
+  .case-media-pair-end {
+    align-items: flex-end;
+  }
+
+  .case-media-cell {
+    flex: 0 0 auto;
+    width: var(--cell-width);
+  }
+
+  .case-media-cell .case-media-surface {
+    height: var(--cell-height);
+  }
+
+  .case-media-single .case-media-surface {
+    aspect-ratio: var(--media-ratio);
+  }
+
+  .case-media-surface {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: var(--case-placeholder);
+  }
+
+  .case-media-content {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+  }
+
+  .case-media-content img,
+  .case-media-content iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    object-fit: cover;
+  }
+
+  .case-media-content iframe {
+    pointer-events: none;
+  }
+
+  .case-media-caption {
+    margin-top: 1vw;
+    font-size: 1.5vw;
+    letter-spacing: -.01em;
+  }
+
+  .case-text {
+    display: grid;
+    grid-template-columns: 13vw 1fr;
+    margin-top: 4.6vw;
+  }
+
+  .case-text h2,
+  .case-credits h2 {
+    font-size: 3.5vw;
+    font-weight: 500;
+    line-height: .9;
+    letter-spacing: -.03em;
+  }
+
+  .case-text-lead {
+    margin-bottom: 2vw;
+    font-size: 2.22vw;
+    line-height: 1;
+    letter-spacing: -.01em;
+  }
+
+  .case-text-wide-copy {
+    width: 77.06vw;
+    margin-left: 5.98vw;
+    font-size: 2.22vw;
+    line-height: 1;
+    letter-spacing: -.01em;
+  }
+
+  .case-credits {
+    display: grid;
+    grid-template-columns: 13vw 1fr;
+    align-items: start;
+    margin-top: 4.6vw;
+  }
+
+  .case-credit-list {
+    display: flex;
+    flex-direction: column;
+    gap: .4vw;
+    text-align: right;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .case-credit-list a {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .08em;
+  }
+
+  [data-case-text-reveal] {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+    transition: opacity .85s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms), transform .95s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms);
+  }
+
+  [data-case-text-reveal].is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  [data-case-media-reveal] {
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 1s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms);
+  }
+
+  [data-case-media-reveal] .case-media-content {
+    scale: 1.05;
+    transition: scale 1.4s cubic-bezier(.19, 1, .22, 1);
+  }
+
+  [data-case-media-reveal].is-visible {
+    clip-path: inset(0 0 0 0);
+  }
+
+  [data-case-media-reveal].is-visible .case-media-content {
+    scale: 1;
+  }
+
+  @media (max-width: 760px) {
+    body:has(.project-case-page) .site-header {
+      display: none;
+    }
+
+    .case-mobile-meta {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      left: 12px;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      line-height: 1.05;
+      letter-spacing: -.02em;
+      text-transform: uppercase;
+    }
+
+    .case-mobile-column {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1px;
+      max-width: 48%;
+    }
+
+    .case-mobile-column-right {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .case-mobile-meta a {
+      color: var(--case-paper);
+      background: var(--case-ink);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: .08em;
+    }
+
+    .project-case-canvas {
+      width: 100%;
+    }
+
+    .editorial-case-hero {
+      width: 96.9231%;
+      margin-top: 96px;
+      margin-left: 3.0769%;
+    }
+
+    .case-title {
+      font-size: min(24.875vw, 97px);
+      line-height: 1;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-title {
+      font-size: 21.5vw;
+    }
+
+    .project-case-page[data-case='outliant'] .case-title {
+      font-size: 22vw;
+    }
+
+    .case-year {
+      margin-left: .4vw;
+      font-size: min(10.72vw, 41.814px);
+    }
+
+    .case-drag {
+      width: 31vw !important;
+    }
+
+    .case-drag:nth-of-type(2) {
+      top: -7vw !important;
+      left: 68vw !important;
+    }
+
+    .case-drag:nth-of-type(3) {
+      top: 20vw !important;
+      left: 51vw !important;
+    }
+
+    .case-intro {
+      width: 90.5128%;
+      grid-template-columns: 1fr;
+      gap: 38px;
+      margin-top: 30px;
+      margin-right: auto;
+      margin-left: auto;
+    }
+
+    .case-label {
+      margin-bottom: 12px;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .case-intro-large {
+      max-width: 100%;
+      font-size: clamp(32px, 13.525vw, 52.746px);
+      line-height: .868;
+    }
+
+    .case-nutshell {
+      font-size: 32px;
+      line-height: 1.0625;
+    }
+
+    .case-intro-columns,
+    .case-text-columns {
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .case-intro-columns {
+      margin-top: 18px;
+    }
+
+    .case-intro-columns p,
+    .case-text-columns p {
+      width: 100%;
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .case-media-block,
+    .case-intro + .case-flow > .case-media-block:first-child,
+    .case-text + .case-media-block {
+      margin-top: 32px;
+    }
+
+    .case-flow,
+    .case-credits {
+      width: 90.5128%;
+      margin-right: auto;
+      margin-left: auto;
+    }
+
+    .case-media-pair {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .case-media-cell {
+      width: 100%;
+    }
+
+    .case-media-cell .case-media-surface {
+      height: auto;
+      aspect-ratio: var(--media-ratio);
+    }
+
+    .case-media-content {
+      top: 0;
+      height: 100%;
+      transform: none !important;
+    }
+
+    .case-media-caption {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .case-text,
+    .case-credits {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 46px;
+    }
+
+    .case-text h2,
+    .case-credits h2 {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .case-text-lead,
+    .case-text-wide-copy {
+      width: 100%;
+      margin: 0 0 14px;
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .case-credit-list {
+      gap: 7px;
+      text-align: left;
+      font-size: 16px;
+      line-height: 1.1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-case-text-reveal],
+    [data-case-media-reveal] {
+      opacity: 1;
+      clip-path: none;
+      transform: none;
+      transition: none;
+    }
+
+    [data-case-media-reveal] .case-media-content {
+      top: 0;
+      height: 100%;
+      scale: 1;
+      transform: none !important;
+      transition: none;
+    }
+  }
+</style>

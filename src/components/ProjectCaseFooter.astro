@@ -1,0 +1,418 @@
+---
+import { imageMetadata } from '@/data/imageMetadata';
+
+const cards = [
+  {
+    slug: 'winona',
+    href: '/projects/winona',
+    src: '/02_Projects/01_Winona/01_Winona_Portada.webp',
+    label: '01_Winona_UX—UI Lead, Visual & Motion Designer',
+    width: '22.0249vw',
+    height: '21.8914vw',
+    ratio: '22.0249 / 21.8914',
+  },
+  {
+    slug: 'genova',
+    href: undefined,
+    src: '/02_Projects/02_Genova/01_Genova_Portada.webp',
+    label: '02_Genova_Art Direction+Visual Design',
+    width: '22.0694vw',
+    height: '29.2331vw',
+    ratio: '22.0694 / 29.2331',
+  },
+  {
+    slug: 'amazon',
+    href: undefined,
+    src: '/02_Projects/03_Amazon/01_Amazon_Portada.jpg',
+    label: '03_Amazon_UXUI Lead+Art Direction+Visual Design',
+    width: '21.8914vw',
+    height: '14.4608vw',
+    ratio: '21.8914 / 14.4608',
+  },
+  {
+    slug: 'maxmaher',
+    href: '/projects/maxmaher',
+    src: '/02_Projects/04_MaxMaher/01_MaxMaher_Portada.webp',
+    label: '04_MaxMaher_Art Direction+Visual Design',
+    width: '22.0249vw',
+    height: '21.8469vw',
+    ratio: '22.0249 / 21.8469',
+  },
+  {
+    slug: 'outliant',
+    href: '/projects/outliant',
+    src: '/02_Projects/05_Outliant/01_Outliant_Portada.webp',
+    label: '05_Outliant_Art Direction+Visual Design+UXUI Lead',
+    width: '22vw',
+    height: '26.0625vw',
+    ratio: '22 / 26.0625',
+  },
+  {
+    slug: 'lumen',
+    href: '/projects/lumen',
+    src: '/02_Projects/06_Lumen/01_Lumen_Portada.webp',
+    label: '06_Lumen_Art Direction+Visual Design',
+    width: '22.0249vw',
+    height: '13.1798vw',
+    ratio: '22.0249 / 13.1798',
+  },
+  {
+    slug: 'blend360',
+    href: undefined,
+    src: '/02_Projects/07_Blend360/01_Blend360_Portada.webp',
+    label: '07_Blend360_UX—UI Lead, Visual & Motion Designer',
+    width: '22.0694vw',
+    height: '29.2331vw',
+    ratio: '22.0694 / 29.2331',
+  },
+] as const;
+
+const { currentSlug } = Astro.props;
+---
+
+<div class="case-more">
+  <div class="case-more-divider" data-case-text-reveal></div>
+  <div class="case-more-heading">
+    <h2 data-case-text-reveal>Pss, let’s continue</h2>
+    <a href="/projects" data-case-text-reveal style="--reveal-delay:70ms">See All (+)</a>
+  </div>
+
+  <div class="case-strip" data-case-strip data-case-text-reveal aria-label="More selected projects">
+    <div class="case-strip-track" data-case-strip-track>
+      {[0, 1].map((setIndex) => (
+        <div class="case-strip-set" data-case-strip-set={setIndex === 0 ? '' : undefined} aria-hidden={setIndex === 1 ? 'true' : undefined}>
+          {cards.map((card) => {
+            const dimensions = imageMetadata[card.src];
+            const style = `--card-width:${card.width};--card-height:${card.height};--card-ratio:${card.ratio}`;
+            const content = (
+              <>
+                <span class="case-strip-name">{card.label}</span>
+                <span class="case-strip-picture">
+                  <img
+                    src={card.src}
+                    alt={setIndex === 0 ? `${card.slug} project cover` : ''}
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    loading="lazy"
+                    decoding="async"
+                    draggable="false"
+                  />
+                </span>
+              </>
+            );
+            return card.href ? (
+              <a class:list={['case-strip-card', { current: currentSlug === card.slug }]} href={card.href} style={style} tabindex={setIndex === 1 ? '-1' : undefined}>
+                {content}
+              </a>
+            ) : (
+              <div class="case-strip-card is-coming" style={style}>{content}</div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<footer class="case-footer">
+  <div class="case-footer-wordmark" aria-label="Itsmicki, copyright 2026">
+    <span data-case-footer-reveal>Itsmicki</span>
+    <span data-case-footer-reveal>©2026</span>
+  </div>
+  <div class="case-footer-info">
+    <span data-case-footer-reveal style="--reveal-delay:0ms">DEV BY</span>
+    <a data-case-footer-reveal style="--reveal-delay:70ms" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">@LUCKYSTONED</a>
+    <span data-case-footer-reveal style="--reveal-delay:140ms">SAY HI</span>
+    <a data-case-footer-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
+    <span data-case-footer-reveal style="--reveal-delay:280ms">ALL RIGHTS RESERVED.</span>
+    <span class="case-footer-socials" data-case-footer-reveal style="--reveal-delay:350ms">
+      SOCIALS <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noreferrer">LINKEDIN</a>,
+      <a href="https://www.behance.net/itsmicki" target="_blank" rel="noreferrer">BEHANCE</a>,
+      <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noreferrer">DRIBBBLE</a>,
+      <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noreferrer">INSTAGRAM</a>,
+      <span>TIKTOK</span>
+    </span>
+  </div>
+</footer>
+
+<style>
+  .case-more {
+    width: 97.2668vw;
+    margin: 0 auto;
+  }
+
+  .case-more-divider {
+    height: 1px;
+    margin-top: 5vw;
+    background: currentColor;
+  }
+
+  .case-more-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 3.8vw;
+  }
+
+  .case-more-heading h2 {
+    font-size: 3.5vw;
+    font-weight: 500;
+    line-height: .9;
+    letter-spacing: -.03em;
+  }
+
+  .case-more-heading a {
+    font-size: 2.19vw;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .08em;
+  }
+
+  .case-strip {
+    width: 100vw;
+    margin-top: 3.7vw;
+    margin-left: calc(50% - 50vw);
+    padding-block: 1.8vw 1vw;
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+
+  .case-strip-track,
+  .case-strip-set {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .case-strip-track {
+    width: max-content;
+    padding-left: 1.37vw;
+    cursor: grab;
+    will-change: transform;
+  }
+
+  .case-strip-track:active {
+    cursor: grabbing;
+  }
+
+  .case-strip-set {
+    flex: none;
+    gap: .81vw;
+    padding-right: .81vw;
+  }
+
+  .case-strip-card {
+    position: relative;
+    display: block;
+    flex: 0 0 auto;
+    width: var(--card-width);
+    height: var(--card-height);
+    color: inherit;
+  }
+
+  .case-strip-picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #efece7;
+    transition: transform .55s cubic-bezier(.16, 1, .3, 1), border-radius .55s cubic-bezier(.16, 1, .3, 1);
+  }
+
+  .case-strip-picture img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .55s cubic-bezier(.16, 1, .3, 1);
+  }
+
+  .case-strip-name {
+    position: absolute;
+    top: -1.55vw;
+    left: 0;
+    z-index: 2;
+    font-size: .8vw;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(.5vw);
+    transition: opacity .4s cubic-bezier(.16, 1, .3, 1), transform .4s cubic-bezier(.16, 1, .3, 1);
+  }
+
+  .case-strip-card[href]:is(:hover, :focus-visible) .case-strip-picture {
+    border-radius: 10vw;
+    transform: translateY(1.8vw);
+  }
+
+  .case-strip-card[href]:is(:hover, :focus-visible) .case-strip-picture img {
+    transform: scale(1.18);
+  }
+
+  .case-strip-card[href]:is(:hover, :focus-visible) .case-strip-name {
+    opacity: 1;
+    transform: none;
+  }
+
+  .case-footer {
+    position: relative;
+    margin-top: 1vw;
+    overflow: hidden;
+  }
+
+  .case-footer-wordmark {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    color: currentColor;
+    font-family: var(--case-display);
+    font-size: 37.4vw;
+    font-weight: 500;
+    line-height: .79;
+    letter-spacing: -.04em;
+    white-space: nowrap;
+  }
+
+  .case-footer-wordmark > :first-child {
+    margin-left: -1.5vw;
+  }
+
+  .case-footer-wordmark > :last-child {
+    margin-right: -1.4vw;
+  }
+
+  .case-footer-info {
+    position: absolute;
+    right: 0;
+    bottom: 5vw;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 clamp(14px, 1.42vw, 22px);
+    font-size: clamp(10px, 1.31vw, 21px);
+    line-height: 1;
+    letter-spacing: -.02em;
+    text-transform: uppercase;
+  }
+
+  .case-footer-info > * {
+    display: inline-block;
+    overflow: hidden;
+    padding-top: 1px;
+    color: var(--case-paper);
+    background: var(--case-ink);
+    white-space: nowrap;
+  }
+
+  .case-footer-info > :nth-child(2) { margin-left: 5.1%; }
+  .case-footer-info > :nth-child(3) { margin-left: 5.2%; }
+  .case-footer-info > :nth-child(4) { margin-left: 5.1%; }
+  .case-footer-info > :nth-child(5) { margin-left: 6.1%; }
+  .case-footer-socials { margin-left: auto; }
+
+  [data-case-footer-reveal] {
+    opacity: 0;
+    transform: translateY(110%);
+    transition: opacity .7s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms), transform .9s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms);
+  }
+
+  [data-case-footer-reveal].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  [data-case-text-reveal] {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+    transition: opacity .85s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms), transform .95s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms);
+  }
+
+  [data-case-text-reveal].is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  @media (max-width: 760px) {
+    .case-more {
+      width: calc(100% - 34.28px);
+    }
+
+    .case-more-divider {
+      margin-top: 54px;
+    }
+
+    .case-more-heading {
+      margin-top: 16px;
+    }
+
+    .case-more-heading h2 {
+      font-size: 24px;
+    }
+
+    .case-more-heading a {
+      font-size: 16px;
+    }
+
+    .case-strip {
+      margin-top: 20px;
+      padding-block: 20px 10px;
+    }
+
+    .case-strip-set {
+      gap: 8px;
+      padding-right: 8px;
+    }
+
+    .case-strip-track {
+      padding-left: 17.14px;
+    }
+
+    .case-strip-card {
+      width: 46vw;
+      height: auto;
+      aspect-ratio: var(--card-ratio);
+    }
+
+    .case-strip-name {
+      top: -16px;
+      font-size: 9px;
+    }
+
+    .case-strip-card[href]:is(:hover, :focus-visible) .case-strip-picture {
+      border-radius: 80px;
+      transform: translateY(12px);
+    }
+
+    .case-footer {
+      margin-top: 18px;
+      padding-bottom: 20px;
+    }
+
+    .case-footer-wordmark {
+      font-size: 46.2vw;
+      line-height: .82;
+    }
+
+    .case-footer-info {
+      position: static;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      padding: 14px;
+      font-size: 12px;
+    }
+
+    .case-footer-info > * {
+      margin-left: 0 !important;
+      white-space: normal;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-case-footer-reveal],
+    [data-case-text-reveal] {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+</style>

@@ -61,7 +61,7 @@ export const projects: Project[] = [
   },
   {
     slug: 'maxmaher', number: '04', title: 'Max Maher', year: '2023',
-    role: 'Art Direction + Visual Design', accent: '#9fb0ff',
+    role: 'Art Director & Visual Designer', accent: '#9fb0ff',
     cover: '/02_Projects/04_MaxMaher/01_MaxMaher_Portada.webp',
     summary: 'A bold content system designed to turn financial education into a recognizable, fast-moving visual world.',
     synopsis: 'The system brings together strong typography, energetic graphics and flexible templates to create consistency across a high-volume content ecosystem.',
@@ -92,8 +92,8 @@ export const projects: Project[] = [
     ],
   },
   {
-    slug: 'lumen', number: '06', title: 'Lumen', year: '2022',
-    role: 'Art Direction + Visual Design', accent: '#f6a66d',
+    slug: 'lumen', number: '06', title: 'Lumen', year: '2025',
+    role: 'Art Direction, Brand Strategy, Visual Identity', accent: '#f6a66d',
     cover: '/02_Projects/06_Lumen/01_Lumen_Portada.webp',
     summary: 'An art and technology experience shaped through tactile digital storytelling, playful systems and expressive interaction.',
     synopsis: 'Lumen explores the meeting point between physical sensation and screen-based experiences through a flexible visual language built for discovery.',
