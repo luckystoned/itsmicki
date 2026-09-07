@@ -1,8 +1,12 @@
 export type CaseMedia = {
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'carousel';
   alt: string;
   src?: string;
   vimeoId?: string;
+  slides?: Array<{
+    src: string;
+    alt: string;
+  }>;
   ratio: string;
   caption?: string;
 };
@@ -52,6 +56,15 @@ const image = (src: string, alt: string, ratio: string, caption?: string): CaseM
 
 const video = (vimeoId: string, alt: string, ratio: string, caption?: string): CaseMedia => ({
   type: 'video', vimeoId, alt, ratio, caption,
+});
+
+const carousel = (
+  slides: Array<{ src: string; alt: string }>,
+  alt: string,
+  ratio: string,
+  caption?: string,
+): CaseMedia => ({
+  type: 'carousel', slides, alt, ratio, caption,
 });
 
 const single = (item: CaseMedia): CaseBlock => ({ type: 'media', layout: 'single', item });
@@ -104,10 +117,14 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       ]),
       pair(
         video('1215371663', 'Winona UGC ambassador campaign', '40.5 / 29.7806', 'UGC Campaign_Ambassors'), '40.5vw', '29.7806vw',
-        image('/02_Projects/01_Winona/03_Winona.webp', 'Winona Essential Defense bottle on satin.', '54.6737 / 51.9794'), '54.6737vw', '51.9794vw',
+        carousel([
+          { src: '/02_Projects/01_Winona/03_Winona.webp', alt: 'Winona Essential Defense bottle on satin.' },
+          { src: '/02_Projects/01_Winona/04_Winona.webp', alt: 'Winona Vaginal Estrogen Cream on a soft chair.' },
+          { src: '/02_Projects/01_Winona/05_Winona.webp', alt: 'Winona Hair Serum campaign composition.' },
+        ], 'Winona product campaign carousel', '54.6737 / 51.9794'), '54.6737vw', '51.9794vw',
       ),
       pair(
-        image('/02_Projects/01_Winona/04_Winona.webp', 'Winona Vaginal Estrogen Cream on a soft chair.', '40.4769 / 51.9794'), '40.4769vw', '51.9794vw',
+        image('/02_Projects/01_Winona/06_Winona.webp', 'Winona Redefining Menopause tote bag on a chair.', '40.4769 / 51.9794'), '40.4769vw', '51.9794vw',
         video('1215371675', 'Winona campaign art direction in motion', '54.6737 / 51.9794'), '54.6737vw', '51.9794vw',
       ),
       single(video('1215371679', 'Winona website experience reel', '1556 / 870')),
@@ -118,7 +135,11 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       single(video('1215371680', 'Winona final brand motion reel', '1556 / 870')),
       pair(
         video('1215371690', 'Winona mobile interface in motion', '40.74 / 51.9794'), '40.74vw', '51.9794vw',
-        image('/02_Projects/01_Winona/09_Winona.webp', 'Winona website displayed on a tablet in a woven chair.', '54.6737 / 51.9794'), '54.6737vw', '51.9794vw',
+        carousel([
+          { src: '/02_Projects/01_Winona/07_Winona.webp', alt: 'Winona progesterone cream experience on a phone.' },
+          { src: '/02_Projects/01_Winona/08_Winona.webp', alt: 'Winona progesterone body cream campaign.' },
+          { src: '/02_Projects/01_Winona/09_Winona.webp', alt: 'Winona website displayed on a tablet in a woven chair.' },
+        ], 'Winona digital campaign carousel', '54.6737 / 51.9794'), '54.6737vw', '51.9794vw',
       ),
     ],
     credits: ['Art Direction / <a href="https://www.behance.net/juliafranc2cc2" target="_blank" rel="noreferrer">Julia Franceschini</a>'],
@@ -131,8 +152,8 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
     role: 'Art Director &<br>Visual Designer',
     nutshell: `Max Maher is a digital entrepreneur with over 1.1K views on YouTube, who uses his channel to document his business and ideas. He sought assistance in developing a cohesive and dynamic rebrand for his communication platforms, where he presents economics in an engaging and intuitive way.`,
     drags: [
-      { src: '/02_Projects/04_MaxMaher/01_MaxMaher_Drag.webp', left: '76.5vw', top: '-1.5vw', width: '24.5vw', rotation: '-7deg' },
-      { src: '/02_Projects/04_MaxMaher/02_MaxMaher_Drag.webp', left: '58vw', top: '11vw', width: '22vw', rotation: '6deg' },
+      { src: '/02_Projects/04_MaxMaher/01_MaxMaher_Drag.webp', left: '62.3%', top: '12.3vw', width: '15.2vw', rotation: '-14.61deg' },
+      { src: '/02_Projects/04_MaxMaher/02_MaxMaher_Drag.webp', left: '77.1%', top: '8.5vw', width: '21.6vw', rotation: '14.31deg' },
     ],
     blocks: [
       single(video('1215371826', 'Max Maher animated brand reel', '1556 / 386')),
@@ -192,8 +213,8 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
     role: 'Art Director, Brand<br>Strategist & UX/UI<br>Design Lead',
     nutshell: `Outliant is a fully remote digital agency that brings together strategy, design, technology, and growth. As the company evolved, a fundamental problem became increasingly visible: it had never clearly defined who it was, how it should position itself, or which part of the market it wanted to own.`,
     drags: [
-      { src: '/02_Projects/05_Outliant/01_OTL_Drag.webp', left: '78vw', top: '-1vw', width: '23vw', rotation: '10deg' },
-      { src: '/02_Projects/05_Outliant/02_OTL_Drag.webp', left: '56vw', top: '10vw', width: '25vw', rotation: '-8deg' },
+      { src: '/02_Projects/05_Outliant/01_OTL_Drag.webp', left: '59vw', top: '8vw', width: '21vw', rotation: '10deg' },
+      { src: '/02_Projects/05_Outliant/02_OTL_Drag.webp', left: '75vw', top: '14vw', width: '24vw', rotation: '-8deg' },
     ],
     blocks: [
       single(video('1215371885', 'Outliant hero brand reel', '1556 / 665')),
@@ -255,8 +276,8 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       `Technology is approached as an expressive medium—not as a threat or a replacement for human creativity, but as a tool that can expand it when used with intention.`,
     ],
     drags: [
-      { src: '/02_Projects/06_Lumen/01_Lumen_Drag.webp', left: '80vw', top: '1vw', width: '20vw', rotation: '7deg' },
-      { src: '/02_Projects/06_Lumen/02_Lumen_Drag.webp', left: '59vw', top: '7vw', width: '23vw', rotation: '-10deg' },
+      { src: '/02_Projects/06_Lumen/01_Lumen_Drag.webp', left: '72.5vw', top: '3.2vw', width: '23.5vw', rotation: '0deg' },
+      { src: '/02_Projects/06_Lumen/02_Lumen_Drag.webp', left: '59vw', top: '6vw', width: '23vw', rotation: '-10deg' },
     ],
     blocks: [
       single(video('1215371918', 'Lumen audiovisual event highlight reel', '1556 / 570')),

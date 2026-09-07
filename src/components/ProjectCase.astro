@@ -101,6 +101,32 @@ const vimeoUrl = (id: string) =>
                 <div class="case-media-content">
                   {item.type === 'image' && item.src && dimensions ? (
                     <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
+                  ) : item.type === 'carousel' && item.slides?.length ? (
+                    <div class="case-carousel" data-case-carousel role="group" aria-roledescription="carousel" aria-label={item.alt}>
+                      <div class="case-carousel-track">
+                        {item.slides.map((slide, slideIndex) => {
+                          const slideDimensions = imageMetadata[slide.src];
+                          return (
+                            <img
+                              class="case-carousel-slide"
+                              src={slide.src}
+                              alt={slide.alt}
+                              width={slideDimensions.width}
+                              height={slideDimensions.height}
+                              loading="lazy"
+                              decoding="async"
+                              draggable="false"
+                              aria-hidden={slideIndex === 0 ? 'false' : 'true'}
+                            />
+                          );
+                        })}
+                      </div>
+                      <span class="case-carousel-progress" aria-hidden="true">
+                        {item.slides.map((_, slideIndex) => (
+                          <i class:list={{ 'is-active': slideIndex === 0 }}><b></b></i>
+                        ))}
+                      </span>
+                    </div>
                   ) : item.vimeoId ? (
                     <iframe
                       src={vimeoUrl(item.vimeoId)}
@@ -127,6 +153,32 @@ const vimeoUrl = (id: string) =>
                     <div class="case-media-content">
                       {item.type === 'image' && item.src && dimensions ? (
                         <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
+                      ) : item.type === 'carousel' && item.slides?.length ? (
+                        <div class="case-carousel" data-case-carousel role="group" aria-roledescription="carousel" aria-label={item.alt}>
+                          <div class="case-carousel-track">
+                            {item.slides.map((slide, slideIndex) => {
+                              const slideDimensions = imageMetadata[slide.src];
+                              return (
+                                <img
+                                  class="case-carousel-slide"
+                                  src={slide.src}
+                                  alt={slide.alt}
+                                  width={slideDimensions.width}
+                                  height={slideDimensions.height}
+                                  loading="lazy"
+                                  decoding="async"
+                                  draggable="false"
+                                  aria-hidden={slideIndex === 0 ? 'false' : 'true'}
+                                />
+                              );
+                            })}
+                          </div>
+                          <span class="case-carousel-progress" aria-hidden="true">
+                            {item.slides.map((_, slideIndex) => (
+                              <i class:list={{ 'is-active': slideIndex === 0 }}><b></b></i>
+                            ))}
+                          </span>
+                        </div>
                       ) : item.vimeoId ? (
                         <iframe
                           src={vimeoUrl(item.vimeoId)}
@@ -214,6 +266,63 @@ const vimeoUrl = (id: string) =>
   })();
 
   const reduceCaseMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const caseCarousels = Array.from(document.querySelectorAll<HTMLElement>('[data-case-carousel]'));
+
+  caseCarousels.forEach((carousel) => {
+    const track = carousel.querySelector<HTMLElement>('.case-carousel-track');
+    const slides = Array.from(carousel.querySelectorAll<HTMLElement>('.case-carousel-slide'));
+    const progressItems = Array.from(carousel.querySelectorAll<HTMLElement>('.case-carousel-progress i'));
+    const duration = 3600;
+    let activeIndex = 0;
+    let timer: number | undefined;
+    let isVisible = false;
+
+    if (!track || slides.length < 2) return;
+
+    const paint = () => {
+      track.style.transform = `translate3d(${-activeIndex * 100}%, 0, 0)`;
+      slides.forEach((slide, index) => slide.setAttribute('aria-hidden', index === activeIndex ? 'false' : 'true'));
+      progressItems.forEach((item, index) => {
+        const fill = item.querySelector<HTMLElement>('b');
+        item.classList.toggle('is-active', index === activeIndex);
+        if (!fill) return;
+        fill.getAnimations().forEach((animation) => animation.cancel());
+        fill.style.transform = 'scaleX(0)';
+        if (index === activeIndex && !reduceCaseMotion && isVisible) {
+          fill.animate(
+            [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
+            { duration, easing: 'linear', fill: 'forwards' },
+          );
+        }
+      });
+    };
+
+    const stop = () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+      timer = undefined;
+    };
+
+    const start = () => {
+      stop();
+      if (reduceCaseMotion || !isVisible || document.hidden) return;
+      timer = window.setTimeout(() => {
+        activeIndex = (activeIndex + 1) % slides.length;
+        paint();
+        start();
+      }, duration);
+    };
+
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
+      isVisible = entry.isIntersecting;
+      paint();
+      start();
+    }, { threshold: .08, rootMargin: '10% 0px' });
+
+    document.addEventListener('visibilitychange', start);
+    visibilityObserver.observe(carousel);
+    paint();
+  });
+
   const revealNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-case-text-reveal], [data-case-media-reveal], [data-case-footer-reveal]'));
 
   if (reduceCaseMotion) {
@@ -631,6 +740,72 @@ const vimeoUrl = (id: string) =>
     pointer-events: none;
   }
 
+  .case-carousel,
+  .case-carousel-track {
+    width: 100%;
+    height: 100%;
+  }
+
+  .case-carousel {
+    position: relative;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .case-carousel-track {
+    display: flex;
+    transition: transform .72s cubic-bezier(.16, 1, .3, 1);
+    will-change: transform;
+  }
+
+  .case-media-content .case-carousel-slide {
+    flex: 0 0 100%;
+    min-width: 100%;
+    object-fit: cover;
+  }
+
+  .case-carousel-progress {
+    position: absolute;
+    bottom: 3.3%;
+    left: 50%;
+    z-index: 3;
+    display: flex;
+    width: clamp(74px, 12.1%, 106px);
+    height: clamp(15px, 2.68%, 23px);
+    align-items: center;
+    gap: clamp(2px, .46%, 4px);
+    padding: 0 clamp(5px, .9%, 8px);
+    border-radius: 48px;
+    background: rgb(217 217 217 / 22%);
+    backdrop-filter: blur(14px) saturate(1.15);
+    transform: translateX(-50%);
+  }
+
+  .case-carousel-progress i {
+    position: relative;
+    display: block;
+    width: 16%;
+    height: clamp(3px, .55%, 5px);
+    flex: 0 0 auto;
+    overflow: hidden;
+    border-radius: 32px;
+    background: rgb(250 250 250 / 30%);
+  }
+
+  .case-carousel-progress i.is-active {
+    width: 44%;
+  }
+
+  .case-carousel-progress b {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 100%;
+    border-radius: inherit;
+    background: var(--case-paper);
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
   .case-media-caption {
     margin-top: 1vw;
     font-size: 1.5vw;
@@ -776,8 +951,44 @@ const vimeoUrl = (id: string) =>
       font-size: 21.5vw;
     }
 
+    .project-case-page[data-case='maxmaher'] .case-drag:nth-of-type(2) {
+      top: 16vw !important;
+      left: 56% !important;
+      width: 22vw !important;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-drag:nth-of-type(3) {
+      top: 11vw !important;
+      left: 68% !important;
+      width: 30vw !important;
+    }
+
     .project-case-page[data-case='outliant'] .case-title {
       font-size: 22vw;
+    }
+
+    .project-case-page[data-case='outliant'] .case-drag:nth-of-type(2) {
+      top: 8vw !important;
+      left: 59vw !important;
+      width: 22vw !important;
+    }
+
+    .project-case-page[data-case='outliant'] .case-drag:nth-of-type(3) {
+      top: 18vw !important;
+      left: 70vw !important;
+      width: 30vw !important;
+    }
+
+    .project-case-page[data-case='lumen'] .case-drag:nth-of-type(2) {
+      top: 8vw !important;
+      left: 70vw !important;
+      width: 28vw !important;
+    }
+
+    .project-case-page[data-case='lumen'] .case-drag:nth-of-type(3) {
+      top: 14vw !important;
+      left: 56vw !important;
+      width: 27vw !important;
     }
 
     .case-year {
@@ -924,6 +1135,15 @@ const vimeoUrl = (id: string) =>
       scale: 1;
       transform: none !important;
       transition: none;
+    }
+
+    .case-carousel-track,
+    .case-carousel-progress i {
+      transition: none;
+    }
+
+    .case-carousel-progress {
+      display: none;
     }
   }
 </style>

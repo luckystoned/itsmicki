@@ -21,23 +21,17 @@ const stripImages = [
   style: `--strip-width:${item.widthCss};--strip-ratio:${item.ratio}`,
 }));
 
-const filmImages = [
-  asset(9, 'A subway passenger reflected in a black-and-white train window.'),
-  asset(10, 'A close-up of bright green leaves.'),
-  asset(11, 'A profile portrait in red sunglasses against a blue sky.'),
-  asset(12, 'People reclining together on an outdoor chaise.'),
-  asset(13, 'A black-and-white cat sitting behind a shop window.'),
-  asset(14, 'A portrait in a cap with a cat paw resting across the face.'),
-  asset(15, 'A black-and-white street vendor beneath an umbrella.'),
-  asset(16, 'A person in a rainbow shirt waving a colorful fan.'),
-  asset(17, 'A pizza maker tossing dough in the air.'),
-  asset(18, 'A black-and-white portrait of an ice-cream truck driver.'),
-  asset(19, 'A woman sitting beside a pool, seen through the foreground.'),
-  asset(20, 'A black cat peeking above a dark window ledge.'),
-];
-
-const filmLeft = filmImages.filter((_, index) => index % 2 === 0);
-const filmRight = filmImages.filter((_, index) => index % 2 === 1);
+const filmPairs = [
+  'A subway passenger reflected in a black-and-white train window beside a close-up of green leaves.',
+  'A profile portrait in red sunglasses beside people reclining together outdoors.',
+  'A black-and-white cat behind a shop window beside a portrait with a cat paw across the face.',
+  'A black-and-white street vendor beneath an umbrella beside a person waving a colorful fan.',
+  'A pizza maker tossing dough beside a black-and-white ice-cream truck portrait.',
+  'A woman sitting beside a pool beside a black cat peeking above a dark window ledge.',
+].map((alt, index) => {
+  const src = `/04_SideB/Film_${String(index + 1).padStart(2, '0')}_SideB.webp`;
+  return { src, alt, ...imageMetadata[src] };
+});
 const fashion = {
   src: '/04_SideB/Fashion_SideB.webp',
   alt: 'A fashion lookbook collage of four outfits against a blue background.',
@@ -142,7 +136,7 @@ const fashion = {
           </div>
         </section>
 
-        <section class="sideb-section" aria-labelledby="music-title">
+        <section class="sideb-section sideb-music-section" aria-labelledby="music-title">
           <h2 class="sideb-section-title" id="music-title">(music)</h2>
           <div class="sideb-section-column">
             <p class="sideb-big">Music taught me that complexity doesn't have to feel chaotic. I'm fascinated by sound, noise, and the absence of both. Through music, I found the same eclectic spirit that defines my work across design, fashion, and aesthetics: different influences, multiple layers, and unexpected contrasts coming together to create something cohesive. My next creative goal is to dive deeper into sound design and music production, expanding the way I think about storytelling beyond the visual.</p>
@@ -167,33 +161,14 @@ const fashion = {
           <div class="sideb-section-column">
             <p class="sideb-big">Shooting on film completely changed the way I approach uncertainty. I fell in love with its grain, textures, light leaks, and chemical imperfections, elements that digital workflows often try to eliminate.</p>
 
-            <div
-              class="sideb-film-pair"
-              data-film-carousel
-              role="region"
-              aria-roledescription="carousel"
-              aria-label="Film photography pairs"
-              tabindex="0"
-            >
-              <div class="sideb-film-slot sideb-film-slot-left">
-                <div class="sideb-film-track" data-film-track>
-                  {filmLeft.map((item, index) => (
-                    <figure class="sideb-film-cell" aria-hidden={index === 0 ? 'false' : 'true'}>
-                      <img data-parallax src={item.src} alt={item.alt} width={item.width} height={item.height} loading="lazy" decoding="async" draggable="false" />
-                    </figure>
-                  ))}
-                </div>
+            <div class="sideb-film-carousel" data-film-carousel role="group" aria-label="Film photography pairs">
+              <div class="sideb-film-track" data-film-track>
+                {filmPairs.map((item, index) => (
+                  <figure class="sideb-film-cell" aria-hidden={index === 0 ? 'false' : 'true'}>
+                    <img src={item.src} alt={item.alt} width={item.width} height={item.height} loading="lazy" decoding="async" draggable="false" />
+                  </figure>
+                ))}
               </div>
-              <div class="sideb-film-slot sideb-film-slot-right">
-                <div class="sideb-film-track" data-film-track>
-                  {filmRight.map((item, index) => (
-                    <figure class="sideb-film-cell" aria-hidden={index === 0 ? 'false' : 'true'}>
-                      <img data-parallax src={item.src} alt={item.alt} width={item.width} height={item.height} loading="lazy" decoding="async" draggable="false" />
-                    </figure>
-                  ))}
-                </div>
-              </div>
-              <p class="sideb-sr-only" data-film-status aria-live="polite">Film pair 1 of 6</p>
             </div>
 
             <div class="sideb-body-pair">
@@ -316,11 +291,6 @@ const fashion = {
       let setWidth = 0;
       let offset = 0;
       let lastTime = performance.now();
-      let hovering = false;
-      let dragging = false;
-      let pointerId = -1;
-      let pointerStart = 0;
-      let offsetStart = 0;
       let resizeFrame = 0;
 
       const normalizeOffset = () => {
@@ -343,39 +313,14 @@ const fashion = {
       const animateMarquee = (now: number) => {
         const deltaTime = Math.min(64, now - lastTime);
         lastTime = now;
-        if (!reduceSideBMotion && !dragging) {
-          offset -= deltaTime * (hovering ? .006 : .03);
+        if (!reduceSideBMotion) {
+          offset -= deltaTime * .03;
           normalizeOffset();
           renderMarquee();
         }
         requestAnimationFrame(animateMarquee);
       };
 
-      marquee.addEventListener('mouseenter', () => { hovering = true; });
-      marquee.addEventListener('mouseleave', () => { hovering = false; });
-      marquee.addEventListener('pointerdown', (event) => {
-        dragging = true;
-        pointerId = event.pointerId;
-        pointerStart = event.clientX;
-        offsetStart = offset;
-        marquee.setPointerCapture(pointerId);
-        marquee.classList.add('is-dragging');
-      });
-      marquee.addEventListener('pointermove', (event) => {
-        if (!dragging || event.pointerId !== pointerId) return;
-        offset = offsetStart + event.clientX - pointerStart;
-        normalizeOffset();
-        renderMarquee();
-      });
-      const finishDrag = (event: PointerEvent) => {
-        if (!dragging || event.pointerId !== pointerId) return;
-        dragging = false;
-        marquee.classList.remove('is-dragging');
-        if (marquee.hasPointerCapture(pointerId)) marquee.releasePointerCapture(pointerId);
-        pointerId = -1;
-      };
-      marquee.addEventListener('pointerup', finishDrag);
-      marquee.addEventListener('pointercancel', finishDrag);
       addEventListener('resize', () => {
         cancelAnimationFrame(resizeFrame);
         resizeFrame = requestAnimationFrame(measureMarquee);
@@ -388,22 +333,17 @@ const fashion = {
 
     const filmCarousel = document.querySelector<HTMLElement>('[data-film-carousel]');
     if (filmCarousel) {
-      const tracks = Array.from(filmCarousel.querySelectorAll<HTMLElement>('[data-film-track]'));
-      const status = filmCarousel.querySelector<HTMLElement>('[data-film-status]');
-      const count = tracks[0]?.children.length ?? 0;
+      const track = filmCarousel.querySelector<HTMLElement>('[data-film-track]');
+      const count = track?.children.length ?? 0;
       let index = 0;
       let timer = 0;
-      let pointerId = -1;
-      let pointerStart = 0;
 
       const renderFilm = () => {
-        tracks.forEach((track) => {
-          track.style.transform = `translate3d(${-index * 100}%, 0, 0)`;
-          Array.from(track.children).forEach((cell, cellIndex) => {
-            cell.setAttribute('aria-hidden', cellIndex === index ? 'false' : 'true');
-          });
+        if (!track) return;
+        track.style.transform = `translate3d(${-index * 100}%, 0, 0)`;
+        Array.from(track.children).forEach((cell, cellIndex) => {
+          cell.setAttribute('aria-hidden', cellIndex === index ? 'false' : 'true');
         });
-        if (status) status.textContent = `Film pair ${index + 1} of ${count}`;
       };
 
       const goTo = (nextIndex: number) => {
@@ -422,31 +362,6 @@ const fashion = {
         if (!reduceSideBMotion && count > 1) timer = window.setInterval(() => goTo(index + 1), 3800);
       };
 
-      filmCarousel.addEventListener('mouseenter', stopFilm);
-      filmCarousel.addEventListener('mouseleave', startFilm);
-      filmCarousel.addEventListener('focusin', stopFilm);
-      filmCarousel.addEventListener('focusout', startFilm);
-      filmCarousel.addEventListener('keydown', (event) => {
-        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-        event.preventDefault();
-        goTo(index + (event.key === 'ArrowRight' ? 1 : -1));
-      });
-      filmCarousel.addEventListener('pointerdown', (event) => {
-        pointerId = event.pointerId;
-        pointerStart = event.clientX;
-        filmCarousel.setPointerCapture(pointerId);
-        stopFilm();
-      });
-      const finishFilmSwipe = (event: PointerEvent) => {
-        if (event.pointerId !== pointerId) return;
-        const distance = event.clientX - pointerStart;
-        if (Math.abs(distance) >= 34) goTo(index + (distance < 0 ? 1 : -1));
-        if (filmCarousel.hasPointerCapture(pointerId)) filmCarousel.releasePointerCapture(pointerId);
-        pointerId = -1;
-        startFilm();
-      };
-      filmCarousel.addEventListener('pointerup', finishFilmSwipe);
-      filmCarousel.addEventListener('pointercancel', finishFilmSwipe);
       renderFilm();
       startFilm();
     }
@@ -512,16 +427,13 @@ const fashion = {
     scroll-behavior: auto;
   }
 
-  body:has(.sideb-page) a,
-  body:has(.sideb-page) [data-marquee],
-  body:has(.sideb-page) [data-film-carousel] {
+  body:has(.sideb-page) a {
     cursor: url('/cursors/view.png') 0 0, auto;
     -webkit-tap-highlight-color: transparent;
   }
 
   body:has(.sideb-page) a:hover,
-  body:has(.sideb-page) a:focus-visible,
-  body:has(.sideb-page) [data-marquee]:active {
+  body:has(.sideb-page) a:focus-visible {
     cursor: url('/cursors/view-hover.png') 0 0, pointer;
   }
 
@@ -573,7 +485,7 @@ const fashion = {
   }
 
   .sideb-title {
-    margin: clamp(30px, 6.6vw, 105px) 0 0;
+    margin: clamp(30px, 5.5vw, 88px) 0 0;
     font-family: 'OT Neue Montreal SideB Extra', Impact, sans-serif;
     font-size: 20.77vw;
     font-weight: 500;
@@ -584,14 +496,15 @@ const fashion = {
   .sideb-main {
     display: flex;
     flex-direction: column;
-    gap: clamp(40px, 8.3vw, 129px);
-    margin-top: clamp(40px, 9vw, 140px);
+    gap: clamp(40px, 7.25vw, 116px);
+    margin-top: clamp(40px, 3.7vw, 59px);
   }
 
   .sideb-intro-grid {
     display: grid;
     grid-template-columns: 556fr 994fr;
-    gap: clamp(20px, 2vw, 32px);
+    gap: 0;
+    padding-inline: var(--sideb-pad);
   }
 
   .sideb-label {
@@ -624,8 +537,6 @@ const fashion = {
     height: 40.4vw;
     margin-top: clamp(20px, 2.6vw, 40px);
     overflow: hidden;
-    touch-action: pan-y;
-    user-select: none;
   }
 
   .sideb-strip-track,
@@ -656,10 +567,6 @@ const fashion = {
     pointer-events: none;
   }
 
-  .sideb-strip.is-dragging {
-    cursor: grabbing;
-  }
-
   .sideb-section {
     display: grid;
     grid-template-columns: 281fr 1269fr;
@@ -668,6 +575,7 @@ const fashion = {
 
   .sideb-section-title {
     font-family: 'OT Neue Montreal SideB', 'Arial Narrow', sans-serif;
+    margin-left: var(--sideb-pad);
   }
 
   .sideb-section-column {
@@ -689,7 +597,10 @@ const fashion = {
   }
 
   .sideb-fashion-reveal {
-    width: 100%;
+    width: min(100%, 1265px);
+    margin-top: -11px;
+    margin-bottom: 13px;
+    align-self: flex-start;
   }
 
   .sideb-fashion-media img {
@@ -737,6 +648,9 @@ const fashion = {
   }
 
   .sideb-spotify {
+    width: calc(100% - (2 * var(--sideb-pad)));
+    margin-top: -4.3125vw;
+    margin-inline: var(--sideb-pad);
     opacity: 0;
     transform: translateY(16px);
     transition:
@@ -771,31 +685,21 @@ const fashion = {
     text-underline-offset: .08em;
   }
 
-  .sideb-film-pair {
-    display: grid;
-    grid-template-columns: 711fr 540fr;
-    gap: clamp(10px, 1.5vw, 23.6px);
-    width: 100%;
-    outline: none;
-    touch-action: pan-y;
-  }
-
-  .sideb-film-pair:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 6px;
-  }
-
-  .sideb-film-slot {
+  .sideb-film-carousel {
     position: relative;
+    width: min(100%, 1275px);
+    aspect-ratio: 1275 / 676;
+    margin-bottom: 7px;
     overflow: hidden;
+    align-self: flex-start;
   }
 
-  .sideb-film-slot-left {
-    aspect-ratio: 711 / 676;
+  .sideb-music-section {
+    margin-top: 7px;
   }
 
-  .sideb-film-slot-right {
-    aspect-ratio: 540 / 676;
+  .sideb-film-section {
+    margin-top: calc(-1.375vw + 2px);
   }
 
   .sideb-film-track {
@@ -816,32 +720,16 @@ const fashion = {
   }
 
   .sideb-film-cell img {
-    position: absolute;
-    top: -7%;
-    left: 0;
     display: block;
     width: 100%;
-    height: 114%;
+    height: 100%;
     object-fit: cover;
     pointer-events: none;
-    will-change: transform;
-  }
-
-  .sideb-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
 
   .sideb-footer {
     position: relative;
-    margin-top: clamp(26px, 3.6vw, 56px);
+    margin-top: 11.25vw;
     overflow: hidden;
   }
 
@@ -856,6 +744,12 @@ const fashion = {
     line-height: .79;
     letter-spacing: -.04em;
     white-space: nowrap;
+  }
+
+  @media (min-width: 761px) {
+    .sideb-footer-wordmark {
+      transform: translateY(1.25vw);
+    }
   }
 
   .sideb-footer-wordmark span:first-child { margin-left: -1.5vw; }
@@ -1013,6 +907,10 @@ const fashion = {
       line-height: 1;
     }
 
+    .sideb-section-title {
+      margin-left: 0;
+    }
+
     .sideb-related {
       line-height: .98;
     }
@@ -1054,14 +952,22 @@ const fashion = {
       font-size: 4.3vw;
     }
 
-    .sideb-film-pair {
-      grid-template-columns: 1fr;
-      gap: 10px;
+    .sideb-fashion-reveal {
+      width: 100%;
+      margin: 0;
     }
 
-    .sideb-film-slot-left,
-    .sideb-film-slot-right {
-      aspect-ratio: 1080 / 1352;
+    .sideb-music-section {
+      margin-top: 0;
+    }
+
+    .sideb-film-section {
+      margin-top: 0;
+    }
+
+    .sideb-film-carousel {
+      width: 100%;
+      margin-bottom: 0;
     }
 
     .sideb-footer {

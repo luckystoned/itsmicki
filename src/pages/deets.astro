@@ -54,7 +54,10 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
       <p class="deets-node deets-label deets-resume-label">Resume</p>
       <a class="deets-node deets-download" href="/Resume/Resume_Micaela%20Galimberti.pdf" download>download (↓)</a>
 
-      <h2 class="deets-node deets-label deets-skills-label">(skills / services)</h2>
+      <h2 class="deets-node deets-skills-label">
+        <span class="deets-desktop-copy">(skills / services)</span>
+        <span class="deets-mobile-copy">Resume</span>
+      </h2>
       <p class="deets-node deets-heading deets-skills-copy">
         <span class="deets-desktop-copy">Art Direction, Brand Identity Design, Web Design, Product Design, Creative Leadership, Motion Design, Generative AI Art Direction, Illustration, and Image Retouching.</span>
         <span class="deets-mobile-copy">Art Direction, Brand Design, Web Design, Product Design, Management, Motion Design, AI and Illustration.</span>
@@ -65,8 +68,9 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
       </figure>
 
       <h2 class="deets-node deets-label deets-story-label">(my story)</h2>
+      <p class="deets-node deets-story-lead deets-desktop-copy">Most portfolio intros make everyone sound like a visionary with a caffeine problem, so here’s the less polished version. How did I get here? Let’s rewind.</p>
       <p class="deets-node deets-body deets-story-one">
-        <span class="deets-desktop-copy">Most portfolio intros make everyone sound like a visionary with a caffeine problem, so here’s the less polished version. How did I get here? Let’s rewind. I grew up in my dad’s carpentry shop, where my siblings and I spent our days among design magazines, books, house and furniture sketches, an unreasonable number of Worms matches, decor objects, fabric scraps, and every kind of office stationery.</span>
+        <span class="deets-desktop-copy">I grew up in my dad’s carpentry shop, where my siblings and I spent our days among design magazines, books, house and furniture sketches, an unreasonable number of Worms matches, decor objects, fabric scraps, and every kind of office stationery.</span>
         <span class="deets-mobile-copy">I apologize in advance for this cheesy and messy intro, but I’m a bit tired of the usual ChatGPT ones. So, how did I get here? Let’s rewind to the beginning. I grew up in my dad’s carpentry shop, where my siblings and I spent our days playing among design mags, house and furniture sketches, countless matches of Worms, decoration items, pieces of fabric, and all kinds of office stationery.</span>
       </p>
       <p class="deets-node deets-body deets-story-two">
@@ -96,13 +100,16 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
         <img src={shoes.src} alt={shoes.alt} width={shoes.width} height={shoes.height} loading="lazy" decoding="async" />
       </figure>
 
-      <p class="deets-node deets-heading deets-statement">I love to shape brands from start to finish, beginning with their intangible stories and bringing them to life through consistent systems, whether digital or printed.</p>
+      <p class="deets-node deets-heading deets-statement">
+        <span class="deets-desktop-copy">I love shaping brands from start to finish, turning intangible stories into coherent systems that can live across digital<br />and print.</span>
+        <span class="deets-mobile-copy">I love to shape brands from start to finish, beginning with their intangible stories and bringing them to life through consistent systems, whether digital or printed.</span>
+      </p>
       <p class="deets-node deets-body deets-close-one">
         <span class="deets-desktop-copy">I’m drawn to experimental design, visual friction, and identities that refuse a single tone. Design isn’t neutral decoration: it carries culture, ideology, and power. At its best, it doesn’t just change how something looks—it changes how it can be read, felt, and remembered.</span>
         <span class="deets-mobile-copy">I’m totally mad about experimental design and not a fan of the idea of being inside a box. I like to think of design as more than just making things look cool—it doesn’t merely transform aesthetics, it reshapes our perspective and the way we experience everything around us.</span>
       </p>
       <p class="deets-node deets-body deets-close-two">
-        <span class="deets-desktop-copy">If any of this resonates, say hi. I’m usually somewhere between a Figma file, an unfinished experiment, and two cats with no respect for deadlines ♡*. Email me → <a href="mailto:hey@itsmicki.com">hey@itsmicki.com</a></span>
+        <span class="deets-desktop-copy">If any of this resonates, say hi. I’m usually somewhere between a Figma file, an unfinished experiment, and two cats with no respect for deadlines ♡*.<span class="deets-email-line">Email me → <a href="mailto:hey@itsmicki.com">hey@itsmicki.com</a></span></span>
         <span class="deets-mobile-copy">Feel free to reach out if my story and perspective on design resonate with you ♡*.<br />Email me → <a href="mailto:hey@itsmicki.com">hey@itsmicki.com</a></span>
       </p>
     </article>
@@ -259,15 +266,16 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   }
 
   body:has(.deets-page) .site-header {
-    position: relative;
+    position: absolute;
     z-index: 20;
-    top: auto;
-    padding: 24px clamp(14px, 1.42vw, 22px) 0;
+    inset: 0 0 auto;
+    align-items: flex-start;
+    padding: 1.450806vw 1.346985vw 0;
     background: transparent;
     color: var(--deets-ink);
     backdrop-filter: none;
     font-family: 'OT Neue Montreal Deets', 'Arial Narrow', sans-serif;
-    font-size: clamp(14px, 1.74vw, 27.117px);
+    font-size: 1.694813vw;
     font-weight: 500;
     line-height: normal;
     letter-spacing: -.02em;
@@ -289,7 +297,9 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
 
   .deets-page {
     position: relative;
-    min-height: 100vh;
+    width: 100%;
+    height: 381.9375vw;
+    overflow: hidden;
     background: var(--deets-paper);
     color: var(--deets-ink);
     font-family: 'OT Neue Montreal Deets', 'Arial Narrow', sans-serif;
@@ -306,7 +316,7 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   .deets-canvas {
     position: relative;
     width: 100%;
-    height: 381.94vw;
+    height: 100%;
   }
 
   .deets-node {
@@ -315,13 +325,13 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   }
 
   .deets-title {
-    top: 8.2988vw;
-    left: 1.3469vw;
-    width: 97.1937vw;
+    top: 8.298462vw;
+    left: 1.346985vw;
+    width: 97.193848vw;
     font-family: 'OT Neue Montreal Deets Extra', Impact, sans-serif;
-    font-size: 20.2vw;
+    font-size: 20.199vw;
     font-weight: 500;
-    line-height: .855;
+    line-height: .854;
     letter-spacing: -.04em;
   }
 
@@ -333,24 +343,30 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   }
 
   .deets-download {
-    font-size: 2.4vw;
-    line-height: 1.1;
-    letter-spacing: -.02em;
+    font-size: 4.033125vw;
+    line-height: .86781;
+    letter-spacing: -.03em;
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: .08em;
   }
 
   .deets-heading {
-    font-size: 3.5vw;
-    line-height: 1.06;
+    font-size: 4.033125vw;
+    line-height: .86781;
     letter-spacing: -.03em;
   }
 
   .deets-body {
-    font-size: 1.06vw;
-    line-height: 1.28;
+    font-size: 2.2175vw;
+    line-height: .96576;
     letter-spacing: -.01em;
+  }
+
+  .deets-story-lead {
+    font-size: 3.533125vw;
+    line-height: .99062;
+    letter-spacing: -.03em;
   }
 
   .deets-image {
@@ -365,26 +381,41 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
     object-fit: cover;
   }
 
-  .deets-resume-label { top: 49.9588vw; left: 1.7063vw; width: 12.5vw; }
-  .deets-download { top: 52.8769vw; left: 1.7063vw; width: 18.75vw; }
-  .deets-nutshell-label { top: 49.9588vw; left: 36.4225vw; width: 27.6194vw; }
-  .deets-bio { top: 52.8769vw; left: 36.4225vw; width: 62.1181vw; }
-  .deets-image-one { top: 70.9394vw; left: 36.4225vw; width: 62.1506vw; height: 46.3013vw; }
-  .deets-skills-label { top: 120.8413vw; left: 1.5325vw; width: 31.25vw; }
-  .deets-skills-copy { top: 120.8031vw; left: 36.45vw; width: 62.125vw; }
-  .deets-image-two { top: 138.8656vw; left: 1.3369vw; width: 97.2262vw; height: 46.3013vw; }
-  .deets-story-label { top: 190.2287vw; left: 1.5325vw; width: 17.5vw; }
-  .deets-story-one { top: 190.25vw; left: 19.5125vw; width: 38.5312vw; }
-  .deets-story-two { top: 190.25vw; left: 60.0438vw; width: 38.5312vw; }
+  .deets-resume-label { top: 49.958492vw; left: 1.706116vw; width: 12.5vw; }
+  .deets-download { top: 52.876705vw; left: 1.706116vw; width: 24vw; }
+  .deets-nutshell-label { top: 49.958492vw; left: 36.422668vw; width: 27.619629vw; }
+  .deets-bio { top: 52.876705vw; left: 36.422668vw; width: 62.118164vw; }
+  .deets-image-one { top: 70.939209vw; left: 36.422668vw; width: 62.150391vw; height: 46.301147vw; }
+  .deets-skills-label {
+    top: 120.841187vw;
+    left: 1.532288vw;
+    width: 34.5vw;
+    font-size: 4.033125vw;
+    font-weight: 500;
+    line-height: .86781;
+    letter-spacing: -.03em;
+    white-space: nowrap;
+  }
+  .deets-skills-copy { top: 120.802856vw; left: 36.449768vw; width: 62.125vw; }
+  .deets-image-two { top: 138.865356vw; left: 1.336731vw; width: 97.226074vw; height: 46.301147vw; }
+  .deets-story-label { top: 189.716919vw; left: 1.47876vw; width: 17.5vw; font-size: 4.033125vw; line-height: .86781; letter-spacing: -.03em; }
+  .deets-story-lead { top: 189.716919vw; left: 20.45874vw; width: 77.0625vw; }
+  .deets-story-one { top: 202.216919vw; left: 20.45874vw; width: 34.666687vw; }
+  .deets-story-two { top: 202.216919vw; left: 56.125427vw; width: 41.395813vw; }
   .deets-story-images { display: contents; }
-  .deets-image-three { top: 212.5vw; left: 19.5569vw; width: 26vw; height: 32.5vw; }
-  .deets-image-four { top: 254.75vw; left: 70.4087vw; width: 28.1875vw; height: 42.25vw; }
-  .deets-story-three { top: 259.8781vw; left: 19.5125vw; width: 36.3669vw; }
-  .deets-story-four { top: 259.8781vw; left: 57.8794vw; width: 40.6956vw; }
-  .deets-image-five { top: 276.4969vw; left: 19.5338vw; width: 79.0394vw; height: 35.75vw; }
-  .deets-statement { top: 316.9031vw; left: 19.5125vw; width: 79vw; }
-  .deets-close-one { top: 330.75vw; left: 19.5125vw; width: 36.3669vw; }
-  .deets-close-two { top: 330.75vw; left: 57.8794vw; width: 40.6956vw; }
+  .deets-image-three { top: 220.80957vw; left: 19.556946vw; width: 26vw; height: 32.5vw; }
+  .deets-image-four { top: 220.80957vw; left: 70.408691vw; width: 28.1875vw; height: 42.25vw; }
+  .deets-story-three { top: 265.74707vw; left: 19.512268vw; width: 36.366943vw; }
+  .deets-story-four { top: 265.74707vw; left: 57.879211vw; width: 40.695557vw; }
+  .deets-image-five { top: 279.029785vw; left: 19.533752vw; width: 79.039307vw; height: 35.75vw; }
+  .deets-statement { top: 318.313477vw; left: 19.512268vw; width: 79.0625vw; }
+  .deets-close-one { top: 330.813477vw; left: 19.512268vw; width: 36.366943vw; }
+  .deets-close-two { top: 330.813477vw; left: 57.879211vw; width: 40.695557vw; }
+
+  .deets-email-line {
+    display: block;
+    margin-top: 1.5vw;
+  }
 
   .deets-close-two a {
     text-decoration: underline;
@@ -393,57 +424,62 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   }
 
   .deets-footer {
-    position: relative;
-    margin-top: clamp(26px, 3.6vw, 56px);
+    position: absolute;
+    top: 346.972198vw;
+    right: 0;
+    left: 0;
+    height: 34.965302vw;
     overflow: hidden;
   }
 
   .deets-footer-wordmark {
+    position: absolute;
+    top: 0;
+    right: -1.468445vw;
+    left: -1.468445vw;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
     color: var(--deets-ink);
     font-family: 'OT Neue Montreal Deets Extra', Impact, sans-serif;
-    font-size: 37.4vw;
+    font-size: 36.451438vw;
     font-weight: 500;
-    line-height: .79;
+    line-height: 1.2;
     letter-spacing: -.04em;
     white-space: nowrap;
   }
 
-  .deets-footer-wordmark span:first-child { margin-left: -1.5vw; }
-  .deets-footer-wordmark span:last-child { margin-right: -1.4vw; }
+  .deets-footer-wordmark span:first-child,
+  .deets-footer-wordmark span:last-child { margin: 0; }
 
   .deets-footer-info {
     position: absolute;
     z-index: 2;
+    top: 28.533447vw;
     right: 0;
-    bottom: 5vw;
     left: 0;
-    display: flex;
-    align-items: flex-end;
-    gap: 0;
-    padding: 0 clamp(14px, 1.42vw, 22px);
-    font-size: clamp(10px, 1.31vw, 21px);
-    line-height: 1;
+    height: 1.5625vw;
+    font-size: 1.3125vw;
+    line-height: normal;
     letter-spacing: -.02em;
     text-transform: uppercase;
   }
 
   .deets-footer-info > * {
+    position: absolute;
+    top: 0;
     width: fit-content;
-    padding-top: 1px;
     background: var(--deets-ink);
     color: var(--deets-paper);
     white-space: nowrap;
   }
 
-  .deets-footer-info > :nth-child(1) { margin-left: -.2%; }
-  .deets-footer-info > :nth-child(2) { margin-left: 5.1%; }
-  .deets-footer-info > :nth-child(3) { margin-left: 5.2%; }
-  .deets-footer-info > :nth-child(4) { margin-left: 5.1%; }
-  .deets-footer-info > :nth-child(5) { margin-left: 6.1%; }
-  .deets-footer-info > :nth-child(6) { margin-left: auto; }
+  .deets-footer-info > :nth-child(1) { left: -.184265vw; }
+  .deets-footer-info > :nth-child(2) { left: 3.942549vw; }
+  .deets-footer-info > :nth-child(3) { left: 21.529272vw; }
+  .deets-footer-info > :nth-child(4) { left: 28.429871vw; }
+  .deets-footer-info > :nth-child(5) { left: 44.106018vw; }
+  .deets-footer-info > :nth-child(6) { right: .050232vw; }
 
   .deets-footer-info a:is(:hover, :focus-visible) {
     color: var(--deets-paper);
@@ -466,53 +502,27 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   }
 
   @media (max-width: 760px) {
-    body:has(.deets-page) {
-      padding-bottom: calc(58px + env(safe-area-inset-bottom));
-    }
-
     body:has(.deets-page) .site-header {
-      position: fixed;
-      z-index: 40;
-      inset: auto 0 max(13px, env(safe-area-inset-bottom));
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      gap: 3.076923vw;
-      width: 100vw;
-      min-height: 0;
-      padding: 0;
-      background: transparent;
-      font-size: 6.794359vw;
-      line-height: 1;
-      pointer-events: none;
+      display: none;
     }
 
-    body:has(.deets-page) .site-header .wordmark,
-    body:has(.deets-page) .site-header nav {
-      pointer-events: auto;
-    }
-
-    body:has(.deets-page) .site-header nav {
-      gap: 3.076923vw;
-    }
-
-    body:has(.deets-page) .site-header a {
-      white-space: nowrap;
+    .deets-page {
+      height: 1093.316195vw;
     }
 
     .deets-mobile-meta {
       position: absolute;
       z-index: 30;
-      top: max(2.564103vw, env(safe-area-inset-top));
-      right: env(safe-area-inset-right);
+      top: max(2.056555vw, env(safe-area-inset-top));
+      right: calc(-2.352347vw + env(safe-area-inset-right));
       left: env(safe-area-inset-left);
       display: grid;
       grid-template-columns: auto 1fr;
       align-items: start;
       color: var(--deets-ink);
-      font-size: 3.5vw;
-      line-height: 1;
-      letter-spacing: -.035em;
+      font-size: 4.113111vw;
+      line-height: 1.1875;
+      letter-spacing: -.02em;
       text-transform: uppercase;
     }
 
@@ -533,18 +543,13 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
     }
 
     .deets-canvas {
-      display: flex;
-      flex-direction: column;
       width: 100%;
-      height: auto;
-      padding: 0 18px;
+      height: 100%;
+      padding: 0;
     }
 
     .deets-node {
-      position: static;
-      flex: 0 0 auto;
-      width: 100%;
-      height: auto;
+      position: absolute;
     }
 
     .deets-desktop-copy {
@@ -556,162 +561,215 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
     }
 
     .deets-title {
-      order: 1;
-      margin-top: 30.7vw;
-      font-size: 14.6vw;
-      line-height: .92;
+      top: 29.404884vw;
+      left: 2.86491vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      width: 94.087404vw;
+      height: 39.07455vw;
+      font-size: 24.939846vw;
+      line-height: .67005;
       letter-spacing: -.04em;
     }
 
     .deets-nutshell-label {
-      order: 2;
-      margin-top: 16vw;
+      top: 82.868766vw;
+      left: 4.415681vw;
+      width: 89.778008vw;
     }
 
     .deets-bio {
-      order: 3;
-      margin-top: 3.8vw;
-      font-size: 6.6vw;
-      line-height: 1.32;
+      top: 93.362108vw;
+      left: 4.415681vw;
+      width: 89.778008vw;
+      font-size: 8.226221vw;
+      line-height: 1.0625;
+      letter-spacing: -.03em;
     }
 
     .deets-image-one {
-      order: 4;
-      margin-top: 6.2vw;
+      top: 142.150977vw;
+      left: 4.079846vw;
+      width: 90.904781vw;
+      height: 67.722776vw;
     }
 
     .deets-resume-label {
-      order: 5;
-      margin-top: 6.4vw;
+      top: 217.616401vw;
+      left: 4.460054vw;
+      width: 89.778008vw;
     }
 
     .deets-download {
-      order: 6;
-      margin-top: 2.1vw;
-      font-size: 11vw;
-      line-height: 1;
+      top: 228.109743vw;
+      left: 4.460054vw;
+      width: 89.778008vw;
+      font-size: 13.559383vw;
+      line-height: .86781;
+      letter-spacing: -.03em;
     }
 
     .deets-skills-label {
-      order: 7;
-      margin-top: 7.2vw;
+      top: 247.677584vw;
+      left: 4.460054vw;
+      width: 89.778008vw;
+      font-size: 6.169666vw;
+      line-height: normal;
+      letter-spacing: -.01em;
+      white-space: normal;
     }
 
     .deets-skills-copy {
-      order: 8;
-      margin-top: 3vw;
-      font-size: 12vw;
-      line-height: .97;
-      letter-spacing: -.04em;
+      top: 258.170925vw;
+      left: 4.460054vw;
+      width: 90.644884vw;
+      font-size: 13.559383vw;
+      line-height: .86781;
+      letter-spacing: -.03em;
     }
 
     .deets-image-two {
-      order: 9;
-      margin-top: 8.2vw;
+      top: 336.607661vw;
+      left: 3.267275vw;
+      width: 90.926401vw;
+      height: 43.301105vw;
     }
 
     .deets-story-label {
-      order: 10;
-      margin-top: 9.5vw;
+      top: 388.61vw;
+      left: 4.460054vw;
+      width: 89.778008vw;
+      font-size: 6.169666vw;
+      line-height: normal;
+      letter-spacing: -.01em;
     }
 
     .deets-story-one {
-      order: 11;
-      margin-top: 6vw;
+      top: 401.127069vw;
+      left: 4.460054vw;
+      width: 89.778008vw;
     }
 
     .deets-story-two {
-      order: 12;
-      margin-top: 6vw;
+      top: 493.592596vw;
+      left: 4.460054vw;
+      width: 89.778008vw;
     }
 
     .deets-story-images {
-      order: 13;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      width: 100%;
-      margin-top: 7vw;
+      position: absolute;
+      top: 590.831928vw;
+      left: 4.319023vw;
+      display: block;
+      width: 91.361979vw;
+      height: 56.658329vw;
     }
 
-    .deets-image-three,
+    .deets-image-three {
+      top: 0;
+      left: 0;
+      width: 34.866658vw;
+      height: 43.583316vw;
+    }
+
     .deets-image-four {
-      width: 35vw;
+      top: 0;
+      left: 53.561825vw;
+      width: 37.800154vw;
+      height: 56.658329vw;
     }
 
     .deets-story-three {
-      order: 14;
-      margin-top: 9vw;
+      top: 657.326041vw;
+      left: 4.079846vw;
+      width: 89.778008vw;
     }
 
     .deets-story-four {
-      order: 15;
-      margin-top: 6vw;
+      top: 712.77365vw;
+      left: 4.079846vw;
+      width: 89.778008vw;
     }
 
     .deets-image-five {
-      order: 16;
-      margin-top: 7.5vw;
+      top: 773.917121vw;
+      left: 4.079846vw;
+      width: 88.34928vw;
+      height: 39.960977vw;
     }
 
     .deets-statement {
-      order: 17;
-      margin-top: 9vw;
-      font-size: 12vw;
-      line-height: .96;
-      letter-spacing: -.04em;
+      top: 823.722314vw;
+      left: 4.460054vw;
+      width: 90.644884vw;
+      font-size: 13.559383vw;
+      line-height: .86781;
+      letter-spacing: -.03em;
     }
 
     .deets-close-one {
-      order: 18;
-      margin-top: 10vw;
+      top: 937.377609vw;
+      left: 4.079846vw;
+      width: 89.778008vw;
     }
 
     .deets-close-two {
-      order: 19;
-      margin-top: 7vw;
+      top: 1003.622057vw;
+      left: 4.079846vw;
+      width: 89.778008vw;
     }
 
     .deets-label {
-      font-size: 4.7vw;
-      line-height: 1.15;
+      font-size: 6.169666vw;
+      line-height: normal;
+      letter-spacing: -.01em;
     }
 
     .deets-body {
-      font-size: 5.55vw;
-      line-height: 1.55;
-      letter-spacing: -.015em;
+      font-size: 6.169666vw;
+      line-height: 1.416667;
+      letter-spacing: -.01em;
     }
 
     .deets-image img {
-      height: auto;
-      object-fit: contain;
+      height: 100%;
+      object-fit: cover;
     }
 
     .deets-footer {
-      margin-top: 11vw;
-      padding-top: 8vw;
-      padding-bottom: calc(18px + env(safe-area-inset-bottom));
+      top: 1049.279512vw;
+      height: 44.036683vw;
+      margin: 0;
+      padding: 0;
     }
 
     .deets-footer::before {
       position: absolute;
-      top: 0;
-      right: 18px;
-      left: 18px;
-      height: 1px;
+      z-index: 2;
+      top: .514139vw;
+      left: 4.54874vw;
+      width: 90.465938vw;
+      height: .061697vw;
       content: '';
-      background: color-mix(in srgb, var(--deets-ink) 38%, transparent);
+      background: var(--deets-ink);
     }
 
     .deets-footer-wordmark {
-      font-size: 26vw;
-      line-height: .85;
+      top: 0;
+      right: auto;
+      left: -1.889357vw;
+      justify-content: flex-start;
+      width: 103.341902vw;
+      font-size: 46.320823vw;
+      line-height: 1.2;
     }
 
-    .deets-footer-wordmark span:first-child { margin-left: -1.5vw; }
-    .deets-footer-wordmark span:last-child { margin-right: -1.4vw; }
+    .deets-footer-wordmark span:first-child,
+    .deets-footer-wordmark span:last-child { margin: 0; }
     .deets-footer-info { display: none; }
+
+    .deets-email-line { display: inline; margin: 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
