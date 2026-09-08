@@ -1,10 +1,10 @@
 ---
 import { imageMetadata } from '@/data/imageMetadata';
+import { projectCases } from '@/data/projectCases';
 
 const cards = [
   {
     slug: 'winona',
-    href: '/projects/winona',
     src: '/02_Projects/01_Winona/01_Winona_Portada.webp',
     label: '01_Winona_UX—UI Lead, Visual & Motion Designer',
     width: '22.0249vw',
@@ -13,7 +13,6 @@ const cards = [
   },
   {
     slug: 'genova',
-    href: undefined,
     src: '/02_Projects/02_Genova/01_Genova_Portada.webp',
     label: '02_Genova_Art Direction+Visual Design',
     width: '22.0694vw',
@@ -22,7 +21,6 @@ const cards = [
   },
   {
     slug: 'amazon',
-    href: undefined,
     src: '/02_Projects/03_Amazon/01_Amazon_Portada.jpg',
     label: '03_Amazon_UXUI Lead+Art Direction+Visual Design',
     width: '21.8914vw',
@@ -31,7 +29,6 @@ const cards = [
   },
   {
     slug: 'maxmaher',
-    href: '/projects/maxmaher',
     src: '/02_Projects/04_MaxMaher/01_MaxMaher_Portada.webp',
     label: '04_MaxMaher_Art Direction+Visual Design',
     width: '22.0249vw',
@@ -40,7 +37,6 @@ const cards = [
   },
   {
     slug: 'outliant',
-    href: '/projects/outliant',
     src: '/02_Projects/05_Outliant/01_Outliant_Portada.webp',
     label: '05_Outliant_Art Direction+Visual Design+UXUI Lead',
     width: '22vw',
@@ -49,7 +45,6 @@ const cards = [
   },
   {
     slug: 'lumen',
-    href: '/projects/lumen',
     src: '/02_Projects/06_Lumen/01_Lumen_Portada.webp',
     label: '06_Lumen_Art Direction+Visual Design',
     width: '22.0249vw',
@@ -58,7 +53,6 @@ const cards = [
   },
   {
     slug: 'blend360',
-    href: undefined,
     src: '/02_Projects/07_Blend360/01_Blend360_Portada.webp',
     label: '07_Blend360_UX—UI Lead, Visual & Motion Designer',
     width: '22.0694vw',
@@ -68,6 +62,7 @@ const cards = [
 ] as const;
 
 const { currentSlug } = Astro.props;
+const publishedCaseSlugs = new Set(Object.keys(projectCases));
 ---
 
 <div class="case-more">
@@ -84,6 +79,7 @@ const { currentSlug } = Astro.props;
           {cards.map((card) => {
             const dimensions = imageMetadata[card.src];
             const style = `--card-width:${card.width};--card-height:${card.height};--card-ratio:${card.ratio}`;
+            const href = publishedCaseSlugs.has(card.slug) ? `/projects/${card.slug}` : undefined;
             const content = (
               <>
                 <span class="case-strip-name">{card.label}</span>
@@ -100,8 +96,8 @@ const { currentSlug } = Astro.props;
                 </span>
               </>
             );
-            return card.href ? (
-              <a class:list={['case-strip-card', { current: currentSlug === card.slug }]} href={card.href} style={style} tabindex={setIndex === 1 ? '-1' : undefined}>
+            return href ? (
+              <a class:list={['case-strip-card', { current: currentSlug === card.slug }]} href={href} style={style} tabindex={setIndex === 1 ? '-1' : undefined}>
                 {content}
               </a>
             ) : (

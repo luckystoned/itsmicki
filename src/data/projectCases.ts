@@ -172,7 +172,11 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         wide: `The brand needed to work at the speed of an active content platform. It had to remain recognizable across video, social media, thumbnails, editorial graphics, and future commercial applications, while giving Max’s internal team clear rules they could use independently. The challenge was therefore not only to define a look, but to create a repeatable production language.`,
       }),
       pair(
-        image('/02_Projects/04_MaxMaher/04_MaxMaher.webp', 'Embroidered Max Maher caps.', '51.36 / 51.98'), '51.36vw', '51.98vw',
+        carousel([
+          { src: '/02_Projects/04_MaxMaher/04_MaxMaher.webp', alt: 'Embroidered Max Maher caps.' },
+          { src: '/02_Projects/04_MaxMaher/05_MaxMaher.webp', alt: 'Pixel-art palm tree, calculator and airplane pins on a shirt collar.' },
+          { src: '/02_Projects/04_MaxMaher/06_MaxMaher.webp', alt: 'Embroidered orange Max Maher keychain on a canvas bag.' },
+        ], 'Max Maher caps, pins and keychain.', '51.36 / 51.98'), '51.36vw', '51.98vw',
         image('/02_Projects/04_MaxMaher/6b_MaxMaher.webp', 'Max Maher campaign graphics held in a hand.', '44.08 / 51.98'), '44.08vw', '51.98vw',
       ),
       single(video('1215375694', 'Max Maher pixel transition animation', '1556 / 891')),
@@ -232,7 +236,11 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       ]),
       pair(
         image('/02_Projects/05_Outliant/03_OTL.webp', 'Outliant business card system.', '40.5 / 29.78'), '40.5vw', '29.78vw',
-        image('/02_Projects/05_Outliant/04__OTL.webp', 'Outliant campaign billboard.', '54.9 / 51.98'), '54.9vw', '51.98vw',
+        carousel([
+          { src: '/02_Projects/05_Outliant/04__OTL.webp', alt: 'Outliant campaign billboard.' },
+          { src: '/02_Projects/05_Outliant/05__OTL.webp', alt: 'Outliant recruitment story on a phone beside a branded laptop.' },
+          { src: '/02_Projects/05_Outliant/06__OTL.webp', alt: 'Outliant branded keychain on a metal surface.' },
+        ], 'Outliant campaign and brand applications.', '54.9 / 51.98'), '54.9vw', '51.98vw',
       ),
       single(image('/02_Projects/05_Outliant/07__OTL.webp', 'Outliant social media and brand book composition.', '1556 / 870')),
       text('(constraints)', [
@@ -292,7 +300,11 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         wide: `The project needed to communicate several ideas at once without becoming overly theoretical: decentralization, experimentation, community, nightlife, and the productive relationship between art and technology. It also needed an identity flexible enough to live across a physical event, interactive installations, printed graphics, merchandise, and fast-moving social content. The main creative challenge was to turn a cultural position into an immediate visual and sensory experience. People did not simply need to understand the message; they needed to feel invited into it.`,
       }),
       pair(
-        image('/02_Projects/06_Lumen/03_Lumen.webp', 'Lumen posters displayed in a venue window.', '40.5 / 47.55'), '40.5vw', '47.55vw',
+        carousel([
+          { src: '/02_Projects/06_Lumen/03_Lumen.webp', alt: 'Lumen posters displayed in a venue window.' },
+          { src: '/02_Projects/06_Lumen/04_Lumen.webp', alt: 'Black cap embroidered with the Lumen logo.' },
+          { src: '/02_Projects/06_Lumen/05_Lumen.webp', alt: 'Lumen art and technology event poster on a layered street wall.' },
+        ], 'Lumen posters and branded cap.', '40.5 / 47.55'), '40.5vw', '47.55vw',
         image('/02_Projects/06_Lumen/06_Lumen.webp', 'White Lumen T-shirt over turntables.', '55.26 / 65.17'), '55.26vw', '65.17vw',
       ),
       text('(the concept)', [
@@ -310,7 +322,12 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       single(image('/02_Projects/06_Lumen/08_Lumen.webp', 'Lumen visual identity layered over a DJ performance.', '1556 / 870')),
       pair(
         image('/02_Projects/06_Lumen/09_Lumen.webp', 'Lumen keychain and printed tag.', '51.36 / 51.98'), '51.36vw', '51.98vw',
-        image('/02_Projects/06_Lumen/10_Lumen.webp', 'Black-and-white portrait at a Lumen event.', '44.08 / 51.98'), '44.08vw', '51.98vw',
+        carousel([
+          { src: '/02_Projects/06_Lumen/10_Lumen.webp', alt: 'Black-and-white portrait of a person wearing sunglasses at a Lumen event.' },
+          { src: '/02_Projects/06_Lumen/11_Lumen.webp', alt: 'DJ wearing a Lumen cap and headphones at the mixing desk.' },
+          { src: '/02_Projects/06_Lumen/12_Lumen.webp', alt: 'Two people enjoying a Lumen event.' },
+          { src: '/02_Projects/06_Lumen/13_Lumen.webp', alt: 'DJ performing in front of projected visuals at a Lumen event.' },
+        ], 'People and performances at Lumen events.', '44.08 / 51.98'), '44.08vw', '51.98vw',
       ),
       text('(the experience)', [
         `The event combined DJ sets, experimental audiovisual work, and interactive installations. Cameras, sensors, projectors, computers, mapping, and sound-reactive visuals transformed the venue into a sequence of environments. In several pieces, the audience’s movement activated or altered the work, making participation part of the final image rather than an interaction added afterward.`,
