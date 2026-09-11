@@ -9,11 +9,26 @@ interface Props {
 
 const { caseStudy } = Astro.props;
 
-const mediaStyle = (media: CaseMedia) => `--media-ratio:${media.ratio}`;
+const ratioValue = (ratio: string) => {
+  const [width, height] = ratio.split('/').map(Number);
+  return width / height;
+};
+
+const mediaStyle = (media: CaseMedia) => {
+  let style = `--media-ratio:${media.ratio}`;
+  if (media.type !== 'video' || !media.sourceRatio) return style;
+
+  const targetRatio = ratioValue(media.ratio);
+  const sourceRatio = ratioValue(media.sourceRatio);
+  const width = sourceRatio > targetRatio ? (sourceRatio / targetRatio) * 100 : 100;
+  const height = sourceRatio < targetRatio ? (targetRatio / sourceRatio) * 100 : 100;
+  style += `;--video-width:${width}%;--video-height:${height}%`;
+  return style;
+};
 const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
-  `--cell-width:${media.width};--cell-height:${media.height};--media-ratio:${media.ratio}`;
+  `--cell-width:${media.width};--cell-height:${media.height};${mediaStyle(media)}`;
 const vimeoUrl = (id: string) =>
-  `https://player.vimeo.com/video/${id}?background=1&autoplay=1&muted=1&loop=1&autopause=0&controls=0&dnt=1`;
+  `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&controls=0&quality=2K`;
 ---
 
 <div class="project-case-page" data-case={caseStudy.slug}>
@@ -669,8 +684,15 @@ const vimeoUrl = (id: string) =>
   .case-text-columns p {
     width: 38.01vw;
     font-size: 2.22vw;
-    line-height: 1;
     letter-spacing: -.01em;
+  }
+
+  .case-intro-columns p {
+    line-height: 1;
+  }
+
+  .case-text-columns p {
+    line-height: .966;
   }
 
   .case-flow {
@@ -737,7 +759,12 @@ const vimeoUrl = (id: string) =>
   }
 
   .case-media-content iframe {
-    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--video-width, 100%);
+    height: var(--video-height, 100%);
+    transform: translate(-50%, -50%);
   }
 
   .case-carousel,
@@ -818,6 +845,10 @@ const vimeoUrl = (id: string) =>
     margin-top: 4.6vw;
   }
 
+  .case-text-content {
+    margin-left: 5.18vw;
+  }
+
   .case-text h2,
   .case-credits h2 {
     font-size: 3.5vw;
@@ -829,16 +860,16 @@ const vimeoUrl = (id: string) =>
   .case-text-lead {
     margin-bottom: 2vw;
     font-size: 2.22vw;
-    line-height: 1;
+    line-height: .966;
     letter-spacing: -.01em;
   }
 
   .case-text-wide-copy {
     width: 77.06vw;
     margin-left: 5.98vw;
-    font-size: 2.22vw;
-    line-height: 1;
-    letter-spacing: -.01em;
+    font-size: 4.03vw;
+    line-height: .868;
+    letter-spacing: -.03em;
   }
 
   .case-credits {
@@ -846,6 +877,8 @@ const vimeoUrl = (id: string) =>
     grid-template-columns: 13vw 1fr;
     align-items: start;
     margin-top: 4.6vw;
+    padding-top: 1.5vw;
+    border-top: 1px solid currentColor;
   }
 
   .case-credit-list {
@@ -1096,6 +1129,14 @@ const vimeoUrl = (id: string) =>
       grid-template-columns: 1fr;
       gap: 12px;
       margin-top: 46px;
+    }
+
+    .case-credits {
+      padding-top: 16px;
+    }
+
+    .case-text-content {
+      margin-left: 0;
     }
 
     .case-text h2,

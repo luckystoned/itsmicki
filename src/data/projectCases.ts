@@ -3,6 +3,7 @@ export type CaseMedia = {
   alt: string;
   src?: string;
   vimeoId?: string;
+  sourceRatio?: string;
   slides?: Array<{
     src: string;
     alt: string;
@@ -54,8 +55,8 @@ const image = (src: string, alt: string, ratio: string, caption?: string): CaseM
   type: 'image', src, alt, ratio, caption,
 });
 
-const video = (vimeoId: string, alt: string, ratio: string, caption?: string): CaseMedia => ({
-  type: 'video', vimeoId, alt, ratio, caption,
+const video = (vimeoId: string, alt: string, ratio: string, sourceRatio: string, caption?: string): CaseMedia => ({
+  type: 'video', vimeoId, alt, ratio, sourceRatio, caption,
 });
 
 const carousel = (
@@ -105,18 +106,18 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       { src: '/02_Projects/01_Winona/02_Winona_Drag.webp', left: '56.3vw', top: '10.5625vw', width: '24.6656vw', rotation: '0deg' },
     ],
     blocks: [
-      single(video('1215371662', 'Winona website motion reel', '1556 / 870')),
+      single(video('1215371662', 'Winona website motion reel', '1556 / 870', '16 / 9')),
       single(image('/02_Projects/01_Winona/02_Winona.webp', 'Winona campaign artwork displayed across a large outdoor wall.', '1556 / 870')),
       pair(
-        video('1215371665', 'Winona digital experience in motion', '54.6737 / 63.01'), '54.6737vw', '63.01vw',
-        video('1215371664', 'Winona product interaction in motion', '40.4862 / 40.2406'), '40.4862vw', '40.2406vw',
+        video('1215371665', 'Winona digital experience in motion', '54.6737 / 63.01', '2160 / 2490'), '54.6737vw', '63.01vw',
+        video('1215371664', 'Winona product interaction in motion', '40.4862 / 40.2406', '1 / 1'), '40.4862vw', '40.2406vw',
       ),
       text('(synopsis)', [
         `After collaborating closely with the marketing team to gain a deeper understanding of the brand, its pain points, and strengths, we embarked on the rebranding project alongside Julia Franceschini, who led the brand's art direction. We held several meetings with Winona's Director of Design and Director of Marketing, where we worked together to define the new brand strategy,`,
         `vision, mission, and how to translate these into visual elements. This collaborative approach ensured that I had the necessary knowledge and understanding to reflect these elements in the new website. I led the art direction for the website, assisting the UX/UI designers in implementing the chosen concept across the extensive scalability of the site's numerous pages.`,
       ]),
       pair(
-        video('1215371663', 'Winona UGC ambassador campaign', '40.5 / 29.7806', 'UGC Campaign_Ambassors'), '40.5vw', '29.7806vw',
+        video('1215371663', 'Winona UGC ambassador campaign', '40.5 / 29.7806', '16 / 9', 'UGC Campaign_Ambassors'), '40.5vw', '29.7806vw',
         carousel([
           { src: '/02_Projects/01_Winona/03_Winona.webp', alt: 'Winona Essential Defense bottle on satin.' },
           { src: '/02_Projects/01_Winona/04_Winona.webp', alt: 'Winona Vaginal Estrogen Cream on a soft chair.' },
@@ -125,16 +126,16 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       ),
       pair(
         image('/02_Projects/01_Winona/06_Winona.webp', 'Winona Redefining Menopause tote bag on a chair.', '40.4769 / 51.9794'), '40.4769vw', '51.9794vw',
-        video('1215371675', 'Winona campaign art direction in motion', '54.6737 / 51.9794'), '54.6737vw', '51.9794vw',
+        video('1215371675', 'Winona campaign art direction in motion', '54.6737 / 51.9794', '2284 / 2160'), '54.6737vw', '51.9794vw',
       ),
-      single(video('1215371679', 'Winona website experience reel', '1556 / 870')),
+      single(video('1215371679', 'Winona website experience reel', '1556 / 870', '16 / 9')),
       text('(conclusion)', [], {
         variant: 'wide',
         wide: `The successful rebranding of Winona's website was a direct result of our close collaboration with their team. By working together, we created a cohesive and engaging online presence that accurately reflects Winona's mission and values, enhancing the user experience and solidifying their digital footprint.`,
       }),
-      single(video('1215371680', 'Winona final brand motion reel', '1556 / 870')),
+      single(video('1215371680', 'Winona final brand motion reel', '1556 / 870', '16 / 9')),
       pair(
-        video('1215371690', 'Winona mobile interface in motion', '40.74 / 51.9794'), '40.74vw', '51.9794vw',
+        video('1215371690', 'Winona mobile interface in motion', '40.74 / 51.9794', '2160 / 2756'), '40.74vw', '51.9794vw',
         carousel([
           { src: '/02_Projects/01_Winona/07_Winona.webp', alt: 'Winona progesterone cream experience on a phone.' },
           { src: '/02_Projects/01_Winona/08_Winona.webp', alt: 'Winona progesterone body cream campaign.' },
@@ -152,11 +153,11 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
     role: 'Art Director &<br>Visual Designer',
     nutshell: `Max Maher is a digital entrepreneur with over 1.1K views on YouTube, who uses his channel to document his business and ideas. He sought assistance in developing a cohesive and dynamic rebrand for his communication platforms, where he presents economics in an engaging and intuitive way.`,
     drags: [
-      { src: '/02_Projects/04_MaxMaher/01_MaxMaher_Drag.webp', left: '62.3%', top: '12.3vw', width: '15.2vw', rotation: '-14.61deg' },
-      { src: '/02_Projects/04_MaxMaher/02_MaxMaher_Drag.webp', left: '77.1%', top: '8.5vw', width: '21.6vw', rotation: '14.31deg' },
+      { src: '/02_Projects/04_MaxMaher/01_MaxMaher_Drag.webp', left: '59%', top: '6.6vw', width: '22.94vw', rotation: '-14.61deg' },
+      { src: '/02_Projects/04_MaxMaher/02_MaxMaher_Drag.webp', left: '74.8%', top: '6.5vw', width: '25.28vw', rotation: '14.31deg' },
     ],
     blocks: [
-      single(video('1215371826', 'Max Maher animated brand reel', '1556 / 386')),
+      single(video('1215371826', 'Max Maher animated brand reel', '1556 / 386', '3892 / 1080')),
       single(image('/02_Projects/04_MaxMaher/01_MaxMaher.webp', 'Max Maher brand guideline overview.', '1556 / 870')),
       single(image('/02_Projects/04_MaxMaher/02_MaxMaher.webp', 'Max Maher typography system featuring Supply Mono, Mondwest and Neue Montreal.', '1556 / 870')),
       text('(synopsis)', [
@@ -165,7 +166,7 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       ]),
       pair(
         image('/02_Projects/04_MaxMaher/03_MaxMaher.webp', 'Pixel icon pack for Max Maher.', '40.5 / 29.78'), '40.5vw', '29.78vw',
-        video('1215371825', 'Max Maher vertical brand animation', '55.26 / 65.17'), '55.26vw', '65.17vw',
+        video('1215371825', 'Max Maher vertical brand animation', '55.26 / 65.17', '2160 / 2488'), '55.26vw', '65.17vw',
       ),
       text('(the challenge)', [], {
         variant: 'wide',
@@ -179,7 +180,7 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         ], 'Max Maher caps, pins and keychain.', '51.36 / 51.98'), '51.36vw', '51.98vw',
         image('/02_Projects/04_MaxMaher/6b_MaxMaher.webp', 'Max Maher campaign graphics held in a hand.', '44.08 / 51.98'), '44.08vw', '51.98vw',
       ),
-      single(video('1215375694', 'Max Maher pixel transition animation', '1556 / 891')),
+      single(video('1215375694', 'Max Maher pixel transition animation', '1556 / 891', '3772 / 2160')),
       single(image('/02_Projects/04_MaxMaher/07_MaxMaher.webp', 'Max Maher branded tote bag photographed in the street.', '1556 / 1358')),
       text('(visual direction)', [
         `The selected direction combines tropical warmth with a distinctly digital structure. A vivid Caribbean palette differentiates the brand from the conservative blues, greens, and dark interfaces common in financial communication. Consistent image treatments create continuity across varied source material, while custom iconography translates recurring economic and technology concepts into a more immediate visual vocabulary.`,
@@ -215,19 +216,19 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
     title: 'Outliant',
     year: '2024',
     role: 'Art Director, Brand<br>Strategist & UX/UI<br>Design Lead',
-    nutshell: `Outliant is a fully remote digital agency that brings together strategy, design, technology, and growth. As the company evolved, a fundamental problem became increasingly visible: it had never clearly defined who it was, how it should position itself, or which part of the market it wanted to own.`,
+    nutshell: `<a href="https://www.outliant.com/" target="_blank" rel="noreferrer">Outliant</a> is a fully remote digital agency that brings together strategy, design, technology, and growth. As the company evolved, a fundamental problem became increasingly visible: it had never clearly defined who it was, how it should position itself, or which part of the market it wanted to own.`,
     drags: [
       { src: '/02_Projects/05_Outliant/01_OTL_Drag.webp', left: '59vw', top: '8vw', width: '21vw', rotation: '10deg' },
       { src: '/02_Projects/05_Outliant/02_OTL_Drag.webp', left: '75vw', top: '14vw', width: '24vw', rotation: '-8deg' },
     ],
     blocks: [
-      single(video('1215371885', 'Outliant hero brand reel', '1556 / 665')),
+      single(video('1215371885', 'Outliant hero brand reel', '1556 / 665', '2530 / 1080')),
       pair(
         image('/02_Projects/05_Outliant/01_OTL.webp', 'A person applying an Outliant Role Creative sticker.', '40.49 / 54.69'), '40.49vw', '54.69vw',
-        video('1215371884', 'Outliant brand system in motion', '54.69 / 54.69'), '54.69vw', '54.69vw',
+        video('1215371884', 'Outliant brand system in motion', '54.69 / 54.69', '1 / 1'), '54.69vw', '54.69vw',
       ),
       pair(
-        video('1215371883', 'Outliant campaign animation', '55.97 / 51.98'), '55.97vw', '51.98vw',
+        video('1215371883', 'Outliant campaign animation', '55.97 / 51.98', '1 / 1'), '55.97vw', '51.98vw',
         image('/02_Projects/05_Outliant/02_OTL.webp', 'Blue Outliant tote bag.', '39.48 / 51.98'), '39.48vw', '51.98vw',
       ),
       text('(synopsis)', [
@@ -256,14 +257,14 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         variant: 'lead',
         lead: `The selected concept—The Professional & Concise Agency—uses simplicity as a sign of confidence. A restrained palette of dark grey, Outliant’s established electric blue, soft neutrals, and white creates a calmer and more intentional foundation for the work to stand out. The freely available Manrope brings clarity and subtle personality to the primary typography, while Fragment Mono introduces a precise technological accent for highlights and coded details without adding licensing costs.`,
       }),
-      single(video('1215371886', 'Outliant website experience', '1556 / 870')),
+      single(video('1215371886', 'Outliant website experience', '1556 / 870', '1546 / 870')),
       text('(digital experience)', [
         `I translated the new positioning and visual direction into a complete website, leading the UX/UI process from structure and interface decisions through final execution. The site became the primary expression of the repositioned brand: a clearer way to explain Outliant’s offer, organize its capabilities, and communicate with a more focused enterprise audience.`,
         `Because Outliant had never worked with a formal design system, I also created its first one from the ground up. I defined reusable foundations, components, patterns, and interaction rules to make the website more consistent and give future digital work a shared, scalable language. Motion principles extended that system into transitions and behaviors, adding rhythm and technological character without compromising clarity.`,
       ]),
       pair(
         image('/02_Projects/05_Outliant/10__OTL.webp', 'Outliant developer department stickers.', '40.74 / 51.98'), '40.74vw', '51.98vw',
-        video('1215371895', 'Outliant digital experience in motion', '54.67 / 51.98'), '54.67vw', '51.98vw',
+        video('1215371895', 'Outliant digital experience in motion', '54.67 / 51.98', '2280 / 2160'), '54.67vw', '51.98vw',
       ),
       text('(conclusion)', [
         `The project resolved more than a visual inconsistency. It gave Outliant a clearer definition of who it was, what it stood for, and how it should position itself in the market. By closing the focus, the brand moved from trying to represent every possible service to presenting a more deliberate and credible proposition for mid-market and enterprise clients.`,
@@ -288,7 +289,7 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       { src: '/02_Projects/06_Lumen/02_Lumen_Drag.webp', left: '59vw', top: '6vw', width: '23vw', rotation: '-10deg' },
     ],
     blocks: [
-      single(video('1215371918', 'Lumen audiovisual event highlight reel', '1556 / 570')),
+      single(video('1215371918', 'Lumen audiovisual event highlight reel', '1556 / 570', '9 / 16')),
       text('(the context)', [
         `The cultural circuit is often geographically concentrated. Artists who work outside the city center face fewer opportunities to exhibit, connect with new audiences, and become part of the conversations that shape contemporary culture. Distance and unfamiliarity can become invisible barriers: what happens outside the established circuit is too easily perceived as secondary, even when the work is rigorous, innovative, and relevant.`,
         `Lumen emerged from the need to question that imbalance. Its purpose was not to imitate a central cultural model in another location but to create a meaningful experience from the territory itself—one capable of introducing audiences to artists, practices, and places they may not otherwise encounter.`,
