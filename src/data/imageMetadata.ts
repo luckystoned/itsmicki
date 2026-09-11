@@ -33,7 +33,7 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/02_Projects/05_Outliant/01_Outliant_Portada.webp': { width: 1600, height: 1844 },
   '/02_Projects/05_Outliant/02_OTL.webp': { width: 1264, height: 1664 },
   '/02_Projects/05_Outliant/02_OTL_Drag.webp': { width: 946, height: 855 },
-  '/02_Projects/05_Outliant/03_OTL.webp': { width: 1296, height: 953 },
+  '/02_Projects/05_Outliant/03_OTL.png': { width: 648, height: 477 },
   '/02_Projects/05_Outliant/04__OTL.webp': { width: 1758, height: 1664 },
   '/02_Projects/05_Outliant/05__OTL.webp': { width: 1758, height: 1664 },
   '/02_Projects/05_Outliant/06__OTL.webp': { width: 1758, height: 1664 },

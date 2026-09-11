@@ -55,13 +55,13 @@ const fashion = {
   <div class="sideb-page">
     <aside class="sideb-mobile-meta" aria-label="Contact and social links">
       <span>SAY HI</span>
-      <a class="sideb-mobile-mail" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
+      <a target="_blank" rel="noopener noreferrer" class="sideb-mobile-mail" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
       <span>SOCIALS</span>
       <span class="sideb-mobile-socials">
-        <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noreferrer">LINKEDIN</a>,
-        <a href="https://www.behance.net/itsmicki" target="_blank" rel="noreferrer">BEHANCE</a>,
-        <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noreferrer">DRIBBBLE</a>,
-        <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noreferrer">INSTAGRAM</a>,
+        <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+        <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
+        <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+        <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
         <span>TIKTOK</span>
       </span>
     </aside>
@@ -75,10 +75,10 @@ const fashion = {
             <div>
               <h2 class="sideb-label">Related Links</h2>
               <p class="sideb-big sideb-related" aria-label="Related profiles">
-                <span class="sideb-pseudo-link">Letterboxd</span><br />
+                <a target="_blank" rel="noopener noreferrer" class="sideb-pseudo-link" href="https://letterboxd.com/mikigalimberti/">Letterboxd</a><br />
                 <span class="sideb-pseudo-link">Lomography</span><br />
-                <span class="sideb-pseudo-link">Indyx</span><br />
-                <span class="sideb-pseudo-link">Substack</span>
+                <a target="_blank" rel="noopener noreferrer" class="sideb-pseudo-link" href="https://opencloset.myindyx.com/user/mickivainilla">Indyx</a><br />
+                <a target="_blank" rel="noopener noreferrer" class="sideb-pseudo-link" href="https://substack.com/@itsmicki">Substack</a>
               </p>
             </div>
             <div>
@@ -158,7 +158,7 @@ const fashion = {
               referrerpolicy="strict-origin-when-cross-origin"
             ></iframe>
           </div>
-          <a href="https://open.spotify.com/playlist/4WzNfZg1nlNPVuNooWu7FZ" target="_blank" rel="noreferrer">Abrir la playlist en Spotify ↗</a>
+          <a href="https://open.spotify.com/playlist/4WzNfZg1nlNPVuNooWu7FZ" target="_blank" rel="noopener noreferrer">Abrir la playlist en Spotify ↗</a>
         </section>
 
         <section class="sideb-section sideb-film-section" aria-labelledby="film-title">
@@ -197,15 +197,15 @@ const fashion = {
       </div>
       <div class="sideb-footer-info" id="sideb-footer-info">
         <span data-sideb-reveal style="--reveal-delay:0ms">DEV BY</span>
-        <a data-sideb-reveal style="--reveal-delay:70ms" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">@LUCKYSTONED</a>
+        <a data-sideb-reveal style="--reveal-delay:70ms" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noopener noreferrer">@LUCKYSTONED</a>
         <span data-sideb-reveal style="--reveal-delay:140ms">SAY HI</span>
-        <a data-sideb-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
+        <a target="_blank" rel="noopener noreferrer" data-sideb-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
         <span data-sideb-reveal style="--reveal-delay:280ms">ALL RIGHTS RESERVED.</span>
         <span class="sideb-footer-socials" data-sideb-reveal style="--reveal-delay:350ms">
-          SOCIALS <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noreferrer">LINKEDIN</a>,
-          <a href="https://www.behance.net/itsmicki" target="_blank" rel="noreferrer">BEHANCE</a>,
-          <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noreferrer">DRIBBBLE</a>,
-          <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noreferrer">INSTAGRAM</a>,
+          SOCIALS <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+          <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
+          <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+          <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
           <span>TIKTOK</span>
         </span>
       </div>
@@ -350,6 +350,12 @@ const fashion = {
       let index = 0;
       let timer: number | undefined;
       let isVisible = false;
+      let dragging = false;
+      let pointerId = -1;
+      let dragStartX = 0;
+      let dragDistance = 0;
+      let wheelTimer: number | undefined;
+      let wheelDistance = 0;
 
       const renderFilm = () => {
         if (!track) return;
@@ -363,7 +369,7 @@ const fashion = {
           if (!fill) return;
           fill.getAnimations().forEach((animation) => animation.cancel());
           fill.style.transform = itemIndex === index && reduceSideBMotion ? 'scaleX(1)' : 'scaleX(0)';
-          if (itemIndex === index && !reduceSideBMotion && isVisible) {
+          if (itemIndex === index && !reduceSideBMotion && isVisible && !dragging && wheelTimer === undefined && !document.hidden) {
             fill.animate(
               [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
               { duration, easing: 'linear', fill: 'forwards' },
@@ -385,16 +391,73 @@ const fashion = {
 
       const startFilm = () => {
         stopFilm();
-        if (reduceSideBMotion || !isVisible || document.hidden || count < 2) return;
+        if (reduceSideBMotion || !isVisible || document.hidden || count < 2 || dragging || wheelTimer !== undefined) return;
         timer = window.setTimeout(() => {
           goTo(index + 1);
           startFilm();
         }, duration);
       };
 
+      filmCarousel.addEventListener('dragstart', (event) => event.preventDefault());
+      filmCarousel.addEventListener('pointerdown', (event) => {
+        if (!event.isPrimary || event.button !== 0 || wheelTimer !== undefined) return;
+        if (!track || count < 2) return;
+        dragging = true;
+        pointerId = event.pointerId;
+        dragStartX = event.clientX;
+        dragDistance = 0;
+        stopFilm();
+        progressItems.forEach((item) => item.querySelector('b')?.getAnimations().forEach((animation) => animation.pause()));
+        track.style.transition = 'none';
+        filmCarousel.setPointerCapture(pointerId);
+      });
+
+      filmCarousel.addEventListener('pointermove', (event) => {
+        if (!track || !dragging || event.pointerId !== pointerId) return;
+        dragDistance = event.clientX - dragStartX;
+        track.style.transform = `translate3d(calc(${-index * 100}% + ${dragDistance}px), 0, 0)`;
+      });
+
+      const finishFilmDrag = (event: PointerEvent) => {
+        if (!track || !dragging || event.pointerId !== pointerId) return;
+        dragging = false;
+        if (filmCarousel.hasPointerCapture(pointerId)) filmCarousel.releasePointerCapture(pointerId);
+        const threshold = Math.min(90, filmCarousel.clientWidth * .14);
+        const direction = Math.abs(dragDistance) >= threshold ? (dragDistance < 0 ? 1 : -1) : 0;
+        track.style.removeProperty('transition');
+        goTo(index + direction);
+        startFilm();
+      };
+
+      filmCarousel.addEventListener('pointerup', finishFilmDrag);
+      filmCarousel.addEventListener('pointercancel', finishFilmDrag);
+      filmCarousel.addEventListener('lostpointercapture', finishFilmDrag);
+      filmCarousel.addEventListener('wheel', (event) => {
+        if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || count < 2 || !track) return;
+        event.preventDefault();
+        if (dragging) return;
+        stopFilm();
+        progressItems.forEach((item) => item.querySelector('b')?.getAnimations().forEach((animation) => animation.pause()));
+        if (wheelTimer !== undefined) window.clearTimeout(wheelTimer);
+        const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? filmCarousel.clientWidth : 1;
+        wheelDistance = Math.max(-filmCarousel.clientWidth, Math.min(filmCarousel.clientWidth, wheelDistance + event.deltaX * unit));
+        // Follow the gesture directly; settle once its momentum events have ended.
+        const previewDistance = (index === 0 && wheelDistance < 0) || (index === count - 1 && wheelDistance > 0) ? wheelDistance * .15 : wheelDistance;
+        track.style.transition = 'none';
+        track.style.transform = `translate3d(calc(${-index * 100}% - ${previewDistance}px), 0, 0)`;
+        wheelTimer = window.setTimeout(() => {
+          wheelTimer = undefined;
+          const direction = Math.abs(wheelDistance) >= Math.min(90, filmCarousel.clientWidth * .14) ? Math.sign(wheelDistance) : 0;
+          wheelDistance = 0;
+          track.style.removeProperty('transition');
+          goTo(index + direction);
+          startFilm();
+        }, 200);
+      }, { passive: false });
+
       const visibilityObserver = new IntersectionObserver(([entry]) => {
         isVisible = entry.isIntersecting;
-        renderFilm();
+        if (!dragging && wheelTimer === undefined) renderFilm();
         startFilm();
       }, { threshold: .08, rootMargin: '10% 0px' });
 
@@ -523,6 +586,7 @@ const fashion = {
 
   .sideb-title {
     margin: clamp(30px, 5.5vw, 88px) 0 0;
+    padding-inline: var(--sideb-pad);
     font-family: 'OT Neue Montreal SideB Extra', Impact, sans-serif;
     font-size: 20.77vw;
     font-weight: 500;
@@ -729,6 +793,13 @@ const fashion = {
     margin-bottom: 7px;
     overflow: hidden;
     align-self: flex-start;
+    touch-action: pan-y;
+    cursor: grab;
+    user-select: none;
+  }
+
+  .sideb-film-carousel:active {
+    cursor: grabbing;
   }
 
   .sideb-music-section {
@@ -827,7 +898,9 @@ const fashion = {
 
   @media (min-width: 761px) {
     .sideb-footer-wordmark {
-      transform: translateY(1.25vw);
+      font-size: var(--footer-wordmark-size);
+      line-height: .8;
+      transform: translateY(var(--footer-wordmark-edge));
     }
   }
 

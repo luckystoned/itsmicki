@@ -47,8 +47,8 @@ const loops = [0, 1, 2];
             </>
           );
           return project.comingSoon
-            ? <div class="carousel-card" style={cardStyle} aria-hidden={loop !== 0 ? 'true' : undefined}>{content}</div>
-            : <a class="carousel-card" style={cardStyle} href={`/projects/${project.slug}`} aria-hidden={loop !== 0 ? 'true' : undefined} tabindex={loop !== 0 ? -1 : undefined}>{content}</a>;
+            ? <div class="carousel-card" data-project-preview="coming" aria-label={`${project.title}, coming soon`} style={cardStyle} aria-hidden={loop !== 0 ? 'true' : undefined}>{content}</div>
+            : <a target="_blank" rel="noopener noreferrer" class="carousel-card" data-project-preview="ready" style={cardStyle} href={`/projects/${project.slug}`} aria-hidden={loop !== 0 ? 'true' : undefined} tabindex={loop !== 0 ? -1 : undefined}>{content}</a>;
         }))}
       </div>
     </section>
@@ -56,12 +56,12 @@ const loops = [0, 1, 2];
     <footer class="home-footer" data-reveal>
       <div class="home-footer-meta">
         <span class="footer-dev-label">DEV BY</span>
-        <a class="footer-dev-name" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">@luckystoned</a>
+        <a class="footer-dev-name" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noopener noreferrer">@luckystoned</a>
         <span class="footer-say-one">SAY HI</span>
         <span class="footer-say-two">SAY HI</span>
-        <a class="footer-mail" href="mailto:hey@itsmicki.com">hey@itsmicki.com</a>
+        <a target="_blank" rel="noopener noreferrer" class="footer-mail" href="mailto:hey@itsmicki.com">hey@itsmicki.com</a>
         <span class="footer-rights">All rights reserved.</span>
-        <span class="home-socials"><span class="socials-label">SOCIALS</span> <span class="socials-links"><a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noreferrer">LinkedIn</a>, <a href="https://www.behance.net/itsmicki" target="_blank" rel="noreferrer">Behance</a>, <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noreferrer">Dribbble</a>, <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noreferrer">Instagram</a>, <span class="tiktok">Tiktok</span></span></span>
+        <span class="home-socials"><span class="socials-label">SOCIALS</span> <span class="socials-links"><a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LinkedIn</a>, <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">Behance</a>, <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">Dribbble</a>, <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">Instagram</a>, <span class="tiktok">Tiktok</span></span></span>
       </div>
       <div class="home-subfooter" aria-label="Itsmicki copyright 2026"><span>Itsmicki</span><span>©2026</span></div>
     </footer>
@@ -80,28 +80,36 @@ const loops = [0, 1, 2];
     const track = document.querySelector<HTMLElement>('[data-carousel-track]');
     if (carousel && track) {
       const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      let offset = 0, cycle = 0, dragging = false, hovered = false, lastX = 0, moved = 0, velocity = 0;
-      const measure = () => { cycle = track.scrollWidth / 3; };
-      const wrap = () => { if (offset <= -cycle) offset += cycle; if (offset > 0) offset -= cycle; };
-      const frame = () => {
+      let offset = 0, cycle = 0, dragging = false, hovered = false, lastX = 0, moved = 0, wheelUntil = 0;
+      let previousTime = 0;
+      let pointerId = -1;
+      const measure = () => { const first = track.children[0] as HTMLElement; const repeat = track.children[track.children.length / 3] as HTMLElement; cycle = repeat.offsetLeft - first.offsetLeft; };
+      const wrap = () => { if (cycle > 0) offset = ((offset % cycle) - cycle) % cycle; };
+      const frame = (time: number) => {
+        const elapsed = previousTime ? Math.min(time - previousTime, 32) / (1000 / 60) : 1;
+        previousTime = time;
         const autoSpeed = matchMedia('(max-width: 760px)').matches ? .5 : .6;
         const designWidth = matchMedia('(max-width: 760px)').matches ? 390 : 1600;
         const scale = Math.min(innerWidth / designWidth, innerHeight / (designWidth === 390 ? 844 : 1033));
-        if (!reduceMotion && !dragging) offset -= autoSpeed * scale * (hovered ? .16 : 1);
-        if (!dragging && Math.abs(velocity) > .05) { offset += velocity; velocity *= .91; }
+        if (!reduceMotion && !dragging && time >= wheelUntil) offset -= autoSpeed * scale * (hovered ? .16 : 1) * elapsed;
         wrap(); track.style.transform = `translate3d(${offset}px, 0, 0)`; requestAnimationFrame(frame);
       };
       measure(); addEventListener('resize', measure); requestAnimationFrame(frame);
       carousel.addEventListener('mouseenter', () => { hovered = true; });
       carousel.addEventListener('mouseleave', () => { hovered = false; });
-      carousel.addEventListener('pointerdown', (event) => { dragging = true; moved = 0; lastX = event.clientX; carousel.setPointerCapture(event.pointerId); });
-      carousel.addEventListener('pointermove', (event) => { if (!dragging) return; const dx = event.clientX - lastX; lastX = event.clientX; moved += Math.abs(dx); offset += dx; velocity = dx * 1.15; wrap(); });
-      const release = () => { dragging = false; };
-      carousel.addEventListener('pointerup', release); carousel.addEventListener('pointercancel', release);
+      carousel.addEventListener('dragstart', (event) => event.preventDefault());
+      carousel.addEventListener('pointerdown', (event) => { if (!event.isPrimary || event.button !== 0) return; dragging = true; pointerId = event.pointerId; moved = 0; lastX = event.clientX; });
+      carousel.addEventListener('pointermove', (event) => { if (!dragging || event.pointerId !== pointerId) return; const dx = event.clientX - lastX; lastX = event.clientX; moved += Math.abs(dx); if (moved > 6 && !carousel.hasPointerCapture(pointerId)) carousel.setPointerCapture(pointerId); offset += dx; wrap(); });
+      const release = (event: PointerEvent) => { if (event.pointerId === pointerId) dragging = false; };
+      window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); carousel.addEventListener('lostpointercapture', release);
       carousel.addEventListener('click', (event) => { if (moved > 6) event.preventDefault(); }, true);
       carousel.addEventListener('wheel', (event) => {
         const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-        velocity -= delta * .12; offset -= delta * 1.1; wrap(); event.preventDefault();
+        event.preventDefault();
+        wheelUntil = performance.now() + 200;
+        if (dragging) return;
+        const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? carousel.clientWidth : 1;
+        offset -= delta * unit; wrap();
       }, { passive: false });
     }
   </script>
@@ -176,12 +184,13 @@ const loops = [0, 1, 2];
     .carousel-card:hover img, .carousel-card:focus-visible img { transform: none; }
 
     .home-footer { position: absolute; z-index: auto; inset: 0; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; pointer-events: none; }
-    .home-subfooter { position: absolute; z-index: 1; inset: 0; display: block; color: #2e2e2e; font-size: min(583.223px, 36.451437vw, 56.459148svh); font-weight: 400; line-height: .8; letter-spacing: -.04em; }
-    .home-subfooter span { position: absolute; bottom: 0; transform: translateY(min(20px, 1.25vw, 1.936108svh)); }
+    .home-subfooter { position: absolute; z-index: 1; inset: 0; display: block; color: #2e2e2e; font-size: var(--footer-wordmark-size); font-weight: 500; line-height: .8; letter-spacing: -.04em; }
+    .home-subfooter span { position: absolute; bottom: 0; transform: translateY(var(--footer-wordmark-edge)); }
     .home-subfooter span:first-child { left: max(-22.69px, -1.418125vw, -2.196515svh); margin: 0; }
     .home-subfooter span:last-child { right: max(-22px, -1.375vw, -2.129719svh); margin: 0; }
 
-    .home-footer-meta { position: absolute; z-index: 3; inset: auto 0 min(86.46px, 5.40375vw, 8.369797svh); display: block; padding: 0; font-size: min(21px, 1.3125vw, 2.032914svh); font-weight: 400; line-height: 1; letter-spacing: -.02em; pointer-events: auto; }
+    .home-footer-meta { position: absolute; z-index: 3; inset: auto 0 min(86.46px, 5.40375vw, 8.369797svh); display: block; padding: 0; font-size: min(21px, 1.3125vw, 2.032914svh); font-weight: 400; line-height: 1; letter-spacing: -.02em; pointer-events: none; }
+    .home-footer-meta a { pointer-events: auto; }
     .home-footer-meta > * { position: absolute; bottom: 0; justify-self: auto; padding: min(1px, .0625vw, .096805svh) 0 0; }
     .footer-dev-label { left: 0; }
     .footer-dev-name { left: min(66.03px, 4.126875vw, 6.392062svh); }
@@ -218,7 +227,8 @@ const loops = [0, 1, 2];
     .carousel-card:active img { transform: scale(1.394); }
 
     .home-footer { position: absolute; z-index: auto; inset: 0; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; pointer-events: none; }
-    .home-footer-meta { position: absolute; z-index: 3; inset: 0; display: block; padding: 0; color: #2e2e2e; font-size: min(16px, 4.102564cqw); font-weight: 400; line-height: normal; letter-spacing: -.02em; pointer-events: auto; }
+    .home-footer-meta { position: absolute; z-index: 3; inset: 0; display: block; padding: 0; color: #2e2e2e; font-size: min(16px, 4.102564cqw); font-weight: 400; line-height: normal; letter-spacing: -.02em; pointer-events: none; }
+    .home-footer-meta a { pointer-events: auto; }
     .home-footer-meta > * { position: absolute; width: fit-content; padding: 0; white-space: nowrap; }
     .footer-dev-label, .footer-dev-name, .footer-say-two, .footer-rights { display: none; }
     .home-footer-meta > .footer-say-one { top: min(8px, 2.051282cqw); left: 0; background: transparent; color: #2e2e2e; }

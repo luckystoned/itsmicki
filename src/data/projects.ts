@@ -87,7 +87,7 @@ export const projects: Project[] = [
       { type: 'video', vimeoId: '1215371883', alt: 'Outliant motion identity 03' },
       { type: 'video', vimeoId: '1215371886', alt: 'Outliant motion identity 04' },
       { type: 'video', vimeoId: '1215371895', alt: 'Outliant motion identity 05' },
-      { type: 'image', src: '/02_Projects/05_Outliant/03_OTL.webp', alt: 'Outliant digital detail', ratio: 'portrait' },
+      { type: 'image', src: '/02_Projects/05_Outliant/03_OTL.png', alt: 'Outliant digital detail', ratio: 'portrait' },
       { type: 'image', src: '/02_Projects/05_Outliant/07__OTL.webp', alt: 'Outliant web experience', ratio: 'wide' },
     ],
   },

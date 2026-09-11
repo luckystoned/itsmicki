@@ -35,15 +35,15 @@ const vimeoUrl = (id: string) =>
   <aside class="case-mobile-meta" aria-label="Contact and social links">
     <span class="case-mobile-column">
       <span>SAY HI</span>
-      <a href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
+      <a target="_blank" rel="noopener noreferrer" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
     </span>
     <span class="case-mobile-column case-mobile-column-right">
       <span>SOCIALS</span>
       <span>
-        <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noreferrer">LINKEDIN</a>,
-        <a href="https://www.behance.net/itsmicki" target="_blank" rel="noreferrer">BEHANCE</a>,<br />
-        <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noreferrer">DRIBBBLE</a>,
-        <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noreferrer">INSTAGRAM</a>, TIKTOK
+        <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+        <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,<br />
+        <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+        <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>, TIKTOK
       </span>
     </span>
   </aside>
@@ -291,6 +291,13 @@ const vimeoUrl = (id: string) =>
     let activeIndex = 0;
     let timer: number | undefined;
     let isVisible = false;
+    let dragging = false;
+    let pointerId = -1;
+    let dragStartX = 0;
+    let dragDistance = 0;
+    let moved = false;
+    let wheelTimer: number | undefined;
+    let wheelDistance = 0;
 
     if (!track || slides.length < 2) return;
 
@@ -303,7 +310,7 @@ const vimeoUrl = (id: string) =>
         if (!fill) return;
         fill.getAnimations().forEach((animation) => animation.cancel());
         fill.style.transform = 'scaleX(0)';
-        if (index === activeIndex && !reduceCaseMotion && isVisible) {
+        if (index === activeIndex && !reduceCaseMotion && isVisible && !dragging && wheelTimer === undefined && !document.hidden) {
           fill.animate(
             [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
             { duration, easing: 'linear', fill: 'forwards' },
@@ -319,7 +326,7 @@ const vimeoUrl = (id: string) =>
 
     const start = () => {
       stop();
-      if (reduceCaseMotion || !isVisible || document.hidden) return;
+      if (reduceCaseMotion || !isVisible || document.hidden || dragging || wheelTimer !== undefined) return;
       timer = window.setTimeout(() => {
         activeIndex = (activeIndex + 1) % slides.length;
         paint();
@@ -327,9 +334,74 @@ const vimeoUrl = (id: string) =>
       }, duration);
     };
 
+    const goTo = (nextIndex: number) => {
+      activeIndex = (nextIndex + slides.length) % slides.length;
+      track.style.removeProperty('transition');
+      paint();
+      start();
+    };
+
+    carousel.addEventListener('dragstart', (event) => event.preventDefault());
+    carousel.addEventListener('pointerdown', (event) => {
+      if (!event.isPrimary || event.button !== 0 || wheelTimer !== undefined) return;
+      dragging = true;
+      pointerId = event.pointerId;
+      dragStartX = event.clientX;
+      dragDistance = 0;
+      moved = false;
+      stop();
+      progressItems.forEach((item) => item.querySelector('b')?.getAnimations().forEach((animation) => animation.pause()));
+      track.style.transition = 'none';
+      carousel.setPointerCapture(pointerId);
+    });
+
+    carousel.addEventListener('pointermove', (event) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      dragDistance = event.clientX - dragStartX;
+      moved ||= Math.abs(dragDistance) > 6;
+      track.style.transform = `translate3d(calc(${-activeIndex * 100}% + ${dragDistance}px), 0, 0)`;
+    });
+
+    const finishDrag = (event: PointerEvent) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      dragging = false;
+      if (carousel.hasPointerCapture(pointerId)) carousel.releasePointerCapture(pointerId);
+      const threshold = Math.min(90, carousel.clientWidth * .14);
+      const direction = Math.abs(dragDistance) >= threshold ? (dragDistance < 0 ? 1 : -1) : 0;
+      goTo(activeIndex + direction);
+    };
+
+    carousel.addEventListener('pointerup', finishDrag);
+    carousel.addEventListener('pointercancel', finishDrag);
+    carousel.addEventListener('lostpointercapture', finishDrag);
+    carousel.addEventListener('click', (event) => {
+      if (moved) event.preventDefault();
+    }, true);
+    carousel.addEventListener('wheel', (event) => {
+      if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || slides.length < 2 || !track) return;
+      event.preventDefault();
+      if (dragging) return;
+      stop();
+      progressItems.forEach((item) => item.querySelector('b')?.getAnimations().forEach((animation) => animation.pause()));
+      if (wheelTimer !== undefined) window.clearTimeout(wheelTimer);
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? carousel.clientWidth : 1;
+      wheelDistance = Math.max(-carousel.clientWidth, Math.min(carousel.clientWidth, wheelDistance + event.deltaX * unit));
+      // Follow the gesture directly; settle once its momentum events have ended.
+      const previewDistance = (activeIndex === 0 && wheelDistance < 0) || (activeIndex === slides.length - 1 && wheelDistance > 0) ? wheelDistance * .15 : wheelDistance;
+      track.style.transition = 'none';
+      track.style.transform = `translate3d(calc(${-activeIndex * 100}% - ${previewDistance}px), 0, 0)`;
+      wheelTimer = window.setTimeout(() => {
+        wheelTimer = undefined;
+        const direction = Math.abs(wheelDistance) >= Math.min(90, carousel.clientWidth * .14) ? Math.sign(wheelDistance) : 0;
+        wheelDistance = 0;
+        track.style.removeProperty('transition');
+        goTo(activeIndex + direction);
+      }, 200);
+    }, { passive: false });
+
     const visibilityObserver = new IntersectionObserver(([entry]) => {
       isVisible = entry.isIntersecting;
-      paint();
+      if (!dragging && wheelTimer === undefined) paint();
       start();
     }, { threshold: .08, rootMargin: '10% 0px' });
 
@@ -448,18 +520,20 @@ const vimeoUrl = (id: string) =>
 
     strip.addEventListener('mouseenter', () => { hovering = true; });
     strip.addEventListener('mouseleave', () => { hovering = false; });
+    strip.addEventListener('dragstart', (event) => event.preventDefault());
     strip.addEventListener('pointerdown', (event) => {
+      if (!event.isPrimary || event.button !== 0) return;
       dragging = true;
       moved = false;
       pointerId = event.pointerId;
       pointerStart = event.clientX;
       offsetStart = offset;
-      strip.setPointerCapture(pointerId);
     });
     strip.addEventListener('pointermove', (event) => {
       if (!dragging || event.pointerId !== pointerId) return;
       const distance = event.clientX - pointerStart;
       moved ||= Math.abs(distance) > 6;
+      if (moved && !strip.hasPointerCapture(pointerId)) strip.setPointerCapture(pointerId);
       offset = offsetStart + distance;
       if (setWidth) {
         while (offset <= -setWidth) offset += setWidth;
@@ -472,8 +546,9 @@ const vimeoUrl = (id: string) =>
       dragging = false;
       if (strip.hasPointerCapture(pointerId)) strip.releasePointerCapture(pointerId);
     };
-    strip.addEventListener('pointerup', endStripDrag);
-    strip.addEventListener('pointercancel', endStripDrag);
+    window.addEventListener('pointerup', endStripDrag);
+    window.addEventListener('pointercancel', endStripDrag);
+    strip.addEventListener('lostpointercapture', endStripDrag);
     strip.addEventListener('click', (event) => {
       if (moved) {
         event.preventDefault();
@@ -649,6 +724,10 @@ const vimeoUrl = (id: string) =>
     margin-top: 2.5vw;
   }
 
+  .project-case-page[data-case='winona'] .case-intro {
+    margin-top: 3.25vw;
+  }
+
   .case-label {
     margin-bottom: 2.92vw;
     font-size: 1.5vw;
@@ -776,7 +855,13 @@ const vimeoUrl = (id: string) =>
   .case-carousel {
     position: relative;
     overflow: hidden;
-    pointer-events: none;
+    touch-action: pan-y;
+    cursor: grab;
+    user-select: none;
+  }
+
+  .case-carousel:active {
+    cursor: grabbing;
   }
 
   .case-carousel-track {
@@ -925,6 +1010,40 @@ const vimeoUrl = (id: string) =>
     scale: 1;
   }
 
+  @media (min-width: 761px) {
+    .project-case-page[data-case='winona'] .case-credit-list {
+      font-size: 2.2175vw;
+      line-height: .966;
+      letter-spacing: -.01em;
+    }
+
+    .project-case-page[data-case='outliant'] .case-text h2,
+    .project-case-page[data-case='outliant'] .case-credits h2 {
+      font-size: 2.2175vw;
+      line-height: .966;
+      letter-spacing: -.01em;
+    }
+
+    .project-case-page[data-case='outliant'] .case-text-lead {
+      width: 77.0625vw;
+      font-size: 3.5331vw;
+      line-height: .991;
+      letter-spacing: -.03em;
+    }
+
+    .project-case-page[data-case='outliant'] .case-credit-list {
+      font-size: 2.2175vw;
+      line-height: .966;
+      letter-spacing: -.01em;
+    }
+
+    .project-case-page[data-case='outliant'] .case-credits {
+      border-top-width: .5px;
+      border-top-color: #2e2e2e;
+    }
+
+  }
+
   @media (max-width: 760px) {
     body:has(.project-case-page) .site-header {
       display: none;
@@ -1050,6 +1169,10 @@ const vimeoUrl = (id: string) =>
       margin-top: 30px;
       margin-right: auto;
       margin-left: auto;
+    }
+
+    .project-case-page[data-case='winona'] .case-intro {
+      margin-top: 30px;
     }
 
     .case-label {

@@ -1,4 +1,6 @@
 :root {
+  --footer-wordmark-size: min(37.4vw, 60svh);
+  --footer-wordmark-edge: .045em;
   --bg: #f1eee7;
   --fg: #11110f;
   --muted: #77746d;
@@ -174,3 +176,40 @@ p, h1, h2, figure, dl, dd { margin: 0; }
   .page-title { min-height: 54svh; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } [data-reveal] { opacity: 1; transform: none; } }
+
+/* Text links retain their underline offset and gain weight on interaction. */
+a[href] {
+  transition-property: text-decoration-thickness;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(.19, 1, .22, 1);
+}
+@media (hover: hover) {
+  body a[href]:hover {
+    text-decoration-thickness: max(1.5px, .06em) !important;
+  }
+}
+body a[href]:focus-visible {
+  text-decoration-thickness: max(1.5px, .06em) !important;
+}
+
+/* Keep parentheses outside the two underline segments, like See All (+). */
+.segmented-link .link-underline-part { position: relative; }
+.segmented-link .link-underline-part::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -.08em;
+  left: 0;
+  height: 3px;
+  background: currentColor;
+  transform: scaleY(1);
+  transform-origin: center bottom;
+  transition: transform 180ms cubic-bezier(.19, 1, .22, 1);
+}
+@media (hover: hover) {
+  .segmented-link:hover .link-underline-part::after { transform: scaleY(1.5); }
+}
+.segmented-link:focus-visible .link-underline-part::after { transform: scaleY(1.5); }
+@media (prefers-reduced-motion: reduce) {
+  a[href], .segmented-link .link-underline-part::after { transition-duration: 0s; }
+}

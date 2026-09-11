@@ -65,11 +65,11 @@ const { currentSlug } = Astro.props;
 const publishedCaseSlugs = new Set(Object.keys(projectCases));
 ---
 
-<div class="case-more">
+<div class="case-more" data-current-case={currentSlug}>
   <div class="case-more-divider" data-case-text-reveal></div>
   <div class="case-more-heading">
     <h2 data-case-text-reveal>Pss, let’s continue</h2>
-    <a href="/projects" data-case-text-reveal style="--reveal-delay:70ms">See All (+)</a>
+    <a target="_blank" rel="noopener noreferrer" href="/projects" data-case-text-reveal style="--reveal-delay:70ms"><span class="case-more-link-label">See All</span> (<span class="case-more-link-plus">+</span>)</a>
   </div>
 
   <div class="case-strip" data-case-strip data-case-text-reveal aria-label="More selected projects">
@@ -97,11 +97,11 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
               </>
             );
             return href ? (
-              <a class:list={['case-strip-card', { current: currentSlug === card.slug }]} href={href} style={style} tabindex={setIndex === 1 ? '-1' : undefined}>
+              <a target="_blank" rel="noopener noreferrer" class:list={['case-strip-card', { current: currentSlug === card.slug }]} data-project-preview="ready" href={href} style={style} tabindex={setIndex === 1 ? '-1' : undefined}>
                 {content}
               </a>
             ) : (
-              <div class="case-strip-card is-coming" style={style}>{content}</div>
+              <div class="case-strip-card is-coming" data-project-preview="coming" aria-label={`${card.slug}, coming soon`} style={style}>{content}</div>
             );
           })}
         </div>
@@ -117,15 +117,15 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
   </div>
   <div class="case-footer-info">
     <span data-case-footer-reveal style="--reveal-delay:0ms">DEV BY</span>
-    <a data-case-footer-reveal style="--reveal-delay:70ms" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">@LUCKYSTONED</a>
+    <a data-case-footer-reveal style="--reveal-delay:70ms" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noopener noreferrer">@LUCKYSTONED</a>
     <span data-case-footer-reveal style="--reveal-delay:140ms">SAY HI</span>
-    <a data-case-footer-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
+    <a target="_blank" rel="noopener noreferrer" data-case-footer-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
     <span data-case-footer-reveal style="--reveal-delay:280ms">ALL RIGHTS RESERVED.</span>
     <span class="case-footer-socials" data-case-footer-reveal style="--reveal-delay:350ms">
-      SOCIALS <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noreferrer">LINKEDIN</a>,
-      <a href="https://www.behance.net/itsmicki" target="_blank" rel="noreferrer">BEHANCE</a>,
-      <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noreferrer">DRIBBBLE</a>,
-      <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noreferrer">INSTAGRAM</a>,
+      SOCIALS <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+      <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
+      <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+      <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
       <span>TIKTOK</span>
     </span>
   </div>
@@ -159,9 +159,38 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
 
   .case-more-heading a {
     font-size: 2.19vw;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: .08em;
+    text-decoration: none;
+  }
+
+  .case-more-link-label,
+  .case-more-link-plus {
+    position: relative;
+  }
+
+  .case-more-link-label::after,
+  .case-more-link-plus::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: -.08em;
+    left: 0;
+    height: 3px;
+    background: currentColor;
+    transform: scaleY(1);
+    transform-origin: center bottom;
+    transition: transform 180ms cubic-bezier(.19, 1, .22, 1);
+  }
+
+  @media (hover: hover) {
+    .case-more-heading a:hover .case-more-link-label::after,
+    .case-more-heading a:hover .case-more-link-plus::after {
+      transform: scaleY(1.5);
+    }
+  }
+
+  .case-more-heading a:focus-visible .case-more-link-label::after,
+  .case-more-heading a:focus-visible .case-more-link-plus::after {
+    transform: scaleY(1.5);
   }
 
   .case-strip {
@@ -234,16 +263,16 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     transition: opacity .4s cubic-bezier(.16, 1, .3, 1), transform .4s cubic-bezier(.16, 1, .3, 1);
   }
 
-  .case-strip-card[href]:is(:hover, :focus-visible) .case-strip-picture {
+  .case-strip-card:is(:hover, :focus-visible) .case-strip-picture {
     border-radius: 10vw;
     transform: translateY(1.8vw);
   }
 
-  .case-strip-card[href]:is(:hover, :focus-visible) .case-strip-picture img {
+  .case-strip-card:is(:hover, :focus-visible) .case-strip-picture img {
     transform: scale(1.18);
   }
 
-  .case-strip-card[href]:is(:hover, :focus-visible) .case-strip-name {
+  .case-strip-card:is(:hover, :focus-visible) .case-strip-name {
     opacity: 1;
     transform: none;
   }
@@ -268,8 +297,15 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
   }
 
   @media (min-width: 761px) {
+    .case-more[data-current-case='outliant'] .case-more-divider {
+      height: .5px;
+      background: #2e2e2e;
+    }
+
     .case-footer-wordmark {
-      transform: translateY(1.25vw);
+      font-size: var(--footer-wordmark-size);
+      line-height: .8;
+      transform: translateY(var(--footer-wordmark-edge));
     }
   }
 
@@ -379,7 +415,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
       font-size: 9px;
     }
 
-    .case-strip-card[href]:is(:hover, :focus-visible) .case-strip-picture {
+    .case-strip-card:is(:hover, :focus-visible) .case-strip-picture {
       border-radius: 80px;
       transform: translateY(12px);
     }

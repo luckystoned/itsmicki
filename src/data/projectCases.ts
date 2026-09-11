@@ -236,7 +236,7 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         `Based on those findings, I reframed Outliant’s positioning around a clearer ambition: to become a trusted digital partner for mid-market and enterprise clients. This shift informed a visual system designed to feel mature, concise, and credible while preserving the energy, optimism, and technological fluency at the core of the company. Throughout the project, Skylar, Chief of Officers, and Michelle, Project Managers Lead, provided ongoing stakeholder feedback. The final direction was reviewed and approved by Outliant’s founders during the closing meetings.`,
       ]),
       pair(
-        image('/02_Projects/05_Outliant/03_OTL.webp', 'Outliant business card system.', '40.5 / 29.78'), '40.5vw', '29.78vw',
+        image('/02_Projects/05_Outliant/03_OTL.png', 'Outliant business card system.', '40.5 / 29.78'), '40.5vw', '29.78vw',
         carousel([
           { src: '/02_Projects/05_Outliant/04__OTL.webp', alt: 'Outliant campaign billboard.' },
           { src: '/02_Projects/05_Outliant/05__OTL.webp', alt: 'Outliant recruitment story on a phone beside a branded laptop.' },

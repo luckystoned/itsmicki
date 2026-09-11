@@ -1,0 +1,49 @@
+<div class="project-pointer" data-project-pointer aria-hidden="true" hidden>
+  <img class="project-pointer-label" src="/cursors/prepping-it.svg" alt="" width="131" height="61" />
+  <img class="project-pointer-arrow" src="/cursors/view.png" alt="" width="52" height="96" />
+</div>
+
+<script>
+  const pointer = document.querySelector<HTMLElement>('[data-project-pointer]');
+  if (pointer) {
+    const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+    const hide = () => {
+      pointer.hidden = true;
+      document.documentElement.classList.remove('project-pointer-active');
+    };
+    document.addEventListener('pointermove', (event) => {
+      const card = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-project-preview]') : null;
+      if (!finePointer.matches || event.pointerType === 'touch' || !card) { hide(); return; }
+      pointer.hidden = false;
+      pointer.classList.toggle('is-coming', card.dataset.projectPreview === 'coming');
+      pointer.classList.toggle('label-right', event.clientX < 145);
+      pointer.classList.toggle('label-below', event.clientY < 65);
+      pointer.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0)`;
+      document.documentElement.classList.add('project-pointer-active');
+    });
+    document.addEventListener('pointerout', (event) => { if (!event.relatedTarget) hide(); });
+    window.addEventListener('blur', hide);
+    window.addEventListener('scroll', hide, { passive: true });
+    finePointer.addEventListener('change', hide);
+  }
+</script>
+
+<style>
+  .project-pointer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2147483647;
+    pointer-events: none;
+    width: 52px;
+    height: 95.85px;
+  }
+  .project-pointer[hidden] { display: none; }
+  .project-pointer-arrow { width: 52px; height: 95.85px; image-rendering: pixelated; }
+  .project-pointer-label { position: absolute; right: 58px; bottom: 100%; width: 131px; height: 61px; max-width: none; display: none; }
+  .project-pointer.is-coming .project-pointer-label { display: block; }
+  .project-pointer.label-right .project-pointer-label { right: auto; left: 58px; }
+  .project-pointer.label-below .project-pointer-label { bottom: auto; top: 0; }
+  :global(html.project-pointer-active [data-project-preview]),
+  :global(html.project-pointer-active [data-project-preview] *) { cursor: none !important; }
+</style>

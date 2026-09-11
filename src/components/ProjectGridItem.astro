@@ -22,7 +22,7 @@ if (!cover || !dimensions) {
 
 <article class:list={['project-card', { 'is-coming': project.comingSoon }]} style={style}>
   {href ? (
-    <a class="project-card-inner" href={href} aria-label={`View ${project.title} case study`}>
+    <a target="_blank" rel="noopener noreferrer" class="project-card-inner" data-project-preview="ready" href={href} aria-label={`View ${project.title} case study`}>
       <span class="project-visual">
         <img
           src={cover}
@@ -37,7 +37,7 @@ if (!cover || !dimensions) {
       <span class="project-label">{label}</span>
     </a>
   ) : (
-    <div class="project-card-inner" aria-label={`${project.title}, coming soon`}>
+    <div class="project-card-inner" data-project-preview="coming" aria-label={`${project.title}, coming soon`}>
       <span class="project-visual">
         <img
           src={cover}
