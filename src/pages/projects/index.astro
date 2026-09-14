@@ -78,7 +78,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
         <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
         <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
         <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
-        <span>TIKTOK</span>
+        <span class="social-placeholder-link">TIKTOK</span>
       </span>
     </div>
 
@@ -513,25 +513,31 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
   }
 
   @media (max-width: 760px) {
+    .projects-page {
+      container-type: inline-size;
+    }
+
     body:has(.projects-page) {
-      padding-bottom: calc(58px + env(safe-area-inset-bottom));
+      padding-bottom: 0;
     }
 
     body:has(.projects-page) .site-header {
-      position: fixed;
-      z-index: 40;
-      inset: auto 0 max(13px, env(safe-area-inset-bottom));
-      display: flex;
-      justify-content: center;
+      position: fixed !important;
+      z-index: 2000 !important;
+      inset: auto 0 0 !important;
+      display: flex !important;
+      justify-content: space-between;
       align-items: flex-start;
-      gap: 3.076923vw;
-      width: 100vw;
-      min-height: 0;
-      padding: 0;
-      background: transparent;
-      font-size: 6.794359vw;
-      line-height: 1;
-      pointer-events: none;
+      gap: min(12px, 3.076923cqw);
+      width: 100vw !important;
+      height: auto !important;
+      min-height: 0 !important;
+      padding: min(8px, 2.051282cqw) min(10px, 2.564103cqw) !important;
+      background: var(--projects-paper) !important;
+      font-size: min(26.498px, 6.794359cqw);
+      line-height: normal;
+      letter-spacing: -.02em;
+      pointer-events: auto !important;
     }
 
     body:has(.projects-page) .site-header .wordmark,
@@ -540,7 +546,8 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     }
 
     body:has(.projects-page) .site-header nav {
-      gap: 3.076923vw;
+      flex: 0 0 auto;
+      gap: min(12px, 3.076923cqw);
     }
 
     body:has(.projects-page) .site-header a {
@@ -550,15 +557,15 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     .projects-mobile-meta {
       position: absolute;
       z-index: 30;
-      top: max(2.051282vw, env(safe-area-inset-top));
+      top: max(min(8px, 2.051282cqw), env(safe-area-inset-top));
       right: env(safe-area-inset-right);
       left: env(safe-area-inset-left);
       display: grid;
       grid-template-columns: auto 1fr;
       align-items: start;
       color: var(--projects-ink);
-      font-size: 4.102564vw;
-      line-height: 1;
+      font-size: min(16px, 4.102564cqw);
+      line-height: normal;
       letter-spacing: -.02em;
       text-transform: uppercase;
     }
@@ -580,33 +587,40 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     }
 
     .projects-hero {
-      height: 64.615385vw;
+      height: min(260px, 66.666667cqw);
     }
 
     .projects-hero h1 {
-      top: 24.615385vw;
-      left: 3.076923vw;
-      font-size: 24.875897vw;
+      top: min(96px, 24.615385cqw);
+      left: min(12px, 3.076923cqw);
+      width: min(234.146px, 60.037538cqw);
+      font-size: min(97.016px, 24.875897cqw);
+      line-height: normal;
       transform: none;
+      white-space: normal;
     }
 
     .projects-hero p {
-      top: 35.95vw;
-      left: auto;
-      right: 5.8vw;
-      font-size: 10.721538vw;
+      top: min(149px, 38.205128cqw);
+      right: auto;
+      left: min(253.902px, 65.103077cqw);
+      width: min(100.918px, 25.87641cqw);
+      font-size: min(41.814px, 10.721538cqw);
+      line-height: normal;
       transform: none;
     }
 
     .projects-grid {
+      box-sizing: border-box;
       align-items: stretch;
-      gap: 15.384615vw;
-      width: calc(100% - 28px);
+      gap: min(64px, 16.410256cqw);
+      width: 100%;
+      margin: 0;
+      padding: 0 min(12px, 3.076923cqw) min(64px, 16.410256cqw);
     }
 
     .projects-row {
-      flex-direction: column;
-      gap: 15.384615vw;
+      display: contents;
     }
 
     .project-card {
@@ -614,26 +628,55 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     }
 
     .project-card-inner {
-      gap: 1vw;
+      gap: min(16px, 4.102564cqw);
     }
 
     .project-visual {
       height: auto;
-      aspect-ratio: var(--project-ratio);
     }
 
     .project-label {
-      font-size: 3.6vw;
+      font-size: min(12px, 3.076923cqw);
+      line-height: min(14px, 3.589744cqw);
+      letter-spacing: -.01em;
+      white-space: nowrap;
+    }
+
+    .projects-row-primary .project-card:nth-child(1) .project-visual,
+    .projects-row-secondary .project-card:nth-child(1) .project-visual {
+      aspect-ratio: 366 / 484.802429;
+    }
+
+    .projects-row-primary .project-card:nth-child(2) .project-visual,
+    .projects-row-secondary .project-card:nth-child(2) .project-visual {
+      aspect-ratio: 366 / 363.78186;
+    }
+
+    .projects-grid > .project-card:nth-of-type(1) .project-visual,
+    .projects-grid > .project-card:nth-of-type(3) .project-visual {
+      aspect-ratio: 366 / 241.768295;
+    }
+
+    .projects-grid > .project-card:nth-of-type(2) .project-visual {
+      aspect-ratio: 366 / 363.042419;
     }
 
     .projects-footer {
-      margin-top: 14vw;
-      padding-bottom: calc(18px + env(safe-area-inset-bottom));
+      height: min(169px, 43.333333cqw);
+      margin-top: 0;
+      padding: 0;
+      z-index: 2;
+      background: var(--projects-paper);
     }
 
     .projects-footer-wordmark {
-      font-size: 45.322051vw;
-      line-height: .82;
+      position: absolute;
+      top: min(2px, .512821cqw);
+      right: min(-8px, -2.051282cqw);
+      left: min(-8.369px, -2.145897cqw);
+      justify-content: space-between;
+      font-size: min(176.756px, 45.322051cqw);
+      line-height: normal;
     }
 
     .projects-footer-wordmark span:first-child {

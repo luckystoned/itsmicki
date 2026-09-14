@@ -203,6 +203,12 @@ p, h1, h2, figure, dl, dd { margin: 0; }
     padding-right: max(var(--gutter), env(safe-area-inset-right)) !important;
     padding-bottom: 14px !important;
     padding-left: max(var(--gutter), env(safe-area-inset-left)) !important;
+    transition: transform 320ms cubic-bezier(.19, 1, .22, 1) !important;
+    will-change: transform;
+  }
+
+  body:not(:has(.home-stage)) .site-header[data-header].is-scroll-hidden {
+    transform: translate3d(0, calc(100% + env(safe-area-inset-bottom)), 0) !important;
   }
 }
 
@@ -219,6 +225,16 @@ a[href] {
 }
 body a[href]:focus-visible {
   text-decoration-thickness: max(1.5px, .06em) !important;
+}
+
+/* Visual placeholder for a social profile whose destination is still pending. */
+.social-placeholder-link {
+  color: var(--bg, #fafafa);
+  background: var(--ink, #2e2e2e);
+  font-weight: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .08em;
 }
 
 /* Keep parentheses outside the two underline segments, like See All (+). */

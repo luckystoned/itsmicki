@@ -9,3 +9,27 @@ const { active = '' } = Astro.props;
     <a class:list={{ active: active === 'sideb' }} href="/sideb">(SIDE B)</a>
   </nav>
 </header>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-header]');
+  const mobile = matchMedia('(max-width: 800px)');
+  let previousY = window.scrollY;
+
+  const updateHeader = () => {
+    if (!header || !mobile.matches || document.querySelector('.home-stage')) {
+      header?.classList.remove('is-scroll-hidden');
+      previousY = window.scrollY;
+      return;
+    }
+
+    const currentY = Math.max(0, window.scrollY);
+    const delta = currentY - previousY;
+    if (currentY <= 8 || delta < -4) header.classList.remove('is-scroll-hidden');
+    else if (delta > 4) header.classList.add('is-scroll-hidden');
+    previousY = currentY;
+  };
+
+  window.addEventListener('scroll', updateHeader, { passive: true });
+  mobile.addEventListener('change', updateHeader);
+  updateHeader();
+</script>

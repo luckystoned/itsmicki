@@ -43,7 +43,7 @@ const vimeoUrl = (id: string) =>
         <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
         <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,<br />
         <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
-        <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>, TIKTOK
+        <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>, <span class="social-placeholder-link">TIKTOK</span>
       </span>
     </span>
   </aside>
@@ -92,15 +92,37 @@ const vimeoUrl = (id: string) =>
             <section class:list={['case-text', `case-text-${block.variant ?? 'columns'}`]}>
               <h2 data-case-text-reveal>{block.title}</h2>
               {block.variant === 'wide' ? (
-                <p class="case-text-wide-copy" data-case-text-reveal>{block.wide}</p>
+                <>
+                  <p class="case-text-wide-copy" data-case-text-reveal>{block.wide}</p>
+                  {caseStudy.slug === 'lumen' && block.title === '(the challenge)' && (
+                    <div class="case-lumen-mobile-copy case-lumen-mobile-challenge">
+                      <p>The project needed to communicate several ideas at once without becoming overly theoretical: decentralization, experimentation, community, nightlife, and the productive relationship between art and technology.</p>
+                      <p>It also needed an identity flexible enough to live across a physical event, interactive installations, printed graphics, merchandise, and fast-moving social content. The main creative challenge was to turn a cultural position into an immediate visual and sensory experience. People did not simply need to understand the message; they needed to feel invited into it.</p>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div class="case-text-content">
-                  {block.lead && <p class="case-text-lead" data-case-text-reveal>{block.lead}</p>}
+                  {block.lead && <p class:list={['case-text-lead', { 'case-outliant-visual-desktop': caseStudy.slug === 'outliant' && block.title === '(visual direction)' }]} data-case-text-reveal>{block.lead}</p>}
+                  {caseStudy.slug === 'outliant' && block.title === '(visual direction)' && (
+                    <div class="case-outliant-mobile-visual">
+                      <p>The selected concept—The Professional & Concise Agency—uses simplicity as a sign of confidence.</p>
+                      <p>A restrained palette of dark grey, Outliant’s established electric blue, soft neutrals, and white creates a calmer and more intentional foundation for the work to stand out. The freely available Manrope brings clarity and subtle personality to the primary typography, while Fragment Mono introduces a precise technological accent for highlights and coded details without adding licensing costs.</p>
+                    </div>
+                  )}
                   <div class="case-text-columns">
                     {block.columns?.map((paragraph, index) => (
                       <p data-case-text-reveal style={`--reveal-delay:${index * 70}ms`}>{paragraph}</p>
                     ))}
                   </div>
+                  {caseStudy.slug === 'lumen' && block.title === '(design process)' && (
+                    <div class="case-lumen-mobile-copy case-lumen-mobile-design">
+                      <p>I created the brand from the ground up, defining the visual direction and a system capable of moving between the analog and the digital.</p>
+                      <p>The identity was designed to feel luminous, kinetic, and slightly unstable—reflecting a program in which sound, image, bodies, and technology are constantly affecting one another.</p>
+                      <p>The system was conceived as a living framework rather than a fixed set of assets. Typography, light, contrast, motion, scale, and graphic repetition could shift across formats while preserving a</p>
+                      <p>recognizable attitude. This flexibility allowed the brand to support different artists and audiovisual languages without forcing them into a single aesthetic.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -221,6 +243,9 @@ const vimeoUrl = (id: string) =>
           <p data-case-text-reveal style={`--reveal-delay:${index * 70}ms`} set:html={credit} />
         ))}
       </div>
+      {caseStudy.slug === 'outliant' && (
+        <p class="case-outliant-mobile-credit">Art Direction / <a href="https://www.behance.net/juliafranc2cc2" target="_blank" rel="noreferrer">Julia Franceschini</a></p>
+      )}
     </section>
   </article>
 
@@ -662,6 +687,18 @@ const vimeoUrl = (id: string) =>
     display: none;
   }
 
+  .case-outliant-mobile-credit {
+    display: none;
+  }
+
+  .case-outliant-mobile-visual {
+    display: none;
+  }
+
+  .case-lumen-mobile-copy {
+    display: none;
+  }
+
   .project-case-canvas {
     width: 97.2668vw;
     margin: 0 auto;
@@ -1011,6 +1048,59 @@ const vimeoUrl = (id: string) =>
   }
 
   @media (min-width: 761px) {
+    .project-case-page[data-case='maxmaher'] .editorial-case-hero {
+      margin-top: 4.75vw;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-title-line {
+      align-items: baseline;
+      height: 24.25vw;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-title {
+      width: 36.375vw;
+      flex: none;
+      line-height: 1.2;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-year {
+      margin-left: .3894vw;
+      line-height: 1.2;
+      transform: scaleX(1.0546);
+      transform-origin: left top;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-intro {
+      grid-template-columns: 34.7166vw 62.1182vw;
+      height: 27.4182vw;
+      margin-top: 1vw;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-label {
+      margin-bottom: 1.1057vw;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-intro + .case-flow > .case-media-block:first-child {
+      margin-top: 3.25vw;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-credit-list {
+      width: 28.3125vw;
+      justify-self: end;
+      gap: 0;
+      font-size: 2.2175vw;
+      line-height: .966;
+      letter-spacing: -.01em;
+    }
+
+    .project-case-page[data-case='maxmaher'] .case-credits {
+      grid-template-columns: 1fr 28.3125vw;
+      min-height: 7.125vw;
+      margin-top: calc(4.6vw + 14.4375vw);
+      padding-top: 2.125vw;
+      border-top-width: .5px;
+    }
+
     .project-case-page[data-case='winona'] .case-credit-list {
       font-size: 2.2175vw;
       line-height: .966;
@@ -1094,6 +1184,12 @@ const vimeoUrl = (id: string) =>
       margin-left: 3.0769%;
     }
 
+    .case-title-line {
+      position: relative;
+      z-index: 10 !important;
+      align-items: baseline;
+    }
+
     .case-title {
       font-size: min(24.875vw, 97px);
       line-height: 1;
@@ -1104,13 +1200,13 @@ const vimeoUrl = (id: string) =>
     }
 
     .project-case-page[data-case='maxmaher'] .case-drag:nth-of-type(2) {
-      top: 16vw !important;
+      top: 46vw !important;
       left: 56% !important;
       width: 22vw !important;
     }
 
     .project-case-page[data-case='maxmaher'] .case-drag:nth-of-type(3) {
-      top: 11vw !important;
+      top: 54vw !important;
       left: 68% !important;
       width: 30vw !important;
     }
@@ -1282,6 +1378,844 @@ const vimeoUrl = (id: string) =>
       font-size: 16px;
       line-height: 1.1;
     }
+
+    /* Mobile / Project Open / Winona (Figma frame 392:10324). */
+    body:has(.project-case-page[data-case='winona']) .site-header[data-header] {
+      position: fixed !important;
+      top: auto !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      z-index: 2000 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      height: 48px !important;
+      min-height: 0 !important;
+      box-sizing: border-box !important;
+      padding: 8px 10px !important;
+      color: #2e2e2e !important;
+      background: #fafafa !important;
+      font-size: 26.498px !important;
+      line-height: 1 !important;
+    }
+
+    .project-case-page[data-case='winona'] {
+      position: relative;
+      width: 100%;
+      height: 1326.4103vw;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .project-case-page[data-case='winona'] .case-mobile-meta {
+      top: 8px;
+      right: 0;
+      left: 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0 8px;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .project-case-page[data-case='winona'] .case-mobile-column {
+      display: contents;
+      max-width: none;
+    }
+
+    .project-case-page[data-case='winona'] .case-mobile-column > :nth-child(even),
+    .project-case-page[data-case='winona'] .case-mobile-column-right > :last-child {
+      justify-self: end;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .project-case-page[data-case='winona'] .case-mobile-meta br {
+      display: none;
+    }
+
+    .project-case-page[data-case='winona'] .project-case-canvas,
+    .project-case-page[data-case='winona'] .case-flow {
+      position: static;
+      width: 100%;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='winona'] .editorial-case-hero {
+      position: absolute;
+      top: 0;
+      left: .1069vw;
+      width: 100vw;
+      height: 66.6667vw;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='winona'] .case-title-line {
+      position: absolute;
+      inset: 0;
+      display: block;
+      opacity: 1;
+      transform: none;
+      z-index: 3;
+    }
+
+    .project-case-page[data-case='winona'] .case-title {
+      position: absolute;
+      top: 24.6154vw;
+      left: 2.9672vw;
+      font-family: var(--case-sans);
+      font-size: 24.875vw;
+      line-height: 1.2;
+      transform: scaleX(.8685);
+      transform-origin: left top;
+      white-space: nowrap;
+    }
+
+    .project-case-page[data-case='winona'] .case-year {
+      position: absolute;
+      top: 38.2051vw;
+      left: 64vw;
+      margin: 0;
+      font-family: var(--case-sans);
+      font-size: 10.72vw;
+      line-height: 1.2;
+      transform: scaleX(1.4018);
+      transform-origin: left top;
+    }
+
+    .project-case-page[data-case='winona'] .case-drag {
+      width: 32.3915vw !important;
+    }
+
+    .project-case-page[data-case='winona'] .case-drag:nth-of-type(2) {
+      top: 50vw !important;
+      left: 63.2vw !important;
+    }
+
+    .project-case-page[data-case='winona'] .case-drag:nth-of-type(3) {
+      top: 62.8205vw !important;
+      left: 54.5928vw !important;
+    }
+
+    .project-case-page[data-case='winona'] .case-intro {
+      display: contents;
+      width: auto;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='winona'] .case-intro > div {
+      position: absolute;
+      left: 4.6072vw;
+      width: 90.5282vw;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='winona'] .case-intro > div:first-child {
+      top: 56.9231vw;
+      height: 34.1026vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-intro > div:nth-child(2) {
+      top: 98.2051vw;
+      height: 79.7436vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-label {
+      margin: 0 0 10px;
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .project-case-page[data-case='winona'] .case-intro-large {
+      margin: 0;
+      font-size: 13.5246vw;
+      line-height: .868;
+    }
+
+    .project-case-page[data-case='winona'] .case-nutshell {
+      font-size: 32px;
+      line-height: 34px;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > * {
+      position: absolute;
+      left: 4.6154vw;
+      width: 90.5128vw;
+      margin: 0 !important;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(1) { top: 186.1538vw; height: 50.7003vw; }
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(2) { top: 238.5441vw; height: 50.7003vw; }
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(3) { top: 290.9344vw; height: 58.7515vw; }
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(4) { top: 357.891vw; height: 158.7179vw; }
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(5) { top: 524.8141vw; height: 154.4577vw; }
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(6) { top: 681.4013vw; height: 48.3621vw; }
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(7) { top: 731.8351vw; height: 50.851vw; }
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(8) { top: 790.8333vw; height: 69.4872vw; }
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(9) { top: 868.5256vw; height: 51.0256vw; }
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(10) { top: 921.2336vw; height: 203.321vw; }
+
+    .project-case-page[data-case='winona'] .case-media-surface,
+    .project-case-page[data-case='winona'] .case-media-cell .case-media-surface {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: auto;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(3),
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(6),
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(10) {
+      display: block;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(3) .case-media-cell,
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(6) .case-media-cell,
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(10) .case-media-cell {
+      position: absolute;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(3) .case-media-cell:first-child {
+      inset: 0 auto 0 0;
+      width: 50.9787vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(3) .case-media-cell:last-child {
+      top: 0;
+      right: 0;
+      width: 37.75vw;
+      height: 37.5213vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(5) {
+      display: block;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(5) .case-media-cell {
+      position: absolute;
+      left: 0;
+      width: 100%;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(5) .case-media-cell:first-child {
+      top: 0;
+      height: 66.7728vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(5) .case-media-cell:last-child {
+      top: 68.8446vw;
+      height: 85.6131vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(6) .case-media-cell:first-child {
+      inset: 0 auto 0 0;
+      width: 37.6599vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(6) .case-media-cell:last-child {
+      inset: 0 0 0 auto;
+      width: 51.1513vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(10) .case-media-cell:first-child {
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 86.0523vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-flow > :nth-child(10) .case-media-cell:last-child {
+      top: 87.7344vw;
+      left: 0;
+      width: 100%;
+      height: 115.5867vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-text {
+      display: block;
+    }
+
+    .project-case-page[data-case='winona'] .case-text h2 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .project-case-page[data-case='winona'] .case-text-content,
+    .project-case-page[data-case='winona'] .case-text-wide-copy {
+      position: absolute;
+      top: 39px;
+      left: 0;
+      width: 100%;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='winona'] .case-text-columns {
+      display: block;
+      margin: 0;
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .project-case-page[data-case='winona'] .case-text-columns p {
+      display: inline;
+      width: auto;
+      margin: 0;
+      font: inherit;
+    }
+
+    .project-case-page[data-case='winona'] .case-text-columns p + p::before {
+      content: ' ';
+    }
+
+    .project-case-page[data-case='winona'] .case-text-wide-copy {
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .project-case-page[data-case='winona'] .case-credits {
+      position: absolute;
+      top: 1132.7597vw;
+      left: 4.6154vw;
+      display: block;
+      width: 90.5128vw;
+      height: 17.9487vw;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .project-case-page[data-case='winona'] .case-credits h2 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .project-case-page[data-case='winona'] .case-credit-list {
+      position: absolute;
+      top: 39.32px;
+      left: 0;
+      gap: 0;
+      font-size: 24px;
+      line-height: 34.265px;
+    }
+
+    /* Mobile / Project Open / Outliant (Figma Frame 96). */
+    body:has(.project-case-page[data-case='outliant']) .site-header[data-header] {
+      position: fixed !important;
+      top: auto !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      z-index: 2000 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      box-sizing: border-box !important;
+      width: 100% !important;
+      height: 48px !important;
+      min-height: 0 !important;
+      padding: 8px 10px !important;
+      color: #2e2e2e !important;
+      background: #fafafa !important;
+      font-size: 26.498px !important;
+      line-height: 1 !important;
+    }
+
+    .project-case-page[data-case='outliant'] {
+      position: relative;
+      width: 100%;
+      height: 2335.3846vw;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .project-case-page[data-case='outliant'] .case-mobile-meta {
+      top: 7.6719px;
+      right: -9.1465px;
+      left: -4.1793px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0 8px;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .project-case-page[data-case='outliant'] .case-mobile-column {
+      display: contents;
+      max-width: none;
+    }
+
+    .project-case-page[data-case='outliant'] .case-mobile-column > :nth-child(even),
+    .project-case-page[data-case='outliant'] .case-mobile-column-right > :last-child {
+      justify-self: end;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .project-case-page[data-case='outliant'] .case-mobile-meta br {
+      display: none;
+    }
+
+    .project-case-page[data-case='outliant'] .project-case-canvas,
+    .project-case-page[data-case='outliant'] .case-flow {
+      position: static;
+      width: 100%;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='outliant'] .editorial-case-hero {
+      position: absolute;
+      top: -.0841vw;
+      left: -.015vw;
+      width: 100vw;
+      height: 54.359vw;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='outliant'] .case-title-line {
+      position: absolute;
+      inset: 0;
+      display: block;
+      opacity: 1;
+      transform: none;
+      z-index: 3;
+    }
+
+    .project-case-page[data-case='outliant'] .case-title {
+      position: absolute;
+      top: 24.6154vw;
+      left: 3.0769vw;
+      font-family: var(--case-sans);
+      font-size: 24.875vw;
+      line-height: 1.2;
+      white-space: nowrap;
+      transform: scaleX(.872);
+      transform-origin: left top;
+    }
+
+    .project-case-page[data-case='outliant'] .case-year {
+      position: absolute;
+      top: 38.2051vw;
+      left: 64vw;
+      margin: 0;
+      font-family: var(--case-sans);
+      font-size: 10.72vw;
+      line-height: 1.2;
+      transform: scaleX(1.436);
+      transform-origin: left top;
+    }
+
+    .project-case-page[data-case='outliant'] .case-drag:nth-of-type(2) {
+      top: 48vw !important;
+      left: 54.4386vw !important;
+      width: 31.851vw !important;
+    }
+
+    .project-case-page[data-case='outliant'] .case-drag:nth-of-type(3) {
+      top: 52.7573vw !important;
+      left: 63.7157vw !important;
+      width: 50.5651vw !important;
+    }
+
+    .project-case-page[data-case='outliant'] .case-intro {
+      display: contents;
+      width: auto;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='outliant'] .case-intro > div {
+      position: absolute;
+      width: 92.3077vw;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='outliant'] .case-intro > div:first-child {
+      top: 60.4287vw;
+      left: 4.9603vw;
+      width: 90.5282vw;
+      height: 45.8974vw;
+    }
+
+    .project-case-page[data-case='outliant'] .case-intro > div:nth-child(2) {
+      top: 116.5825vw;
+      left: 4.0705vw;
+      height: 90vw;
+    }
+
+    .project-case-page[data-case='outliant'] .case-label {
+      margin: 0 0 12px;
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .project-case-page[data-case='outliant'] .case-intro-large {
+      margin: 0;
+      font-size: 13.5246vw;
+      line-height: .868;
+    }
+
+    .project-case-page[data-case='outliant'] .case-intro > div:first-child .case-intro-large {
+      position: relative;
+      color: transparent;
+    }
+
+    .project-case-page[data-case='outliant'] .case-intro > div:first-child .case-intro-large::after {
+      position: absolute;
+      inset: 0;
+      color: var(--case-ink);
+      white-space: pre-wrap;
+      content: 'Art Director,\A Brand Strategist &\A UX/UI Design Lead';
+    }
+
+    .project-case-page[data-case='outliant'] .case-nutshell {
+      font-size: 32px;
+      line-height: 34px;
+    }
+
+    .project-case-page[data-case='outliant'] .case-flow > * {
+      position: absolute;
+      left: 4.0705vw;
+      width: 92.3077vw;
+      margin: 0 !important;
+    }
+
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(1) { top: 216.839vw; height: 39.6241vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(2) { top: 258.191vw; height: 52.137vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(3) { top: 312.0559vw; height: 49.5553vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(4) { top: 371.9671vw; height: 259.7436vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(5) { top: 639.9159vw; height: 156.7518vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(6) { top: 798.2062vw; height: 51.6116vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(7) { top: 860.0743vw; height: 172.5641vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(8) { top: 1042.8949vw; height: 51.4477vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(9) { top: 1095.881vw; height: 51.4477vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(10) { top: 1157.5851vw; height: 290.2564vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(11) { top: 1456.0466vw; height: 51.6577vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(12) { top: 1517.9608vw; height: 181.2821vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(13) { top: 1709.4992vw; height: 206.2335vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(14) { top: 1925.989vw; height: 198.7179vw; }
+
+    .project-case-page[data-case='outliant'] .case-media-surface,
+    .project-case-page[data-case='outliant'] .case-media-cell .case-media-surface {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: auto;
+    }
+
+    .project-case-page[data-case='outliant'] .case-media-pair {
+      display: block;
+    }
+
+    .project-case-page[data-case='outliant'] .case-media-pair .case-media-cell {
+      position: absolute;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(2) .case-media-cell:first-child { inset: 0 auto 0 0; width: 38.598vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(2) .case-media-cell:last-child { inset: 0 0 0 auto; width: 52.137vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(3) .case-media-cell:first-child { inset: 0 auto 0 0; width: 53.363vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(3) .case-media-cell:last-child { inset: 0 0 0 auto; width: 37.6396vw; }
+
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(5) .case-media-cell,
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(13) .case-media-cell {
+      left: 0;
+      width: 100%;
+    }
+
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(5) .case-media-cell:first-child { top: 0; height: 67.876vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(5) .case-media-cell:last-child { top: 69.4144vw; height: 87.3376vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(13) .case-media-cell:first-child { top: 0; height: 116.9757vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(13) .case-media-cell:last-child { top: 118.5141vw; height: 87.7194vw; }
+
+    .project-case-page[data-case='outliant'] .case-text {
+      display: block;
+    }
+
+    .project-case-page[data-case='outliant'] .case-text h2 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 29px;
+      text-transform: lowercase;
+    }
+
+    .project-case-page[data-case='outliant'] .case-text-content {
+      position: absolute;
+      top: 45px;
+      left: 0;
+      width: 100%;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='outliant'] .case-text-columns {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='outliant'] .case-text-columns p {
+      width: 100%;
+      margin: 0;
+      font-size: 24px;
+      line-height: 34px;
+    }
+
+    .project-case-page[data-case='outliant'] .case-text-content > .case-text-lead {
+      width: 100%;
+      margin: 0 0 32px;
+      font-size: 13.5246vw;
+      line-height: .868;
+    }
+
+    .project-case-page[data-case='outliant'] .case-outliant-visual-desktop {
+      display: none;
+    }
+
+    .project-case-page[data-case='outliant'] .case-outliant-mobile-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      margin-bottom: 16px;
+    }
+
+    .project-case-page[data-case='outliant'] .case-outliant-mobile-visual p {
+      width: 100%;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='outliant'] .case-outliant-mobile-visual p:first-child {
+      font-size: 13.5246vw;
+      line-height: .868;
+    }
+
+    .project-case-page[data-case='outliant'] .case-outliant-mobile-visual p:last-child {
+      font-size: 24px;
+      line-height: 34px;
+    }
+
+    .project-case-page[data-case='outliant'] .case-credits {
+      position: absolute;
+      top: 2134.9633vw;
+      left: 4.0705vw;
+      display: block;
+      width: 92.3077vw;
+      height: 26.2014vw;
+      margin: 0;
+      padding: 32px 0 0;
+      border-top: .5px solid #000;
+    }
+
+    .project-case-page[data-case='outliant'] .case-credits h2 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .project-case-page[data-case='outliant'] .case-credit-list {
+      display: none;
+    }
+
+    .project-case-page[data-case='outliant'] .case-outliant-mobile-credit {
+      display: block;
+      margin-top: 10px;
+      font-size: 24px;
+      line-height: 34.265px;
+    }
+
+    /* Mobile / Project Open / Lumen (Figma frame 613:4753 / Frame 98). */
+    body:has(.project-case-page[data-case='lumen']) .site-header[data-header] {
+      position: fixed !important;
+      inset: auto 0 0 !important;
+      z-index: 2000 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      box-sizing: border-box !important;
+      width: 100% !important;
+      height: 48px !important;
+      min-height: 0 !important;
+      padding: 8px 10px !important;
+      color: #2e2e2e !important;
+      background: #fafafa !important;
+      font-size: 26.498px !important;
+      line-height: 1 !important;
+    }
+
+    .project-case-page[data-case='lumen'] {
+      position: relative;
+      width: 100%;
+      height: 3516.1538vw;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .project-case-page[data-case='lumen'] .case-mobile-meta {
+      top: 7.7188px;
+      right: -9.64px;
+      left: -4.674px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0 8px;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .project-case-page[data-case='lumen'] .case-mobile-column { display: contents; max-width: none; }
+    .project-case-page[data-case='lumen'] .case-mobile-column > :nth-child(even),
+    .project-case-page[data-case='lumen'] .case-mobile-column-right > :last-child {
+      justify-self: end;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .project-case-page[data-case='lumen'] .case-mobile-meta br { display: none; }
+
+    .project-case-page[data-case='lumen'] .project-case-canvas,
+    .project-case-page[data-case='lumen'] .case-flow { position: static; width: 100%; margin: 0; }
+
+    .project-case-page[data-case='lumen'] .editorial-case-hero {
+      position: absolute;
+      top: -.0721vw;
+      left: -.1422vw;
+      width: 100vw;
+      height: 54.359vw;
+      margin: 0;
+    }
+
+    .project-case-page[data-case='lumen'] .case-title-line {
+      position: absolute;
+      inset: 0;
+      display: block;
+      opacity: 1;
+      transform: none;
+      z-index: 3;
+    }
+
+    .project-case-page[data-case='lumen'] .case-title {
+      position: absolute;
+      top: 24.6154vw;
+      left: 3.0769vw;
+      font-family: var(--case-sans);
+      font-size: 24.875vw;
+      line-height: 1.2;
+      white-space: nowrap;
+      transform: scaleX(.85);
+      transform-origin: left top;
+    }
+
+    .project-case-page[data-case='lumen'] .case-year {
+      position: absolute;
+      top: 38.2051vw;
+      left: 57.7vw;
+      margin: 0;
+      font-family: var(--case-sans);
+      font-size: 10.72vw;
+      line-height: 1.2;
+      transform: scaleX(1.436);
+      transform-origin: left top;
+    }
+
+    .project-case-page[data-case='lumen'] .case-drag:nth-of-type(2) {
+      top: 50vw !important;
+      left: 59.605vw !important;
+      width: 46.18vw !important;
+    }
+    .project-case-page[data-case='lumen'] .case-drag:nth-of-type(3) {
+      top: 50vw !important;
+      left: 41.994vw !important;
+      width: 40.977vw !important;
+    }
+
+    .project-case-page[data-case='lumen'] .case-intro { display: contents; width: auto; margin: 0; }
+    .project-case-page[data-case='lumen'] .case-intro > div { position: absolute; width: 92.3077vw; margin: 0; }
+    .project-case-page[data-case='lumen'] .case-intro > div:first-child {
+      top: 60.4407vw; left: 4.8331vw; width: 90.5282vw; height: 45.8974vw;
+    }
+    .project-case-page[data-case='lumen'] .case-intro > div:nth-child(2) {
+      top: 116.5946vw; left: 3.9433vw; height: 98.7179vw;
+    }
+    .project-case-page[data-case='lumen'] .case-label { margin: 0 0 12px; font-size: 24px; line-height: 29px; }
+    .project-case-page[data-case='lumen'] .case-intro-large { margin: 0; font-size: 13.5246vw; line-height: .868; }
+    .project-case-page[data-case='lumen'] .case-nutshell { font-size: 32px; line-height: 34px; }
+    .project-case-page[data-case='lumen'] .case-intro-columns {
+      position: absolute; top: 148.1731vw; left: 3.9433vw; display: flex; gap: 16px; width: 92.3077vw; margin: 0;
+    }
+    .project-case-page[data-case='lumen'] .case-intro-columns p { margin: 0; font-size: 24px; line-height: 34px; }
+
+    .project-case-page[data-case='lumen'] .case-flow > * {
+      position: absolute;
+      left: 3.9433vw;
+      width: 92.3077vw;
+      margin: 0 !important;
+    }
+
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(1) { top: 225.569vw; left: 3.2438vw; width: 93.7065vw; height: 34.3269vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(2) { top: 352.2035vw; height: 181.2821vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(3) { top: 541.6907vw; height: 51.6027vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(4) { top: 594.8318vw; height: 62.4387vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(5) { top: 667.527vw; height: 227.4359vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6) { top: 903.168vw; width: 91.4203vw; height: 216.0261vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(7) { top: 1129.4505vw; height: 120.2564vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(8) { top: 1259.9633vw; left: 3.7035vw; width: 92.7872vw; height: 53.5372vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(9) { top: 1323.7569vw; height: 244.1026vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(10) { top: 1576.0646vw; height: 52.0272vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(11) { top: 1629.6303vw; height: 206.3367vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(12) { top: 1846.2233vw; height: 190vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(13) { top: 2046.4797vw; height: 209.1672vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(14) { top: 2265.9033vw; height: 272.3077vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(15) { top: 2548.4674vw; left: 3.7204vw; width: 92.7535vw; height: 51.9466vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(16) { top: 2601.9525vw; left: 3.7204vw; width: 92.7535vw; height: 51.9466vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(17) { top: 2664.1562vw; height: 367.1795vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(18) { top: 3051.8485vw; left: 3.7204vw; width: 92.7535vw; height: 206.8511vw; }
+
+    .project-case-page[data-case='lumen'] .case-media-surface,
+    .project-case-page[data-case='lumen'] .case-media-cell .case-media-surface { width: 100%; height: 100%; aspect-ratio: auto; }
+    .project-case-page[data-case='lumen'] .case-media-pair { display: block; }
+    .project-case-page[data-case='lumen'] .case-media-pair .case-media-cell { position: absolute; left: 0; width: 100%; margin: 0; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6) .case-media-cell:first-child { top: 0; height: 107.3337vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6) .case-media-cell:last-child { top: 108.8722vw; height: 107.1539vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(11) .case-media-cell:first-child { top: 0; height: 93.7956vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(11) .case-media-cell:last-child { top: 95.3344vw; height: 111.0026vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(13) .case-media-cell:first-child { top: 0; height: 116.1vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(13) .case-media-cell:last-child { top: 117.6385vw; height: 91.5287vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(18) .case-media-cell:first-child { top: 0; height: 74.463vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(18) .case-media-cell:last-child { top: 76.0015vw; height: 130.8496vw; }
+
+    .project-case-page[data-case='lumen'] .case-text { display: block; }
+    .project-case-page[data-case='lumen'] .case-text h2 { margin: 0; font-size: 24px; line-height: 29px; text-transform: lowercase; }
+    .project-case-page[data-case='lumen'] .case-text-content { position: absolute; top: 45px; left: 0; width: 100%; margin: 0; }
+    .project-case-page[data-case='lumen'] .case-text-columns { display: flex; flex-direction: column; gap: 16px; margin: 0; }
+    .project-case-page[data-case='lumen'] .case-text-columns p { width: 100%; margin: 0; font-size: 24px; line-height: 34px; }
+    .project-case-page[data-case='lumen'] .case-text-content > .case-text-lead { width: 100%; margin: 0 0 32px; font-size: 13.5246vw; line-height: .868; }
+    .case-lumen-mobile-copy { display: none; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(5) .case-text-wide-copy { display: none; }
+    .project-case-page[data-case='lumen'] .case-lumen-mobile-copy { display: flex; flex-direction: column; margin-top: 16px; }
+    .project-case-page[data-case='lumen'] .case-lumen-mobile-challenge { gap: 32px; }
+    .project-case-page[data-case='lumen'] .case-lumen-mobile-copy p { width: 100%; margin: 0; font-size: 24px; line-height: 34px; }
+    .project-case-page[data-case='lumen'] .case-lumen-mobile-challenge p:first-child,
+    .project-case-page[data-case='lumen'] .case-lumen-mobile-design p:first-child { font-size: 13.5246vw; line-height: .868; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(9) .case-text-lead,
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(9) .case-text-columns { display: none; }
+    .project-case-page[data-case='lumen'] .case-lumen-mobile-design { gap: 16px; margin: 0; }
+    .project-case-page[data-case='lumen'] .case-lumen-mobile-design p:first-child { margin-bottom: 16px; }
+
+    .project-case-page[data-case='lumen'] .case-credits {
+      position: absolute;
+      top: 3268.955vw;
+      left: 3.9433vw;
+      display: block;
+      width: 92.3077vw;
+      height: 76.5385vw;
+      margin: 0;
+      padding: 32.5px 0 0;
+      border-top: .5px solid #2e2e2e;
+    }
+    .project-case-page[data-case='lumen'] .case-credits h2 { margin: 0 0 10px; font-size: 24px; line-height: 29px; }
+    .project-case-page[data-case='lumen'] .case-credit-list { display: flex; flex-direction: column; gap: 10px; font-size: 24px; line-height: 34px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
