@@ -69,7 +69,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
   <div class="case-more-divider" data-case-text-reveal></div>
   <div class="case-more-heading">
     <h2 data-case-text-reveal>Pss, let’s continue</h2>
-    <a target="_blank" rel="noopener noreferrer" href="/projects" data-case-text-reveal style="--reveal-delay:70ms"><span class="case-more-link-label">See All</span> (<span class="case-more-link-plus">+</span>)</a>
+    <a href="/projects" data-case-text-reveal style="--reveal-delay:70ms"><span class="case-more-link-label">See All</span> (<span class="case-more-link-plus">+</span>)</a>
   </div>
 
   <div class="case-strip" data-case-strip data-case-text-reveal aria-label="More selected projects">
@@ -97,7 +97,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
               </>
             );
             return href ? (
-              <a target="_blank" rel="noopener noreferrer" class:list={['case-strip-card', { current: currentSlug === card.slug }]} data-project-preview="ready" href={href} style={style} tabindex={setIndex === 1 ? '-1' : undefined}>
+              <a class:list={['case-strip-card', { current: currentSlug === card.slug }]} data-project-preview="ready" href={href} style={style} tabindex={setIndex === 1 ? '-1' : undefined}>
                 {content}
               </a>
             ) : (
@@ -119,7 +119,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     <span data-case-footer-reveal style="--reveal-delay:0ms">DEV BY</span>
     <a data-case-footer-reveal style="--reveal-delay:70ms" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noopener noreferrer">@LUCKYSTONED</a>
     <span data-case-footer-reveal style="--reveal-delay:140ms">SAY HI</span>
-    <a target="_blank" rel="noopener noreferrer" data-case-footer-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
+    <a data-case-footer-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com">HEY@ITSMICKI.COM</a>
     <span data-case-footer-reveal style="--reveal-delay:280ms">ALL RIGHTS RESERVED.</span>
     <span class="case-footer-socials" data-case-footer-reveal style="--reveal-delay:350ms">
       SOCIALS <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,

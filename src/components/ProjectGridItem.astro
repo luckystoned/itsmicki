@@ -22,7 +22,7 @@ if (!cover || !dimensions) {
 
 <article class:list={['project-card', { 'is-coming': project.comingSoon }]} style={style}>
   {href ? (
-    <a target="_blank" rel="noopener noreferrer" class="project-card-inner" data-project-preview="ready" href={href} aria-label={`View ${project.title} case study`}>
+    <a class="project-card-inner" data-project-preview="ready" href={href} aria-label={`View ${project.title} case study`}>
       <span class="project-visual">
         <img
           src={cover}

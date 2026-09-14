@@ -7,7 +7,7 @@ const coverDimensions = project.cover ? imageMetadata[project.cover] : undefined
 ---
 <article class:list={['project-row', { 'is-coming': project.comingSoon }]} data-project-row>
   {href ? (
-    <a target="_blank" rel="noopener noreferrer" href={href} aria-label={`View ${project.title} case study`}>
+    <a href={href} aria-label={`View ${project.title} case study`}>
       <span class="project-index">{project.number}</span>
       <span class="project-name">{project.title}</span>
       <span class="project-role">{project.role}</span>

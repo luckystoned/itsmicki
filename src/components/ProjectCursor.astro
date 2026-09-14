@@ -7,19 +7,30 @@
   const pointer = document.querySelector<HTMLElement>('[data-project-pointer]');
   if (pointer) {
     const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+    let pointerX = -1;
+    let pointerY = -1;
     const hide = () => {
       pointer.hidden = true;
       document.documentElement.classList.remove('project-pointer-active');
     };
-    document.addEventListener('pointermove', (event) => {
-      const card = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-project-preview]') : null;
-      if (!finePointer.matches || event.pointerType === 'touch' || !card) { hide(); return; }
+    const refresh = (target: Element | null) => {
+      const card = target?.closest<HTMLElement>('[data-project-preview]') ?? null;
+      if (!finePointer.matches || !card) { hide(); return; }
       pointer.hidden = false;
       pointer.classList.toggle('is-coming', card.dataset.projectPreview === 'coming');
-      pointer.classList.toggle('label-right', event.clientX < 145);
-      pointer.classList.toggle('label-below', event.clientY < 65);
-      pointer.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0)`;
+      pointer.classList.toggle('label-right', pointerX < 145);
+      pointer.classList.toggle('label-below', pointerY < 65);
+      pointer.style.transform = `translate3d(${pointerX}px, ${pointerY}px, 0)`;
       document.documentElement.classList.add('project-pointer-active');
+    };
+    document.addEventListener('pointermove', (event) => {
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      if (event.pointerType === 'touch') { hide(); return; }
+      refresh(event.target instanceof Element ? event.target : null);
+    });
+    document.addEventListener('project-preview-refresh', () => {
+      if (pointerX >= 0 && pointerY >= 0) refresh(document.elementFromPoint(pointerX, pointerY));
     });
     document.addEventListener('pointerout', (event) => { if (!event.relatedTarget) hide(); });
     window.addEventListener('blur', hide);

@@ -177,6 +177,35 @@ p, h1, h2, figure, dl, dd { margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } [data-reveal] { opacity: 1; transform: none; } }
 
+/* The primary navigation stays above every page and uses a solid, legible surface. */
+.site-header[data-header] {
+  position: fixed !important;
+  z-index: 2000 !important;
+  inset: 0 0 auto !important;
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 62px !important;
+  padding: 18px var(--gutter) !important;
+  background: #fafafa !important;
+  backdrop-filter: none !important;
+  pointer-events: auto !important;
+}
+.site-header[data-header] .wordmark,
+.site-header[data-header] nav {
+  position: static !important;
+  pointer-events: auto !important;
+}
+@media (max-width: 800px) {
+  .site-header[data-header] {
+    min-height: 54px !important;
+    padding-top: max(14px, env(safe-area-inset-top)) !important;
+    padding-right: max(var(--gutter), env(safe-area-inset-right)) !important;
+    padding-bottom: 14px !important;
+    padding-left: max(var(--gutter), env(safe-area-inset-left)) !important;
+  }
+}
+
 /* Text links retain their underline offset and gain weight on interaction. */
 a[href] {
   transition-property: text-decoration-thickness;
