@@ -7,7 +7,7 @@ Para preparar un push o publicación, leer también `docs/flujo-de-publicacion.m
 
 - Mantener Astro, TypeScript, CSS nativo y salida estática.
 - No agregar React, Tailwind, CMS, base de datos o SSR sin una decisión explícita.
-- Tratar `src/data/projects.ts` como fuente de verdad para los casos.
+- Fuentes de contenido: `src/data/projects.ts` (listado, metadatos y SEO de cada proyecto) y `src/data/projectCases.ts` (contenido de cada página de caso: bloques, imágenes, videos de Vimeo y créditos).
 - Mantener los videos en Vimeo; no incorporar archivos de video al repositorio.
 - Guardar en `public/` solamente assets utilizados en producción.
 - No modificar `../Referencias originales`: es archivo de consulta fuera del repositorio.

@@ -11,9 +11,9 @@
     "hooks:install": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "@astrojs/check": "latest",
+    "@astrojs/check": "^0.9.10",
     "@astrojs/sitemap": "^3.7.3",
-    "astro": "latest",
+    "astro": "^7.1.6",
     "typescript": ">=5.9.0 <7.0.0"
   }
 }
