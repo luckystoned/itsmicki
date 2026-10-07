@@ -18,7 +18,7 @@ Preserve the project's deliberately editorial visual identity while keeping its 
 
 - Keep Astro, TypeScript, native CSS, and static output.
 - Do not introduce React, Tailwind, a CMS, a database, or SSR merely for convenience.
-- Use `src/data/projects.ts` as the canonical project-content model.
+- Use `src/data/projects.ts` for project records (listing, metadata, SEO) and `src/data/projectCases.ts` for case-page content (blocks, images, Vimeo IDs, credits).
 - Reuse `src/pages/projects/[slug].astro` for standard case studies.
 - Prefer focused Astro components over duplicated page markup.
 - Avoid dependencies when browser APIs or the existing code solve the problem cleanly.

@@ -2,9 +2,11 @@
 
 ## Primary files
 
-- `src/data/projects.ts`: canonical project records and Vimeo IDs.
+- `src/data/projects.ts`: project records used by listings and SEO.
+- `src/data/projectCases.ts`: case-page content, including Vimeo IDs.
+- `src/data/imageMetadata.ts`: width and height for every image.
 - `src/pages/projects/[slug].astro`: dynamic project detail route.
-- `src/components/VideoPlaceholder.astro`: Vimeo presentation.
+- `src/components/ProjectCase.astro`: case-page markup, Vimeo embeds, carousels, and per-case styles.
 - `src/styles/global.css`: global visual system and responsive rules.
 - `public/02_Projects/`: production case-study imagery.
 - `public/04_SideB/`: Side B imagery.
