@@ -6,17 +6,17 @@ The site is written in English. It presents selected professional case studies a
 
 ## Main Pages
 
-- [Home](https://itsmicki.com/): Introduction and selected work.
-- [Projects](https://itsmicki.com/projects): Directory of published and upcoming case studies.
-- [About](https://itsmicki.com/deets): Professional profile, experience and résumé.
-- [Side B](https://itsmicki.com/sideb): Personal experiments, photography and illustration.
+- [Home](https://www.itsmicki.com/): Introduction and selected work.
+- [Projects](https://www.itsmicki.com/projects): Directory of published and upcoming case studies.
+- [About](https://www.itsmicki.com/deets): Professional profile, experience and résumé.
+- [Side B](https://www.itsmicki.com/sideb): Personal experiments, photography and illustration.
 
 ## Published Case Studies
 
-- [Winona](https://itsmicki.com/projects/winona): UX/UI leadership, visual design, motion and rebranding for a women’s wellness platform.
-- [Max Maher](https://itsmicki.com/projects/maxmaher): Art direction and a high-volume visual content system for financial education.
-- [Outliant](https://itsmicki.com/projects/outliant): Brand strategy, art direction and UX/UI leadership for a remote digital agency.
-- [Lumen](https://itsmicki.com/projects/lumen): Art direction and visual design for an art and technology experience.
+- [Winona](https://www.itsmicki.com/projects/winona): UX/UI leadership, visual design, motion and rebranding for a women’s wellness platform.
+- [Max Maher](https://www.itsmicki.com/projects/maxmaher): Art direction and a high-volume visual content system for financial education.
+- [Outliant](https://www.itsmicki.com/projects/outliant): Brand strategy, art direction and UX/UI leadership for a remote digital agency.
+- [Lumen](https://www.itsmicki.com/projects/lumen): Art direction and visual design for an art and technology experience.
 
 ## Contact and Profiles
 
@@ -28,4 +28,4 @@ The site is written in English. It presents selected professional case studies a
 
 ## Optional
 
-- [Expanded portfolio context](https://itsmicki.com/llms-full.txt): Plain-text summary of the portfolio and published projects.
+- [Expanded portfolio context](https://www.itsmicki.com/llms-full.txt): Plain-text summary of the portfolio and published projects.

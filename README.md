@@ -47,7 +47,10 @@ El resultado estático se genera en `dist/`. No se debe versionar esa carpeta.
 ├── public/                 # Imágenes, CV y recursos públicos realmente usados
 ├── src/
 │   ├── components/         # Componentes Astro reutilizables
-│   ├── data/projects.ts    # Fuente central de contenido de los proyectos
+│   ├── data/
+│   │   ├── projects.ts       # Listado, metadatos y SEO de cada proyecto
+│   │   ├── projectCases.ts   # Contenido de cada página de caso
+│   │   └── imageMetadata.ts  # Ancho y alto de cada imagen usada
 │   ├── layouts/            # Estructura HTML compartida
 │   ├── pages/              # Rutas del sitio
 │   └── styles/global.css   # Sistema visual y estilos globales
@@ -67,21 +70,30 @@ El resultado estático se genera en `dist/`. No se debe versionar esa carpeta.
 
 ## Editar o agregar proyectos
 
-La fuente de verdad es `src/data/projects.ts`. Cada proyecto define su slug, textos, imágenes, créditos y, cuando corresponde, el identificador de Vimeo.
+El contenido se reparte en dos archivos:
+
+- `src/data/projects.ts`: un registro por proyecto con slug, número, título, año, rol, resumen, portada y estado (`comingSoon`). Alimenta el listado y los metadatos SEO.
+- `src/data/projectCases.ts`: el contenido de cada página de caso publicada: textos, bloques de imágenes, videos de Vimeo (`vimeoId`), carruseles, imágenes arrastrables y créditos.
+
+`src/data/imageMetadata.ts` registra el ancho y alto de cada imagen; los componentes lo usan para evitar saltos de layout.
 
 Para agregar un caso:
 
-1. Crear su entrada en `src/data/projects.ts`.
-2. Guardar únicamente las imágenes finales necesarias dentro de `public/02_Projects/<Proyecto>/`.
-3. Usar rutas públicas que comiencen con `/`.
-4. Completar textos alternativos descriptivos.
-5. Ejecutar `pnpm check` y `pnpm build`.
+1. Crear su entrada en `src/data/projects.ts` (sin `comingSoon` si se publica).
+2. Agregar su contenido en `src/data/projectCases.ts` y sumar el slug al tipo `ProjectCase['slug']`.
+3. Registrar las dimensiones de cada imagen nueva en `src/data/imageMetadata.ts`.
+4. Revisar las tarjetas de `src/components/ProjectCaseFooter.astro` y la home, que tienen su propia lista de portadas.
+5. Agregar los ajustes visuales propios del caso en `src/components/ProjectCase.astro` (selectores `[data-case='<slug>']`).
+6. Guardar únicamente las imágenes finales necesarias dentro de `public/02_Projects/<Proyecto>/`.
+7. Usar rutas públicas que comiencen con `/`.
+8. Completar textos alternativos descriptivos.
+9. Ejecutar `pnpm check` y `pnpm build`.
 
 La página dinámica `src/pages/projects/[slug].astro` genera las rutas publicadas. Evitar crear una página manual por proyecto salvo que el diseño realmente necesite una excepción.
 
 ## Videos de Vimeo
 
-Los videos se integran mediante su `vimeoId`. No descargar ni agregar `.mp4`, `.mov` u otros videos al repositorio. El componente `src/components/VideoPlaceholder.astro` centraliza la presentación y los controles del reproductor.
+Los videos se integran mediante su `vimeoId`. No descargar ni agregar `.mp4`, `.mov` u otros videos al repositorio. Se declaran en `src/data/projectCases.ts` con el helper `video()`, que recibe el ID, la proporción de la caja y la proporción original del video; `src/components/ProjectCase.astro` renderiza el `iframe` y recorta el video para que llene la caja.
 
 Perfil de referencia: [Miki en Vimeo](https://vimeo.com/user173432758).
 
@@ -125,14 +137,14 @@ La rama `main` corresponde a Production. La rama `staging` corresponde a Preview
 
 ## SEO e indexación
 
-El dominio canónico configurado es `https://itsmicki.com`. El build genera automáticamente `sitemap-index.xml` y `sitemap-0.xml`; `robots.txt` referencia ese índice. Todas las páginas incluyen canonical autorreferencial, descripción, directivas de robots, Open Graph, Twitter Cards y datos estructurados Schema.org. `llms.txt` y `llms-full.txt` ofrecen una descripción curada para asistentes y herramientas compatibles con esa propuesta.
+El dominio canónico configurado es `https://www.itsmicki.com`; Vercel redirige `itsmicki.com` a esa dirección con un 308. El build genera automáticamente `sitemap-index.xml` y `sitemap-0.xml`; `robots.txt` referencia ese índice. Todas las páginas incluyen canonical autorreferencial, descripción, directivas de robots, Open Graph, Twitter Cards y datos estructurados Schema.org. `llms.txt` y `llms-full.txt` ofrecen una descripción curada para asistentes y herramientas compatibles con esa propuesta.
 
 Después del despliegue:
 
-1. Verificar el dominio `itsmicki.com` en Google Search Console, preferentemente mediante un registro DNS.
-2. Enviar `https://itsmicki.com/sitemap-index.xml` desde la sección Sitemaps.
+1. Verificar el dominio `itsmicki.com` en Google Search Console, preferentemente mediante un registro DNS (cubre la versión con y sin `www`).
+2. Enviar `https://www.itsmicki.com/sitemap-index.xml` desde la sección Sitemaps.
 3. Inspeccionar la portada y solicitar indexación cuando el dominio responda públicamente.
-4. Confirmar que la versión con `www` redirija permanentemente al dominio canónico sin `www`, o invertir la configuración si se decide usar `www`.
+4. Confirmar que `itsmicki.com` siga redirigiendo de forma permanente a `https://www.itsmicki.com`. Si en Vercel se invierte la redirección, actualizar `site` en `astro.config.mjs`, `SITE_URL` en `src/data/seo.ts`, `robots.txt` y los `llms*.txt`.
 
 `llms.txt` es complementario: no reemplaza `robots.txt`, el sitemap ni el contenido HTML indexable.
 

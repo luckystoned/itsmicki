@@ -9,13 +9,13 @@ importers:
   .:
     dependencies:
       '@astrojs/check':
-        specifier: latest
+        specifier: ^0.9.10
         version: 0.9.10(prettier@3.9.6)(typescript@6.0.3)
       '@astrojs/sitemap':
         specifier: ^3.7.3
         version: 3.7.3
       astro:
-        specifier: latest
+        specifier: ^7.1.6
         version: 7.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)(yaml@2.9.0)
       typescript:
         specifier: '>=5.9.0 <7.0.0'

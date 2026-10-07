@@ -80,7 +80,22 @@ gh pr checks staging --watch
 gh pr merge staging --merge
 ```
 
-El merge a `main` dispara un **nuevo build de Production** en Vercel con la configuración de producción. Verificar `https://itsmicki.com` y las páginas modificadas después de que Vercel marque el despliegue como listo. Mantener la rama `staging` para futuras rondas. Tras publicar, actualizarla con `main` mediante un PR `main` → `staging` si el historial divergió; no forzar pushes.
+El merge a `main` dispara un **nuevo build de Production** en Vercel con la configuración de producción. Verificar `https://www.itsmicki.com` y las páginas modificadas después de que Vercel marque el despliegue como listo. Mantener la rama `staging` para futuras rondas. Tras publicar, actualizarla con `main` mediante un PR `main` → `staging` si el historial divergió; no forzar pushes.
+
+## Versionado y rollback
+
+Cada publicación en `main` se marca con un tag anotado con versión semántica: `vX.Y.Z+1` para ajustes y correcciones, `vX.Y+1.0` para secciones o casos nuevos, `vX+1.0.0` para rediseños.
+
+```bash
+git fetch origin
+git tag -a v1.0.1 origin/main -m "v1.0.1: resumen del cambio"
+git push origin v1.0.1
+```
+
+`v1.0.0` corresponde al sitio publicado antes de adoptar este flujo. Para volver atrás:
+
+- Inmediato: en Vercel, **Instant Rollback** al despliegue de producción anterior.
+- Definitivo: revertir el merge en una rama (`git revert -m 1 <commit-del-merge>`), pasar por `staging` y publicar con un tag nuevo. No mover ni reescribir tags existentes.
 
 Si se necesita publicar solo uno de varios ajustes acumulados en `staging`, detener este flujo y preparar un PR separado hacia `main` con únicamente el cambio aprobado.
 
