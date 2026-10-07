@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo 'Falta pnpm. Instalalo antes de publicar cambios.' >&2
+  exit 1
+fi
+
+pnpm check
+pnpm build

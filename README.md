@@ -104,6 +104,7 @@ Todo cambio debe comprobarse en móvil y escritorio, mantener navegación por te
 El repositorio incluye configuración para Claude Code y otros agentes:
 
 - `CLAUDE.md` y `AGENTS.md`: límites, arquitectura y comandos de validación.
+- `docs/flujo-de-publicacion.md`: guía para trabajar con Claude Code, revisar staging y publicar desde la terminal.
 - `itsmicki-portfolio`: skill propia con el mapa y las decisiones del proyecto.
 - `astro`: prácticas específicas del framework.
 - `frontend-design`: criterio de implementación visual.
@@ -114,13 +115,13 @@ Las skills instaladas están versionadas en `.claude/skills/`; `skills-lock.json
 
 ## Despliegue
 
-El proyecto puede desplegarse en Vercel con el preset estático de Astro:
+El proyecto se despliega en Vercel con el preset estático de Astro:
 
 - Build command: `pnpm build`
 - Output directory: `dist`
 - Install command: `pnpm install`
 
-No conectar ni desplegar el proyecto hasta que la validación local y la aprobación visual estén completas.
+La rama `main` corresponde a Production. La rama `staging` corresponde a Preview una vez creada y configurada. La guía de [publicación](docs/flujo-de-publicacion.md) incluye preparación de accesos, controles y comandos de PR/merge.
 
 ## SEO e indexación
 

@@ -1,6 +1,7 @@
 # Itsmicki: instrucciones para Claude Code
 
 Antes de modificar el proyecto, leer `README.md` y usar la skill `itsmicki-portfolio`.
+Para preparar un push o publicación, leer también `docs/flujo-de-publicacion.md`.
 
 ## Reglas del proyecto
 
@@ -11,7 +12,7 @@ Antes de modificar el proyecto, leer `README.md` y usar la skill `itsmicki-portf
 - Guardar en `public/` solamente assets utilizados en producción.
 - No modificar `../Referencias originales`: es archivo de consulta fuera del repositorio.
 - Respetar la dirección visual del Figma, el responsive, el foco visible y `prefers-reduced-motion`.
-- No iniciar servidores persistentes, desplegar ni hacer operaciones Git remotas salvo pedido explícito.
+- Iniciar servidores locales, desplegar y hacer operaciones Git remotas solo cuando el encargo lo pida; seguir el flujo de publicación y respetar los checks y protecciones de ramas.
 - Antes de entregar código, ejecutar `pnpm check` y `pnpm build`.
 
 ## Skills recomendadas
