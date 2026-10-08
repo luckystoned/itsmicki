@@ -1333,18 +1333,18 @@ const fashion = {
 
     .sideb-footer-wordmark {
       top: min(2px, .512821vw);
-      right: min(-8px, -2.051282vw);
+      right: auto;
       bottom: auto;
-      left: min(-8.369px, -2.145897vw);
-      width: auto;
-      justify-content: space-between;
-      font-size: min(176.756px, 45.322051vw);
+      left: -1.538462vw; /* Same position and size as the home wordmark. */
+      justify-content: flex-start;
+      font-size: 46.202051vw;
       line-height: normal;
       text-box-trim: none;
+      width: max-content;
     }
 
-    .sideb-footer-wordmark span:first-child { margin-left: -2.051282vw; }
-    .sideb-footer-wordmark span:last-child { margin-right: -2.051282vw; }
+    .sideb-footer-wordmark span:first-child { margin-left: 0; }
+    .sideb-footer-wordmark span:last-child { margin-right: 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {

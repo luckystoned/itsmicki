@@ -672,13 +672,18 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     }
     .case-more[data-current-case='lumen'] + .case-footer .case-footer-info { display: none; }
 
-    /* Same side margins as /projects: "Itsmicki ©2026" with the same size and bleed past both edges. */
+    /* "Itsmicki©2026" with the same position and size as the home wordmark. */
     .case-footer .case-footer-wordmark,
     .case-more[data-current-case] + .case-footer .case-footer-wordmark {
-      /* The cases cut of the face sits .033em wider at each end, so it is pulled back by that much. */
-      margin-right: calc(min(-8px, -2.051282vw) - 2.051282vw + .0306em);
-      margin-left: calc(min(-8.369px, -2.145897vw) - 2.051282vw + .0332em);
-      font-size: min(176.756px, 45.322051vw);
+      width: max-content;
+      margin-left: -1.538462vw;
+      justify-content: flex-start;
+      font-size: 46.202051vw;
+    }
+
+    .case-footer-wordmark > :first-child,
+    .case-footer-wordmark > :last-child {
+      margin: 0;
     }
   }
 

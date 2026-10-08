@@ -994,18 +994,18 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
 
     .deets-footer-wordmark {
       top: min(2px, .512821cqw);
-      right: min(-8px, -2.051282cqw);
+      right: auto;
       bottom: auto;
-      left: min(-8.369px, -2.145897cqw);
-      width: auto;
-      justify-content: space-between;
-      font-size: min(176.756px, 45.322051cqw);
+      left: -1.538462cqw; /* Same position and size as the home wordmark. */
+      justify-content: flex-start;
+      font-size: 46.202051cqw;
       line-height: normal;
       text-box-trim: none;
+      width: max-content;
     }
 
-    .deets-footer-wordmark span:first-child { margin-left: -2.051282vw; }
-    .deets-footer-wordmark span:last-child { margin-right: -2.051282vw; }
+    .deets-footer-wordmark span:first-child { margin-left: 0; }
+    .deets-footer-wordmark span:last-child { margin-right: 0; }
 
     /* Room at the end so the bottom navigation never covers the wordmark. */
     .deets-page { padding-bottom: calc(min(48px, 12.307692cqw) + env(safe-area-inset-bottom)); }
