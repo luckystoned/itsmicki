@@ -131,8 +131,8 @@ const vimeoUrl = (id: string) =>
           const item = block.item;
           const dimensions = item.type === 'image' && item.src ? imageMetadata[item.src] : undefined;
           return (
-            <section class="case-media-block case-media-single" style={mediaStyle(item)}>
-              <div class="case-media-surface" data-case-media-reveal data-parallax={item.type === 'image' ? '' : undefined}>
+            <section class="case-media-block case-media-single" style={mediaStyle(item)} data-parallax>
+              <div class="case-media-surface" data-case-media-reveal>
                 <div class="case-media-content">
                   {item.type === 'image' && item.src && dimensions ? (
                     <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
@@ -179,12 +179,12 @@ const vimeoUrl = (id: string) =>
         }
 
         return (
-          <section class:list={['case-media-block', 'case-media-pair', { 'case-media-pair-end': block.align === 'end' }]}>
+          <section class:list={['case-media-block', 'case-media-pair', { 'case-media-pair-end': block.align === 'end' }]} data-parallax>
             {block.items.map((item, itemIndex) => {
               const dimensions = item.type === 'image' && item.src ? imageMetadata[item.src] : undefined;
               return (
                 <div class="case-media-cell" style={cellStyle(item)}>
-                  <div class="case-media-surface" data-case-media-reveal data-parallax={item.type === 'image' ? '' : undefined} style={`--reveal-delay:${itemIndex * 70}ms`}>
+                  <div class="case-media-surface" data-case-media-reveal style={`--reveal-delay:${itemIndex * 70}ms`}>
                     <div class="case-media-content">
                       {item.type === 'image' && item.src && dimensions ? (
                         <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
@@ -857,19 +857,18 @@ const vimeoUrl = (id: string) =>
     backface-visibility: hidden;
   }
 
-  /* Same motion as /projects and /deets: images slide inside their frame (parallax) and fade in once loaded. */
-  .case-media-surface[data-parallax] .case-media-content {
-    overflow: hidden;
+  /* Same motion as /projects and /deets: each media block (photos at their original size and crop, videos,
+     carousels and captions) drifts ±16px slower than the page, and photos fade in once loaded. */
+  .case-media-block[data-parallax] {
+    translate: 0 calc((var(--parallax-progress, .5) - .5) * 32px);
   }
 
-  .case-media-surface[data-parallax] .case-media-content img {
-    height: 140% !important;
-    translate: 0 calc(-23% + 23% * var(--parallax-progress, .5));
+  .case-media-block[data-parallax] .case-media-content > img {
     opacity: 0;
     transition: opacity .9s cubic-bezier(.22, 1, .36, 1);
   }
 
-  .case-media-surface[data-parallax] .case-media-content img.is-loaded {
+  .case-media-block[data-parallax] .case-media-content > img.is-loaded {
     opacity: 1;
   }
 
