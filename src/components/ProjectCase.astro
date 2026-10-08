@@ -1323,6 +1323,25 @@ const vimeoUrl = (id: string) =>
       left: 51vw !important;
     }
 
+    /* Winona on phones: bigger products, placed as in the reference, above the title so both can be dragged. */
+    .project-case-page[data-case='winona'] .case-year {
+      margin-left: 2.2vw;
+    }
+
+    .project-case-page[data-case='winona'] .case-drag:nth-of-type(2) {
+      z-index: 13;
+      top: 28.13vw !important;
+      left: 53.36vw !important;
+      width: 37.9vw !important;
+    }
+
+    .project-case-page[data-case='winona'] .case-drag:nth-of-type(3) {
+      z-index: 12;
+      top: 1.95vw !important;
+      left: 57.9vw !important;
+      width: 38.38vw !important;
+    }
+
     .case-intro {
       width: calc(100% - 2 * min(9px, 2.307692vw));
       grid-template-columns: 1fr;
