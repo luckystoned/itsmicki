@@ -11,7 +11,7 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/02_Projects/01_Winona/10_Winona.webp': { width: 3114, height: 1742 },
   '/02_Projects/01_Winona/11_Winona.webp': { width: 3114, height: 1738 },
   '/02_Projects/01_Winona/12_Winona.webp': { width: 3114, height: 1742 },
-  '/02_Projects/01_Winona/13_Winona.webp': { width: 1296, height: 1340 },
+  '/02_Projects/01_Winona/13_Winona.webp': { width: 1158, height: 1197 },
   '/02_Projects/01_Winona/14_Winona.webp': { width: 3114, height: 1736 },
   '/02_Projects/01_Winona/15_Winona.webp': { width: 1298, height: 1656 },
   '/02_Projects/01_Winona/16_Winona.webp': { width: 1452, height: 1912 },

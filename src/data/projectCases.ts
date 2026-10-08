@@ -113,7 +113,7 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       single(image('/02_Projects/01_Winona/12_Winona.webp', 'Winona Talks cards about night sweats over a portrait lying on the grass.', '1556 / 870')),
       pair(
         video('1215371665', 'Winona brand guidelines in motion', '878 / 1010', '2160 / 2490'), '54.875vw', '63.125vw',
-        image('/02_Projects/01_Winona/13_Winona.webp', 'Progesterone New Body Cream campaign artwork.', '650 / 672'), '40.625vw', '42vw',
+        image('/02_Projects/01_Winona/13_Winona.webp', 'Animated Winona campaign: Progesterone New Body Cream, Estrogen + Progesterone, Get Blossom and You call the shots.', '650 / 672'), '40.625vw', '42vw',
       ),
       text('(synopsis)', [
         `After collaborating closely with the marketing team to gain a deeper understanding of the brand, its pain points, and strengths, we embarked on the rebranding project alongside Julia Franceschini, who led the brand's art direction. We held several meetings with Winona's Director of Design and Director of Marketing, where we worked together to define the new brand strategy,`,

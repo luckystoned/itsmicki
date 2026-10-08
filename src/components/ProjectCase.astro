@@ -156,9 +156,9 @@ const vimeoUrl = (id: string) =>
                           );
                         })}
                       </div>
-                      <span class="case-carousel-progress" aria-hidden="true">
+                      <span class="case-carousel-progress" role="group" aria-label="Choose a photo">
                         {item.slides.map((_, slideIndex) => (
-                          <i class:list={{ 'is-active': slideIndex === 0 }}></i>
+                          <button type="button" class:list={['case-carousel-dot', { 'is-active': slideIndex === 0 }]} aria-label={`Show photo ${slideIndex + 1} of ${item.slides!.length}`} aria-current={slideIndex === 0 ? 'true' : undefined}><b></b></button>
                         ))}
                       </span>
                     </div>
@@ -208,11 +208,11 @@ const vimeoUrl = (id: string) =>
                               );
                             })}
                           </div>
-                          <span class="case-carousel-progress" aria-hidden="true">
-                            {item.slides.map((_, slideIndex) => (
-                              <i class:list={{ 'is-active': slideIndex === 0 }}></i>
-                            ))}
-                          </span>
+                          <span class="case-carousel-progress" role="group" aria-label="Choose a photo">
+                        {item.slides.map((_, slideIndex) => (
+                          <button type="button" class:list={['case-carousel-dot', { 'is-active': slideIndex === 0 }]} aria-label={`Show photo ${slideIndex + 1} of ${item.slides!.length}`} aria-current={slideIndex === 0 ? 'true' : undefined}><b></b></button>
+                        ))}
+                      </span>
                         </div>
                       ) : item.vimeoId ? (
                         <iframe
@@ -306,21 +306,23 @@ const vimeoUrl = (id: string) =>
   const reduceCaseMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const caseCarousels = Array.from(document.querySelectorAll<HTMLElement>('[data-case-carousel]'));
 
+  // Photo carousels inside the cases: they advance on their own while the active bar fills up, and any
+  // swipe, drag, trackpad gesture or click on a bar plays the same eased slide to the next photo.
   caseCarousels.forEach((carousel) => {
     const track = carousel.querySelector<HTMLElement>('.case-carousel-track');
     const slides = Array.from(carousel.querySelectorAll<HTMLElement>('.case-carousel-slide'));
-    const progressItems = Array.from(carousel.querySelectorAll<HTMLElement>('.case-carousel-progress i'));
+    const dots = Array.from(carousel.querySelectorAll<HTMLButtonElement>('.case-carousel-dot'));
     const duration = 3600;
+    const slideTime = 900;
     let activeIndex = 0;
     let timer: number | undefined;
     let isVisible = false;
-    let dragging = false;
     let pointerId = -1;
-    let dragStartX = 0;
-    let dragDistance = 0;
-    let moved = false;
-    let wheelTimer: number | undefined;
+    let startX = 0;
+    let startY = 0;
+    let swiped = false;
     let wheelDistance = 0;
+    let wheelLock = 0;
 
     if (!track || slides.length < 2) return;
 
@@ -344,11 +346,27 @@ const vimeoUrl = (id: string) =>
       if (event.target === track && activeIndex === count) jumpTo(0);
     });
 
+    const running = () => !reduceCaseMotion && isVisible && !document.hidden;
+
     const paint = () => {
       track.style.transform = `translate3d(${-activeIndex * 100}%, 0, 0)`;
       const current = activeIndex % count;
       slides.forEach((slide, index) => slide.setAttribute('aria-hidden', index === current ? 'false' : 'true'));
-      progressItems.forEach((item, index) => item.classList.toggle('is-active', index === current));
+      dots.forEach((dot, index) => {
+        const active = index === current;
+        dot.classList.toggle('is-active', active);
+        if (active) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+        // The active bar fills up while its photo is on screen; the next photo comes in when it is full.
+        const fill = dot.querySelector<HTMLElement>('b');
+        if (!fill) return;
+        fill.getAnimations().forEach((animation) => animation.cancel());
+        if (active && running()) {
+          fill.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration, easing: 'linear', fill: 'forwards' });
+        } else {
+          fill.style.transform = active && reduceCaseMotion ? 'scaleX(1)' : 'scaleX(0)';
+        }
+      });
     };
 
     const stop = () => {
@@ -358,17 +376,11 @@ const vimeoUrl = (id: string) =>
 
     const start = () => {
       stop();
-      if (reduceCaseMotion || !isVisible || document.hidden || dragging || wheelTimer !== undefined) return;
-      timer = window.setTimeout(() => {
-        if (activeIndex >= count) jumpTo(0);
-        activeIndex += 1;
-        paint();
-        start();
-      }, duration);
+      if (!running()) return;
+      timer = window.setTimeout(() => go(1), duration);
     };
 
     const goTo = (nextIndex: number) => {
-      track.style.removeProperty('transition');
       if (nextIndex < 0) {
         // Going back from the first photo: start from its copy at the end and slide back one.
         jumpTo(count);
@@ -382,71 +394,63 @@ const vimeoUrl = (id: string) =>
       start();
     };
 
-    carousel.addEventListener('dragstart', (event) => event.preventDefault());
-    carousel.addEventListener('pointerdown', (event) => {
-      if (!event.isPrimary || event.button !== 0 || wheelTimer !== undefined) return;
-      dragging = true;
-      pointerId = event.pointerId;
-      dragStartX = event.clientX;
-      dragDistance = 0;
-      moved = false;
-      stop();
-      track.style.transition = 'none';
-      carousel.setPointerCapture(pointerId);
-    });
-
-    carousel.addEventListener('pointermove', (event) => {
-      if (!dragging || event.pointerId !== pointerId) return;
-      dragDistance = event.clientX - dragStartX;
-      moved ||= Math.abs(dragDistance) > 6;
-      track.style.transform = `translate3d(calc(${-activeIndex * 100}% + ${dragDistance}px), 0, 0)`;
-    });
-
-    const finishDrag = (event: PointerEvent) => {
-      if (!dragging || event.pointerId !== pointerId) return;
-      dragging = false;
-      if (carousel.hasPointerCapture(pointerId)) carousel.releasePointerCapture(pointerId);
-      const threshold = Math.min(90, carousel.clientWidth * .14);
-      const direction = Math.abs(dragDistance) >= threshold ? (dragDistance < 0 ? 1 : -1) : 0;
-      goTo(activeIndex + direction);
+    const go = (step: number) => {
+      if (activeIndex >= count) jumpTo(0);
+      goTo(activeIndex + step);
     };
 
-    carousel.addEventListener('pointerup', finishDrag);
-    carousel.addEventListener('pointercancel', finishDrag);
-    carousel.addEventListener('lostpointercapture', finishDrag);
-    carousel.addEventListener('click', (event) => {
-      if (moved) event.preventDefault();
-    }, true);
-    carousel.addEventListener('wheel', (event) => {
-      if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || slides.length < 2 || !track) return;
-      event.preventDefault();
-      if (dragging) return;
-      stop();
-      if (wheelTimer !== undefined) window.clearTimeout(wheelTimer);
-      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? carousel.clientWidth : 1;
-      wheelDistance = Math.max(-carousel.clientWidth, Math.min(carousel.clientWidth, wheelDistance + event.deltaX * unit));
-      // Follow the gesture directly; settle once its momentum events have ended.
+    dots.forEach((dot, index) => dot.addEventListener('click', () => {
+      if (index === activeIndex % count) return;
       if (activeIndex >= count) jumpTo(0);
-      if (activeIndex === 0 && wheelDistance < 0) jumpTo(count);
-      const previewDistance = wheelDistance;
-      track.style.transition = 'none';
-      track.style.transform = `translate3d(calc(${-activeIndex * 100}% - ${previewDistance}px), 0, 0)`;
-      wheelTimer = window.setTimeout(() => {
-        wheelTimer = undefined;
-        const direction = Math.abs(wheelDistance) >= Math.min(90, carousel.clientWidth * .14) ? Math.sign(wheelDistance) : 0;
+      goTo(index);
+    }));
+
+    // Swipes and drags only read the direction; the photo never follows the finger.
+    carousel.addEventListener('dragstart', (event) => event.preventDefault());
+    carousel.addEventListener('pointerdown', (event) => {
+      if (!event.isPrimary || event.button !== 0 || (event.target as Element).closest('.case-carousel-dot')) return;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startY = event.clientY;
+      swiped = false;
+    });
+    carousel.addEventListener('pointermove', (event) => {
+      if (event.pointerId !== pointerId || swiped) return;
+      const dx = event.clientX - startX;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(event.clientY - startY)) {
+        swiped = true;
+        go(dx < 0 ? 1 : -1);
+      }
+    });
+    const endPointer = (event: PointerEvent) => { if (event.pointerId === pointerId) pointerId = -1; };
+    carousel.addEventListener('pointerup', endPointer);
+    carousel.addEventListener('pointercancel', endPointer);
+    carousel.addEventListener('click', (event) => {
+      if (swiped) { event.preventDefault(); swiped = false; }
+    }, true);
+
+    // Trackpad: one horizontal gesture moves one photo; the rest of its momentum is ignored.
+    carousel.addEventListener('wheel', (event) => {
+      if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+      event.preventDefault();
+      const now = performance.now();
+      if (now < wheelLock) { wheelLock = now + 220; return; }
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? carousel.clientWidth : 1;
+      wheelDistance += event.deltaX * unit;
+      if (Math.abs(wheelDistance) > 40) {
+        go(wheelDistance > 0 ? 1 : -1);
         wheelDistance = 0;
-        track.style.removeProperty('transition');
-        goTo(activeIndex + direction);
-      }, 200);
+        wheelLock = now + slideTime;
+      }
     }, { passive: false });
 
     const visibilityObserver = new IntersectionObserver(([entry]) => {
       isVisible = entry.isIntersecting;
-      if (!dragging && wheelTimer === undefined) paint();
+      paint();
       start();
     }, { threshold: .08, rootMargin: '10% 0px' });
 
-    document.addEventListener('visibilitychange', start);
+    document.addEventListener('visibilitychange', () => { paint(); start(); });
     visibilityObserver.observe(carousel);
     paint();
   });
@@ -905,13 +909,10 @@ const vimeoUrl = (id: string) =>
     position: relative;
     overflow: hidden;
     touch-action: pan-y;
-    cursor: grab;
     user-select: none;
   }
 
-  .case-carousel:active {
-    cursor: grabbing;
-  }
+
 
   .case-carousel-track {
     display: flex;
@@ -953,19 +954,52 @@ const vimeoUrl = (id: string) =>
     transform: translateX(-50%);
   }
 
-  .case-carousel-progress i {
+  .case-carousel-dot {
+    position: relative;
     display: block;
     flex: none;
     width: calc(16.54 * var(--u));
     height: calc(8.775 * var(--u));
+    padding: 0;
+    border: 0;
     border-radius: 999px;
+    overflow: hidden;
     background: rgb(250 250 250 / 30%);
-    transition: width .9s cubic-bezier(.65, 0, .35, 1), background-color .9s cubic-bezier(.65, 0, .35, 1);
+    cursor: pointer;
+    appearance: none;
+    transition: width .9s cubic-bezier(.65, 0, .35, 1);
   }
 
-  .case-carousel-progress i.is-active {
+  /* Bigger tap target than the 8.8px bar. */
+  .case-carousel-dot::before {
+    position: absolute;
+    inset: calc(-7 * var(--u)) calc(-2 * var(--u));
+    content: "";
+  }
+
+  .case-carousel-dot.is-active {
     width: calc(44.89 * var(--u));
+  }
+
+  .case-carousel-dot:focus-visible {
+    outline: 1px solid #fafafa;
+    outline-offset: 2px;
+  }
+
+  .case-carousel-dot b {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     background: #fafafa;
+    transform: scaleX(0);
+    transform-origin: left center;
+    pointer-events: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .case-carousel-dot:not(.is-active):hover {
+      background: rgb(250 250 250 / 55%);
+    }
   }
 
   .case-media-caption {
@@ -1864,12 +1898,9 @@ const vimeoUrl = (id: string) =>
     }
 
     .case-carousel-track,
-    .case-carousel-progress i {
+    .case-carousel-dot {
       transition: none;
     }
 
-    .case-carousel-progress {
-      display: none;
-    }
   }
 </style>
