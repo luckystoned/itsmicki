@@ -21,7 +21,7 @@ The site is written in English. It presents selected professional case studies a
 ## Contact and Profiles
 
 - [Email](mailto:hey@itsmicki.com): Professional inquiries.
-- [LinkedIn](https://www.linkedin.com/in/micaelagalimberti/): Professional profile.
+- [LinkedIn](https://www.linkedin.com/in/itsmicki/): Professional profile.
 - [Behance](https://www.behance.net/itsmicki): Design portfolio.
 - [Dribbble](https://dribbble.com/micaelagalimberti): Design work.
 - [Instagram](https://www.instagram.com/its.micki/): Visual work and updates.

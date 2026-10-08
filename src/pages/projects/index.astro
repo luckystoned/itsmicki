@@ -74,16 +74,16 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
   ]}
 >
   <div class="projects-page">
-    <div class="projects-mobile-meta" aria-label="Contact and social links">
+    <div class="projects-mobile-meta" aria-label="Contact and social links" data-scroll-bar>
       <span>SAY HI</span>
       <a class="projects-mobile-mail" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
       <span>SOCIALS</span>
       <span class="projects-mobile-socials">
-        <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
-        <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
-        <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
-        <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
-        <a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
+        <a href="https://www.linkedin.com/in/itsmicki/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+        {" "}<a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
+        {" "}<a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+        {" "}<a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
+        {" "}<a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
       </span>
     </div>
 
@@ -121,17 +121,19 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
         <a data-footer-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
         <span data-footer-reveal style="--reveal-delay:280ms">ALL RIGHTS RESERVED.</span>
         <span class="projects-footer-socials" data-footer-reveal style="--reveal-delay:350ms">
-          SOCIALS <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
-          <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
-          <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
-          <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
-          <a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
+          SOCIALS <a href="https://www.linkedin.com/in/itsmicki/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+          {" "}<a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
+          {" "}<a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+          {" "}<a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
+          {" "}<a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
         </span>
       </div>
     </footer>
   </div>
 
   <script>
+    import { initPageMotion } from '@/scripts/pageMotion';
+
     /* ============ SMOOTH SCROLL (inercia, mantiene scroll nativo) ============ */
     (function () {
       const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -202,27 +204,6 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       });
     })();
 
-    /* ============ PARALLAX: each image slides through its frame while it crosses the viewport ============ */
-    (function () {
-      if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
-      const frames = [...document.querySelectorAll<HTMLElement>('.projects-page [data-parallax]')];
-      let queued = false;
-      const update = () => {
-        queued = false;
-        const viewport = window.innerHeight;
-        frames.forEach((frame) => {
-          const rect = frame.getBoundingClientRect();
-          if (rect.bottom < 0 || rect.top > viewport) return;
-          const progress = (viewport - rect.top) / (viewport + rect.height);
-          frame.style.setProperty('--parallax-progress', Math.max(0, Math.min(1, progress)).toFixed(4));
-        });
-      };
-      const queue = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
-      addEventListener('scroll', queue, { passive: true });
-      addEventListener('resize', queue);
-      update();
-    })();
-
     /* ============ DESKTOP: each project opens in a new tab ============ */
     if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
       document.querySelectorAll<HTMLAnchorElement>('.projects-page a.project-card-inner').forEach((link) => {
@@ -231,21 +212,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       });
     }
 
-    /* ============ LOAD-IN: type and images appear as they enter the viewport ============ */
-    (function () {
-      document.querySelectorAll<HTMLImageElement>('.projects-page .project-visual img').forEach((image) => {
-        const done = () => image.classList.add('is-loaded');
-        if (image.complete) done(); else { image.addEventListener('load', done, { once: true }); image.addEventListener('error', done, { once: true }); }
-      });
-      if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
-      document.documentElement.classList.add('appear-ready');
-      const appearObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        appearObserver.unobserve(entry.target);
-      }), { threshold: .12 });
-      document.querySelectorAll('.projects-page [data-appear]').forEach((node) => appearObserver.observe(node));
-    })();
+    initPageMotion(document.querySelector<HTMLElement>('.projects-page'));
 
     const footerReveals = document.querySelectorAll<HTMLElement>('.projects-page [data-footer-reveal]');
     if (footerReveals.length) {

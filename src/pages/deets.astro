@@ -7,7 +7,6 @@ const portrait = image('/03_Deets/01_Deets.webp', 'Micaela resting with her face
 const desk = image('/03_Deets/02_Deets.webp', 'A softly blurred desk with colorful printed materials and design objects.');
 const cap = image('/03_Deets/03_Deets.webp', 'Micaela seen from behind wearing a green cap.');
 const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pair of boots.');
-const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes against a dark outfit.');
 ---
 
 <BaseLayout
@@ -23,96 +22,101 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   ]}
 >
   <div class="deets-page">
-    <aside class="deets-mobile-meta" aria-label="Contact and social links">
+    <aside class="deets-mobile-meta" aria-label="Contact and social links" data-scroll-bar>
       <span>SAY HI</span>
       <a class="deets-mobile-mail" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
       <span>SOCIALS</span>
       <span class="deets-mobile-socials">
-        <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
-        <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
-        <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
-        <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
-        <a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
+        <a href="https://www.linkedin.com/in/itsmicki/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>, <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>, <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>, <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>, <a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
       </span>
     </aside>
 
     <article class="deets-canvas" aria-labelledby="deets-title">
-      <h1 class="deets-node deets-title" id="deets-title">
-        (Deets, and some cursed<br />stuff about me)
+      <h1 class="deets-node deets-title deets-appear-text" id="deets-title" data-appear>
+        (Deets, and some<br class="deets-break-mobile" /> cursed<br class="deets-break-desktop" /> stuff<br class="deets-break-mobile" /> about me)
       </h1>
 
-      <p class="deets-node deets-label deets-nutshell-label">In a Nutshell</p>
-      <p class="deets-node deets-heading deets-bio">
+      <p class="deets-node deets-label deets-nutshell-label" data-appear>In a Nutshell</p>
+      <p class="deets-node deets-heading deets-bio" data-appear>
         <span class="deets-desktop-copy">Hey — I’m micki, a creative director and senior brand + visual designer based in Buenos Aires. Designing professionally since 2016; currently reporting to two insane cats.</span>
         <span class="deets-mobile-copy">Hey — I’m micki, a creative director and senior brand + visual designer based in Buenos Aires. Designing professionally since 2016; currently reporting to two insane cats.</span>
       </p>
 
-      <figure class="deets-node deets-image deets-image-one">
+      <figure data-parallax class="deets-node deets-image deets-image-one" data-appear>
         <img src={portrait.src} alt={portrait.alt} width={portrait.width} height={portrait.height} loading="eager" fetchpriority="high" decoding="async" />
       </figure>
 
-      <p class="deets-node deets-label deets-resume-label">Resume</p>
-      <a class="deets-node deets-download segmented-link" href="/Resume/Resume_Micaela%20Galimberti.pdf" download><span class="link-underline-part">download</span> (<span class="link-underline-part">↓</span>)</a>
+      <p class="deets-node deets-label deets-resume-label" data-appear>Resume</p>
+      <a class="deets-node deets-download segmented-link" href="/Resume/Resume_Micaela%20Galimberti.pdf" download data-appear><span class="link-underline-part">download</span> (<span class="link-underline-part">↓</span>)</a>
 
-      <h2 class="deets-node deets-skills-label">
+      <h2 class="deets-node deets-skills-label" data-appear>
         <span class="deets-desktop-copy">(skills / services)</span>
         <span class="deets-mobile-copy">(skills / services)</span>
       </h2>
-      <p class="deets-node deets-heading deets-skills-copy">
-        <span class="deets-desktop-copy">Art Direction, Brand Identity Design, Web Design, Product Design, Creative Leadership, Motion Design, Generative AI Art Direction, Illustration, and Image Retouching.</span>
-        <span class="deets-mobile-copy">Art Direction, Brand Identity Design, Web Design, Product Design, Creative Leadership, Motion Design, Generative AI Art Direction, Illustration, and Image Retouching.</span>
+      <p class="deets-node deets-heading deets-skills-copy" data-appear>
+        <span class="deets-desktop-copy">Art Direction, Brand Identity Design, Web Design, Product Design, Creative Leadership, Motion Design, Generative AI, Art Direction, Illustration, and Image Retouching.</span>
+        <span class="deets-mobile-copy">Art Direction, Brand Identity Design, Web Design, Product Design, Creative Leadership, Motion Design, Generative AI, Art Direction, Illustration, and Image Retouching.</span>
       </p>
 
-      <figure class="deets-node deets-image deets-image-two">
+      <figure data-parallax class="deets-node deets-image deets-image-two" data-appear>
         <img src={desk.src} alt={desk.alt} width={desk.width} height={desk.height} loading="lazy" decoding="async" />
       </figure>
 
-      <h2 class="deets-node deets-label deets-story-label">(my story)</h2>
-      <p class="deets-node deets-story-lead deets-desktop-copy">Most portfolio intros make everyone sound like a visionary with a caffeine problem, so here’s the less polished version. How did I get here? Let’s rewind.</p>
-      <p class="deets-node deets-story-lead deets-mobile-copy">Most portfolio intros make everyone sound like a visionary with a caffeine problem, so here’s the less polished version. How did I get here? Let’s rewind.</p>
-      <p class="deets-node deets-body deets-story-one">
-        <span class="deets-desktop-copy">I grew up in my dad’s carpentry shop, where my siblings and I spent our days among design magazines, books, house and furniture sketches, an unreasonable number of Worms matches, decor objects, fabric scraps, and every kind of office stationery.</span>
-        <span class="deets-mobile-copy">I grew up in my dad’s carpentry shop, where my siblings and I spent our days among design magazines, books, house and furniture sketches, an unreasonable number of Worms matches, decor objects, fabric scraps, and every kind of office stationery.</span>
-      </p>
-      <p class="deets-node deets-body deets-story-two">
-        <span class="deets-desktop-copy">From there, the obsession only grew. I decided that when I grew up, I would design magazines and books. I didn’t know this profession had a name until I met Anna, my graphic design teacher, during my final years of high school. Her first assignment? Designing a magazine cover. Obviously.</span>
-        <span class="deets-mobile-copy">From there, the obsession only grew. I decided that when I grew up, I would design magazines and books.<br />I didn’t know this profession had a name until I met Anna—my graphic design teacher, during my final years of high school. Her first assignment? Designing a magazine cover. Obviously.</span>
-      </p>
+      <div class="deets-story-label-track">
+        <h2 class="deets-node deets-label deets-story-label" data-appear>(my story)</h2>
+      </div>
+      <div class="deets-story-column">
+        <p class="deets-node deets-story-lead deets-desktop-copy" data-appear>Most portfolio intros make everyone sound like a visionary with a caffeine problem, so here’s the less polished version. How did I get here? Let’s rewind.</p>
+        <p class="deets-node deets-story-lead deets-mobile-copy" data-appear>Most portfolio intros make everyone sound like a visionary with a caffeine problem, so here’s the less polished version. How did I get here? Let’s rewind.</p>
+        <div class="deets-story-row">
+          <p class="deets-node deets-body deets-story-one" data-appear>
+            <span class="deets-desktop-copy">I grew up in my dad’s carpentry shop, where my siblings and I spent our days among design magazines, books, house and furniture sketches, an unreasonable number of Worms matches, decor objects, fabric scraps, and every kind of office stationery.</span>
+            <span class="deets-mobile-copy">I grew up in my dad’s carpentry shop, where my siblings and I spent our days among design magazines, books, house and furniture sketches, an unreasonable number of Worms matches, decor objects, fabric scraps, and every kind of office stationery.</span>
+          </p>
+          <p class="deets-node deets-body deets-story-two" data-appear>
+            <span class="deets-desktop-copy">From there, the obsession only grew. I decided that when I grew up, I would design magazines and books. I didn’t know this profession had a name until I met Anna, my graphic design teacher, during my final years of high school. Her first assignment? Designing a magazine cover. Obviously.</span>
+            <span class="deets-mobile-copy">From there, the obsession only grew. I decided that when I grew up, I would design magazines and books.<br />I didn’t know this profession had a name until I met Anna—my graphic design teacher, during my final years of high school. Her first assignment? Designing a magazine cover. Obviously.</span>
+          </p>
+
+        </div>
+      </div>
 
       <div class="deets-story-images">
-        <figure class="deets-node deets-image deets-image-three">
+        <figure data-parallax class="deets-node deets-image deets-image-three" data-appear>
           <img src={cap.src} alt={cap.alt} width={cap.width} height={cap.height} loading="lazy" decoding="async" />
         </figure>
-        <figure class="deets-node deets-image deets-image-four">
+        <figure data-parallax class="deets-node deets-image deets-image-four" data-appear>
           <img src={laptop.src} alt={laptop.alt} width={laptop.width} height={laptop.height} loading="lazy" decoding="async" />
         </figure>
       </div>
 
-      <p class="deets-node deets-body deets-story-three">
-        <span class="deets-desktop-copy">That was the beginning of a long, slightly obsessive relationship with design. I knew I had found the field I wanted to stay in, and I haven’t stopped learning, experimenting, or finding new ways to push it since.</span>
-        <span class="deets-mobile-copy">That was the beginning of a long, slightly obsessive relationship with design. I knew I had found the field I wanted to stay in, and I haven’t stopped learning, experimenting, or finding new ways to push it since.</span>
-      </p>
-      <p class="deets-node deets-body deets-story-four">
-        <span class="deets-desktop-copy">Since then, I’ve worked across analog craft, print, web and product design—still my favorite territory—as well as illustration, photography, image-making, and motion. I use whichever medium helps an idea become clearer, stranger, or more memorable.</span>
-        <span class="deets-mobile-copy">Since then, I’ve worked across analog craft, print, web and product design—still my favorite territory—as well as illustration, photography, image-making, and motion. I use whichever medium helps an idea become clearer, stranger, or more memorable.</span>
-      </p>
+      <div class="deets-story-row deets-story-row-late">
+        <p class="deets-node deets-body deets-story-three" data-appear>
+          <span class="deets-desktop-copy">That was the beginning of a long, slightly obsessive relationship with design. I knew I had found the field I wanted to stay in, and I haven’t stopped learning, experimenting, or finding new ways to push it since.</span>
+          <span class="deets-mobile-copy">That was the beginning of a long, slightly obsessive relationship with design. I knew I had found the field I wanted to stay in, and I haven’t stopped learning, experimenting, or finding new ways to push it since.</span>
+        </p>
+        <p class="deets-node deets-body deets-story-four" data-appear>
+          <span class="deets-desktop-copy">Since then, I’ve worked across analog craft, print, web and product design—still my favorite territory—as well as illustration, photography, image-making, and motion. I use whichever medium helps an idea become clearer, stranger, or more memorable.</span>
+          <span class="deets-mobile-copy">Since then, I’ve worked across analog craft, print, web and product design—still my favorite territory—as well as illustration, photography, image-making, and motion. I use whichever medium helps an idea become clearer, stranger, or more memorable.</span>
+        </p>
+      </div>
 
-      <figure class="deets-node deets-image deets-image-five">
-        <img src={shoes.src} alt={shoes.alt} width={shoes.width} height={shoes.height} loading="lazy" decoding="async" />
-      </figure>
-
-      <p class="deets-node deets-heading deets-statement">
-        <span class="deets-desktop-copy">I love shaping brands from start to finish, turning intangible stories into coherent systems that can live across digital<br />and print.</span>
-        <span class="deets-mobile-copy">I love shaping brands from start to finish, turning intangible stories into coherent systems that can live across digital<br />and print.</span>
-      </p>
-      <p class="deets-node deets-body deets-close-one">
-        <span class="deets-desktop-copy">I’m drawn to experimental design, visual friction, and identities that refuse a single tone. Design isn’t neutral decoration: it carries culture, ideology, and power. At its best, it doesn’t just change how something looks—it changes how it can be read, felt, and remembered.</span>
-        <span class="deets-mobile-copy">I’m drawn to experimental design, visual friction, and identities that refuse a single tone. Design isn’t neutral decoration: it carries culture, ideology, and power. At its best, it doesn’t just change how something looks—it changes how it can be read, felt, and remembered.</span>
-      </p>
-      <p class="deets-node deets-body deets-close-two">
-        <span class="deets-desktop-copy">If any of this resonates, say hi. I’m usually somewhere between a Figma file, an unfinished experiment, and two cats with no respect for deadlines ♡*.<span class="deets-email-line">Email me → <a href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">hey@itsmicki.com</a></span></span>
-        <span class="deets-mobile-copy">If any of this resonates, say hi. I’m usually somewhere between a Figma file, an unfinished experiment, and two cats with no respect for deadlines ♡*.<br />Email me → <a href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">hey@itsmicki.com</a></span>
-      </p>
+      <div class="deets-story-column deets-closing">
+        <p class="deets-node deets-heading deets-statement" data-appear>
+          <span class="deets-desktop-copy">I love shaping brands from start to finish, turning intangible stories into coherent systems that can live across digital and print.</span>
+          <span class="deets-mobile-copy">I love shaping brands from start to finish, turning intangible stories into coherent systems that can live across digital<br />and print.</span>
+        </p>
+        <div class="deets-story-row">
+          <p class="deets-node deets-body deets-close-one" data-appear>
+            <span class="deets-desktop-copy">I’m drawn to experimental design, visual friction, and identities that refuse a single tone. Design isn’t neutral decoration: it carries culture, ideology, and power. At its best, it doesn’t just change how something looks—it changes how it can be read, felt, and remembered.</span>
+            <span class="deets-mobile-copy">I’m drawn to experimental design, visual friction, and identities that refuse a single tone. Design isn’t neutral decoration: it carries culture, ideology, and power. At its best, it doesn’t just change how something looks—it changes how it can be read, felt, and remembered.</span>
+          </p>
+          <p class="deets-node deets-body deets-close-two" data-appear>
+            <span class="deets-desktop-copy">If any of this resonates, say hi. I’m usually somewhere between a Figma file, an unfinished experiment, and two cats with no respect for deadlines ♡*.<span class="deets-email-line">Email me → <a href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">hey@itsmicki.com</a></span></span>
+            <span class="deets-mobile-copy">If any of this resonates, say hi. I’m usually somewhere between a Figma file, an unfinished experiment, and two cats with no respect for deadlines ♡*.<br />Email me → <a href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">hey@itsmicki.com</a></span>
+          </p>
+        </div>
+      </div>
     </article>
 
     <footer class="deets-footer">
@@ -127,17 +131,19 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
         <a data-footer-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
         <span data-footer-reveal style="--reveal-delay:280ms">ALL RIGHTS RESERVED.</span>
         <span class="deets-footer-socials" data-footer-reveal style="--reveal-delay:350ms">
-          SOCIALS <a href="https://www.linkedin.com/in/micaelagalimberti/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
-          <a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
-          <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
-          <a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
-          <a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
+          SOCIALS <a href="https://www.linkedin.com/in/itsmicki/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+          {" "}<a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
+          {" "}<a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+          {" "}<a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
+          {" "}<a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
         </span>
       </div>
     </footer>
   </div>
 
   <script>
+    import { initPageMotion } from '@/scripts/pageMotion';
+
     /* ============ SMOOTH SCROLL (inercia, mantiene scroll nativo) ============ */
     (function () {
       const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -207,6 +213,20 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
       });
     })();
 
+    initPageMotion(document.querySelector<HTMLElement>('.deets-page'));
+
+    /* ============ "(my story)" fades out when the page reaches its end ============ */
+    const storyTrack = document.querySelector<HTMLElement>('.deets-story-label-track');
+    if (storyTrack) {
+      const checkEnd = () => {
+        const end = document.documentElement.scrollHeight - window.innerHeight;
+        storyTrack.classList.toggle('is-at-end', window.scrollY >= end - 40);
+      };
+      addEventListener('scroll', checkEnd, { passive: true });
+      addEventListener('resize', checkEnd);
+      checkEnd();
+    }
+
     const footerReveals = document.querySelectorAll<HTMLElement>('[data-footer-reveal]');
     if (footerReveals.length) {
       const footerObserver = new IntersectionObserver((entries) => {
@@ -243,7 +263,8 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
     color: var(--deets-ink);
     cursor: url('/cursors/view.png') 0 0, auto;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    /* clip (not hidden) so sticky elements keep working */
+    overflow-x: clip;
   }
 
   html:has(.deets-page) {
@@ -299,8 +320,8 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   .deets-page {
     position: relative;
     width: 100%;
-    height: 381.9375vw;
-    overflow: hidden;
+    height: 337.655vw;
+    overflow: clip;
     background: var(--deets-paper);
     color: var(--deets-ink);
     font-family: 'OT Neue Montreal Deets', 'Arial Narrow', sans-serif;
@@ -325,12 +346,13 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
     margin: 0;
   }
 
+  /* Same size and first-line baseline as "(Picked projects)" on /projects. */
   .deets-title {
-    top: 8.298462vw;
-    left: 1.346985vw;
+    top: 10.1355vw;
+    left: 1.4vw;
     width: 97.193848vw;
     font-family: 'OT Neue Montreal Deets Extra', Impact, sans-serif;
-    font-size: 20.199vw;
+    font-size: 20.2vw;
     font-weight: 500;
     line-height: .854;
     letter-spacing: -.04em;
@@ -357,8 +379,8 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   }
 
   .deets-body {
-    font-size: 2.2175vw;
-    line-height: .96576;
+    font-size: 1.875vw;
+    line-height: 1.14217;
     letter-spacing: -.01em;
   }
 
@@ -380,6 +402,8 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
     object-fit: cover;
   }
 
+  .deets-break-mobile { display: none; }
+
   .deets-resume-label { top: 49.958492vw; left: 1.706116vw; width: 12.5vw; }
   .deets-download { top: 52.876705vw; left: 1.706116vw; width: 24vw; }
   .deets-nutshell-label { top: 49.958492vw; left: 36.422668vw; width: 27.619629vw; }
@@ -398,18 +422,61 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
   .deets-skills-copy { top: 120.802856vw; left: 36.449768vw; width: 62.125vw; }
   .deets-image-two { top: 138.865356vw; left: 1.336731vw; width: 97.226074vw; height: 46.301147vw; }
   .deets-story-label { top: 189.716919vw; left: 1.47876vw; width: 17.5vw; font-size: 4.033125vw; line-height: .86781; letter-spacing: -.03em; }
-  .deets-story-lead { top: 189.716919vw; left: 20.45874vw; width: 77.0625vw; }
-  .deets-story-one { top: 202.216919vw; left: 20.45874vw; width: 34.666687vw; }
-  .deets-story-two { top: 202.216919vw; left: 56.125427vw; width: 41.395813vw; }
+  /* Desktop structure (Figma 392:9900): the story and closing copy flow in the right column, aligned with the large photo. */
+  .deets-story-column {
+    position: absolute;
+    left: 36.457vw;
+    display: flex;
+    flex-direction: column;
+    gap: 2vw;
+    width: 62.0625vw;
+  }
+  .deets-story-column:not(.deets-closing) { top: 189.716919vw; }
+  .deets-closing { top: 281.3125vw; }
+  .deets-story-row {
+    display: flex;
+    gap: 1vw;
+    align-items: flex-start;
+  }
+  .deets-story-row-late {
+    position: absolute;
+    top: 265.74707vw;
+    left: 36.4375vw;
+    width: 62.125vw;
+    gap: 2vw;
+  }
+  .deets-story-column > .deets-node,
+  .deets-story-row > .deets-node {
+    position: static;
+    width: auto;
+  }
+  .deets-story-row > .deets-node { flex: 1 1 0; min-width: 0; }
+  /* "(my story)" sticks below the top edge once the wide photo above has scrolled out, until the closing copy ends. */
+  .deets-story-label-track {
+    position: absolute;
+    top: 189.716919vw;
+    left: 1.47876vw;
+    width: 17.5vw;
+    height: 116.98vw;
+  }
+  .deets-story-label-track > .deets-story-label {
+    position: sticky;
+    top: 4.5625vw;
+    left: auto;
+  }
+  /* Fades out once the page hits its end. */
+  .deets-story-label-track.is-at-end > .deets-story-label {
+    opacity: 0 !important;
+    transition: opacity .18s ease-out !important;
+  }
   .deets-story-images { display: contents; }
-  .deets-image-three { top: 220.80957vw; left: 19.556946vw; width: 26vw; height: 32.5vw; }
-  .deets-image-four { top: 220.80957vw; left: 70.408691vw; width: 28.1875vw; height: 42.25vw; }
-  .deets-story-three { top: 265.74707vw; left: 19.512268vw; width: 36.366943vw; }
-  .deets-story-four { top: 265.74707vw; left: 57.879211vw; width: 40.695557vw; }
-  .deets-image-five { top: 279.029785vw; left: 19.533752vw; width: 79.039307vw; height: 35.75vw; }
-  .deets-statement { top: 318.313477vw; left: 19.512268vw; width: 79.0625vw; }
-  .deets-close-one { top: 330.813477vw; left: 19.512268vw; width: 36.366943vw; }
-  .deets-close-two { top: 330.813477vw; left: 57.879211vw; width: 40.695557vw; }
+  .deets-image-three { top: 220.80957vw; left: 36.4375vw; width: 26vw; height: 32.5vw; }
+  .deets-image-four { top: 220.80957vw; left: 70.4375vw; width: 28.1875vw; height: 42.25vw; }
+  .deets-statement {
+    font-size: 3.533125vw;
+    line-height: .99062;
+    letter-spacing: -.03em;
+  }
 
   .deets-email-line {
     display: block;
@@ -424,12 +491,16 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
 
   .deets-footer {
     position: absolute;
-    top: 346.972198vw;
+    top: 302.69vw;
     right: 0;
     left: 0;
     height: 34.965302vw;
     overflow: hidden;
+    /* Its box overlaps the end of the closing copy; only its own links take clicks. */
+    pointer-events: none;
   }
+
+  .deets-footer a { pointer-events: auto; }
 
   .deets-footer-wordmark {
     position: absolute;
@@ -547,16 +618,20 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
       white-space: nowrap;
     }
 
+    /* The title matches /projects (26.54cqw, first baseline at 49.6cqw); everything below moves down 34.1cqw to make room for its third line. */
     .deets-page {
       container-type: inline-size;
-      height: min(4492px, 1151.794872cqw);
+      height: calc(min(4492px, 1151.794872cqw) + 34.1cqw);
     }
+
+    .deets-break-mobile { display: inline; }
+    .deets-break-desktop { display: none; }
 
     .deets-mobile-meta {
       position: absolute;
       z-index: 30;
       top: max(min(8px, 2.051282cqw), env(safe-area-inset-top));
-      right: calc(min(-8.664px, -2.221538cqw) + env(safe-area-inset-right));
+      right: env(safe-area-inset-right);
       left: env(safe-area-inset-left);
       display: grid;
       grid-template-columns: auto 1fr;
@@ -586,7 +661,7 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
 
     .deets-canvas {
       position: absolute;
-      top: min(322.359px, 82.656154cqw);
+      top: calc(min(322.359px, 82.656154cqw) + 34.1cqw);
       left: min(15.871px, 4.069487cqw);
       width: min(360px, 92.307692cqw);
       height: min(3947.732px, 1012.238974cqw);
@@ -607,15 +682,22 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
 
     .deets-story-lead.deets-mobile-copy { display: block; }
 
+    .deets-story-column,
+    .deets-story-row,
+    .deets-story-label-track { display: contents; }
+
+    .deets-story-label-track > .deets-story-label { position: absolute; top: min(1338.883px, 343.303333cqw); left: 0; }
+
+    .deets-story-column > .deets-node,
+    .deets-story-row > .deets-node { position: absolute; width: 100%; }
+
     .deets-title {
-      top: min(-207.974px, -53.326667cqw);
-      left: min(-4.726px, -1.211795cqw);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      width: min(366px, 93.846154cqw);
-      height: min(152px, 38.974359cqw);
-      font-size: min(97.016px, 24.875897cqw);
+      top: calc(31.52cqw - min(322.359px, 82.656154cqw) - 34.1cqw);
+      left: calc(2.307692cqw - min(15.871px, 4.069487cqw));
+      display: block;
+      width: 95.384616cqw;
+      height: auto;
+      font-size: 26.54cqw;
       line-height: .65005;
       letter-spacing: -.04em;
     }
@@ -749,12 +831,6 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
       width: 100%;
     }
 
-    .deets-image-five {
-      top: min(2999.284px, 769.047179cqw);
-      left: 0;
-      width: min(343.78px, 88.148718cqw);
-      height: min(155.448px, 39.858462cqw);
-    }
 
     .deets-statement {
       top: min(3186.732px, 817.110769cqw);
@@ -807,7 +883,7 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
     .deets-image-three img { object-position: bottom; }
 
     .deets-footer {
-      top: min(4363px, 1118.717949cqw);
+      top: calc(min(4363px, 1118.717949cqw) + 34.1cqw);
       height: min(129px, 33.076923cqw);
       margin: 0;
       padding: 0;
@@ -836,6 +912,136 @@ const shoes = image('/03_Deets/05_Deets.webp', 'A close-up of pale yellow shoes 
 
     .deets-email-line { display: inline; margin: 0; }
   }
+
+  /* Mobile: content flows block after block with the design's spacing (16px label → copy, 32px between sections),
+     so text size changes never leave gaps or overlaps. The title shares the first baseline of "(Picked projects)". */
+  @media (max-width: 760px) {
+    .deets-page { height: auto; }
+
+    .deets-break-mobile { display: none; }
+    .deets-break-desktop { display: inline; }
+    .deets-story-lead.deets-desktop-copy { display: none; }
+
+    .deets-title {
+      top: calc(31.6cqw - 82.656154cqw);
+      left: calc(2.307692cqw - min(15.871px, 4.069487cqw));
+      font-size: 24.53cqw;
+      line-height: .755;
+    }
+
+    .deets-canvas {
+      position: relative;
+      top: auto;
+      left: auto;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+      margin: 82.656154cqw 0 0 min(15.871px, 4.069487cqw);
+    }
+
+    .deets-canvas > .deets-node:not(.deets-title),
+    .deets-story-column > .deets-node,
+    .deets-story-row > .deets-node,
+    .deets-story-label-track > .deets-story-label,
+    .deets-story-images > .deets-node {
+      position: relative;
+      top: auto;
+      left: auto;
+    }
+
+    .deets-story-images {
+      position: relative;
+      top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      height: auto;
+    }
+
+    .deets-bio, .deets-skills-copy, .deets-story-lead, .deets-story-one, .deets-story-two,
+    .deets-story-four, .deets-close-one, .deets-close-two { margin-top: min(16px, 4.102564cqw); }
+    .deets-image-one { margin-top: min(20px, 5.128205cqw); }
+    .deets-download { margin-top: min(12px, 3.076923cqw); }
+    .deets-resume-label, .deets-skills-label, .deets-image-two, .deets-story-label,
+    .deets-story-images, .deets-story-three, .deets-statement { margin-top: min(32px, 8.205128cqw); }
+
+    .deets-story-lead, .deets-statement {
+      font-size: min(49px, 12.564103cqw);
+      line-height: min(42.52px, 10.902564cqw);
+    }
+
+    /* Same type as the bio under "In a Nutshell". */
+    .deets-skills-copy {
+      font-size: min(32px, 8.205128cqw);
+      line-height: min(34px, 8.717949cqw);
+      letter-spacing: -.03em;
+    }
+
+    /* Footer identical to /projects on mobile. */
+    .deets-footer {
+      position: relative;
+      top: auto;
+      height: min(169px, 43.333333cqw);
+      margin-top: min(64px, 16.410256cqw);
+      overflow: hidden;
+    }
+
+    .deets-footer-wordmark {
+      top: min(2px, .512821cqw);
+      right: min(-8px, -2.051282cqw);
+      bottom: auto;
+      left: min(-8.369px, -2.145897cqw);
+      width: auto;
+      justify-content: space-between;
+      font-size: min(176.756px, 45.322051cqw);
+      line-height: normal;
+      text-box-trim: none;
+    }
+
+    .deets-footer-wordmark span:first-child { margin-left: -2.051282vw; }
+    .deets-footer-wordmark span:last-child { margin-right: -2.051282vw; }
+
+    /* Room at the end so the bottom navigation never covers the wordmark. */
+    .deets-page { padding-bottom: calc(min(48px, 12.307692cqw) + env(safe-area-inset-bottom)); }
+  }
+
+  /* Same motion as /projects: images slide inside their frame (parallax) and content rises in on load. */
+  .deets-page .deets-image img {
+    position: static;
+    left: auto;
+    bottom: auto;
+    width: 100%;
+    height: 140%;
+    object-fit: cover;
+    translate: 0 calc(-23% + 23% * var(--parallax-progress, .5));
+    opacity: 0;
+    transition: opacity .9s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .deets-page .deets-image img.is-loaded { opacity: 1; }
+
+  :root.appear-ready .deets-page [data-appear] {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: opacity .75s cubic-bezier(.22, 1, .36, 1), transform .75s cubic-bezier(.22, 1, .36, 1);
+    transition-delay: calc(.1s * var(--delay-order, 0));
+  }
+
+  :root.appear-ready .deets-page [data-appear].is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  :root.appear-ready .deets-page .deets-appear-text[data-appear] {
+    transform: translateY(50%) skewY(6deg);
+    transform-origin: 0 100%;
+    transition-duration: 1s;
+  }
+
+  :root.appear-ready .deets-page .deets-appear-text[data-appear].is-visible { transform: none; }
+
+  .deets-nutshell-label, .deets-bio, .deets-skills-copy, .deets-story-lead, .deets-story-two,
+  .deets-image-four, .deets-story-four, .deets-close-two { --delay-order: 1; }
 
   @media (prefers-reduced-motion: reduce) {
     *,
