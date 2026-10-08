@@ -132,7 +132,7 @@ const vimeoUrl = (id: string) =>
           const dimensions = item.type === 'image' && item.src ? imageMetadata[item.src] : undefined;
           return (
             <section class="case-media-block case-media-single" style={mediaStyle(item)}>
-              <div class="case-media-surface" data-case-media-reveal data-parallax={item.type === 'image' ? '' : undefined}>
+              <div class="case-media-surface" data-case-media-reveal>
                 <div class="case-media-content">
                   {item.type === 'image' && item.src && dimensions ? (
                     <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
@@ -184,7 +184,7 @@ const vimeoUrl = (id: string) =>
               const dimensions = item.type === 'image' && item.src ? imageMetadata[item.src] : undefined;
               return (
                 <div class="case-media-cell" style={cellStyle(item)}>
-                  <div class="case-media-surface" data-case-media-reveal data-parallax={item.type === 'image' ? '' : undefined} style={`--reveal-delay:${itemIndex * 70}ms`}>
+                  <div class="case-media-surface" data-case-media-reveal style={`--reveal-delay:${itemIndex * 70}ms`}>
                     <div class="case-media-content">
                       {item.type === 'image' && item.src && dimensions ? (
                         <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
@@ -251,11 +251,6 @@ const vimeoUrl = (id: string) =>
 </div>
 
 <script>
-  import { initPageMotion } from '@/scripts/pageMotion';
-
-  // Same image parallax and load-in fade as /projects and /deets.
-  initPageMotion(document.querySelector<HTMLElement>('.project-case-page'));
-
   /* Native scroll plus the same frame-rate-independent damping as the reference. */
   (function () {
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -855,22 +850,6 @@ const vimeoUrl = (id: string) =>
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
-  }
-
-  /* Same motion as /projects and /deets: images slide inside their frame (parallax) and fade in once loaded. */
-  .case-media-surface[data-parallax] .case-media-content {
-    overflow: hidden;
-  }
-
-  .case-media-surface[data-parallax] .case-media-content img {
-    height: 140% !important;
-    translate: 0 calc(-23% + 23% * var(--parallax-progress, .5));
-    opacity: 0;
-    transition: opacity .9s cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .case-media-surface[data-parallax] .case-media-content img.is-loaded {
-    opacity: 1;
   }
 
   .case-media-content img,

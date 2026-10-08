@@ -423,9 +423,9 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     height: 100%;
     object-fit: cover;
     object-position: 50% 50%;
-    /* Parallax: the image is 40% taller than its frame and slides through it as the frame crosses the viewport. */
-    height: 140%;
-    translate: 0 calc(-23% + 23% * var(--parallax-progress, .5));
+    /* Parallax: the image is 25% taller than its frame and slides through it as the frame crosses the viewport. */
+    height: 125%;
+    translate: 0 calc(-20% + 20% * var(--parallax-progress, .5));
     transition: transform .6s var(--projects-ease);
   }
 
@@ -439,9 +439,9 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     aspect-ratio: 426 / 240;
     border: 0;
     pointer-events: none;
-    height: 140%;
+    height: 125%;
     transform: translate(-50%, -50%);
-    translate: 0 calc((var(--parallax-progress, .5) - .5) * 28%);
+    translate: 0 calc((var(--parallax-progress, .5) - .5) * 20%);
   }
 
   /* Load-in: type and images rise and fade in as they enter the viewport. */
