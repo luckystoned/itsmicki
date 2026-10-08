@@ -1213,6 +1213,8 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='lumen'] .case-intro-columns p { flex: none; width: 30.5vw; line-height: .966; }
 
     .project-case-page[data-case='lumen'] .case-text { column-gap: 0; }
+    /* "(physical & digital touchpoints)" sits on two lines, as in Figma; its copy starts at x 598 so it has room. */
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(14) h2 { width: 30vw; }
     .project-case-page[data-case='lumen'] .case-text-wide-copy { margin-left: calc(21.125vw - var(--gutter) - 13vw); }
     .project-case-page[data-case='lumen'] .case-intro { grid-template-columns: calc(36.1875vw - var(--gutter)) 1fr; }
     .project-case-page[data-case='lumen'] .case-text-content { margin-left: calc(19.6875vw - var(--gutter) - 13vw); }
@@ -1879,7 +1881,11 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='lumen'] .project-case-canvas {
       display: flex;
       flex-direction: column;
-      padding-top: 60.4407vw;
+      padding: 60.4407vw min(9px, 2.307692vw) 0; /* Same side margins as the home. */
+    }
+    /* Body copy justified; headings, role and credits keep their alignment. */
+    .project-case-page[data-case='lumen'] :is(.case-nutshell, .case-intro-columns p, .case-text-content p, .case-lumen-mobile-copy p, .case-text-wide-copy) {
+      text-align: justify;
     }
     .project-case-page[data-case='lumen'] .case-intro,
     .project-case-page[data-case='lumen'] .case-intro > div:nth-child(2),
