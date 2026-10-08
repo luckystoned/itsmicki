@@ -369,9 +369,9 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       ),
     ],
     credits: [
-      'Project Founders & Leads / Luckystoned & 1nd1a',
-      'Spatial Art Direction, Scenography & Production / Guillermina Arbos & Camila Sesler',
-      'Photography & Film / Glenda Lazart',
+      'Project Founders & Leads / <a href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">Luckystoned</a> & <a href="https://www.instagram.com/1_n_d1_4_/" target="_blank" rel="noreferrer">1nd1a</a>',
+      'Spatial Art Direction, Scenography & Production / <a href="https://www.instagram.com/guillermiiiina/" target="_blank" rel="noreferrer">Guillermina Arbos</a> & <a href="https://www.instagram.com/camiiselser/" target="_blank" rel="noreferrer">Camila Sesler</a>',
+      'Photography & Film / <a href="https://www.instagram.com/glendalazart/" target="_blank" rel="noreferrer">Glenda Lazart</a>',
     ],
   },
 };
