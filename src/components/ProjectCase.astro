@@ -1100,14 +1100,14 @@ const vimeoUrl = (id: string) =>
       border-top-width: .5px;
     }
 
-    .project-case-page[data-case='winona'] .case-credit-list {
+    /* Credits at the Winona size on every case. */
+    .project-case-page .case-credit-list {
       font-size: 2.2175vw;
       line-height: .966;
       letter-spacing: -.01em;
     }
 
-    .project-case-page[data-case='outliant'] .case-text h2,
-    .project-case-page[data-case='outliant'] .case-credits h2 {
+    .project-case-page[data-case='outliant'] .case-text h2 {
       font-size: 2.2175vw;
       line-height: .966;
       letter-spacing: -.01em;
@@ -1118,12 +1118,6 @@ const vimeoUrl = (id: string) =>
       font-size: 3.5331vw;
       line-height: .991;
       letter-spacing: -.03em;
-    }
-
-    .project-case-page[data-case='outliant'] .case-credit-list {
-      font-size: 2.2175vw;
-      line-height: .966;
-      letter-spacing: -.01em;
     }
 
     .project-case-page[data-case='outliant'] .case-credits {
@@ -1381,10 +1375,15 @@ const vimeoUrl = (id: string) =>
       margin-left: 0;
     }
 
-    .case-text h2,
-    .case-credits h2 {
+    .case-text h2 {
       font-size: 24px;
       line-height: 1;
+    }
+
+    /* Credits at the Winona size on every case. */
+    .case-credits h2 {
+      font-size: 24px;
+      line-height: 29px;
     }
 
     .case-text-lead,
@@ -1396,10 +1395,10 @@ const vimeoUrl = (id: string) =>
     }
 
     .case-credit-list {
-      gap: 7px;
+      gap: 0;
       text-align: left;
-      font-size: 16px;
-      line-height: 1.1;
+      font-size: 24px;
+      line-height: 34.265px;
     }
 
     /* Mobile / Project Open / Winona (Figma frame 392:10324). */
