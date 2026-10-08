@@ -814,8 +814,9 @@ const vimeoUrl = (id: string) =>
     display: flow-root;
   }
 
+  /* 6px between images, the same spacing as the /projects grid. */
   .case-media-block {
-    margin-top: 1.81vw;
+    margin-top: 6px;
   }
 
   .case-intro + .case-flow > .case-media-block:first-child,
@@ -830,7 +831,7 @@ const vimeoUrl = (id: string) =>
   .case-media-pair {
     display: flex;
     align-items: flex-start;
-    gap: 1.81vw;
+    gap: 6px;
     width: 100%;
   }
 
@@ -838,9 +839,10 @@ const vimeoUrl = (id: string) =>
     align-items: flex-end;
   }
 
+  /* Cells keep their Figma proportions and grow to fill the row up to the side margins. */
   .case-media-cell {
-    flex: 0 0 auto;
-    width: var(--cell-width);
+    flex: 1 1 var(--cell-width);
+    min-width: 0;
   }
 
   .case-media-cell .case-media-surface {
@@ -1322,7 +1324,10 @@ const vimeoUrl = (id: string) =>
       line-height: 29px;
     }
 
-    .case-media-block,
+    .case-media-block {
+      margin-top: 6px;
+    }
+
     .case-intro + .case-flow > .case-media-block:first-child,
     .case-text + .case-media-block {
       margin-top: 32px;
@@ -1337,10 +1342,11 @@ const vimeoUrl = (id: string) =>
 
     .case-media-pair {
       flex-direction: column;
-      gap: 12px;
+      gap: 6px;
     }
 
     .case-media-cell {
+      flex: none;
       width: 100%;
     }
 
