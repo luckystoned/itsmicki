@@ -113,16 +113,6 @@ body a[href]:focus-visible {
   text-decoration-thickness: max(1.5px, .06em) !important;
 }
 
-/* Visual placeholder for a social profile whose destination is still pending. */
-.social-placeholder-link {
-  color: var(--bg, #fafafa);
-  background: var(--ink, #2e2e2e);
-  font-weight: inherit;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: .08em;
-}
-
 /* Keep parentheses outside the two underline segments, like See All (+). */
 .segmented-link .link-underline-part { position: relative; }
 .segmented-link .link-underline-part::after {
