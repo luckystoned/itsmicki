@@ -7,18 +7,20 @@ const asset = (number: number, alt = '') => {
   return { src, alt, ...imageMetadata[src] };
 };
 
+// Desktop sizes from Figma 392:9991 (1600px frame), with the stickers cropped to their visible edge so every gap is the
+// same: `width` is the slot (the tilted sticker's bounding box), `inner` the sticker inside it, `rotate` its tilt.
 const stripImages = [
-  { ...asset(1), widthCss: '31.1vw', ratio: '484 / 580' },
-  { ...asset(2), widthCss: '38.2vw', ratio: '595 / 497' },
-  { ...asset(3), widthCss: '26vw', ratio: '405 / 623' },
-  { ...asset(4), widthCss: '25.4vw', ratio: '395 / 555' },
-  { ...asset(5), widthCss: '37.1vw', ratio: '578 / 439' },
-  { ...asset(6), widthCss: '27.9vw', ratio: '434 / 463' },
-  { ...asset(7), widthCss: '27.1vw', ratio: '422 / 494' },
-  { ...asset(8), widthCss: '36.6vw', ratio: '569 / 680' },
+  { ...asset(1), width: '28.910vw', inner: '100.00%', rotate: '0deg' },
+  { ...asset(2), width: '33.763vw', inner: '90.70%', rotate: '8.92deg' },
+  { ...asset(3), width: '22.917vw', inner: '88.55%', rotate: '-4.98deg' },
+  { ...asset(4), width: '23.287vw', inner: '100.00%', rotate: '0deg' },
+  { ...asset(5), width: '34.381vw', inner: '100.00%', rotate: '0deg' },
+  { ...asset(6), width: '25.675vw', inner: '100.00%', rotate: '0deg' },
+  { ...asset(7), width: '25.195vw', inner: '100.00%', rotate: '0deg' },
+  { ...asset(8), width: '27.974vw', inner: '87.21%', rotate: '6.33deg' },
 ].map((item) => ({
   ...item,
-  style: `--strip-width:${item.widthCss};--strip-ratio:${item.ratio}`,
+  style: `--strip-width:${item.width};--strip-inner:${item.inner};--strip-rotate:${item.rotate}`,
 }));
 
 const filmPairs = [
@@ -32,6 +34,7 @@ const filmPairs = [
   const src = `/04_SideB/Film_${String(index + 1).padStart(2, '0')}_SideB.webp`;
   return { src, alt, ...imageMetadata[src] };
 });
+
 const fashion = {
   src: '/04_SideB/Fashion_SideB.webp',
   alt: 'A fashion lookbook collage of four outfits against a blue background.',
@@ -53,6 +56,12 @@ const fashion = {
   ]}
 >
   <div class="sideb-page">
+    <!-- White balance for the fashion video: softens the warm cast of the paper cards without pushing the blue backdrop to cyan. -->
+    <svg class="sideb-filters" aria-hidden="true" width="0" height="0" focusable="false">
+      <filter id="sideb-video-wb" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values=".94 0 0 0 0  0 1.03 0 0 0  0 0 1.15 0 0  0 0 0 1 0" />
+      </filter>
+    </svg>
     <aside class="sideb-mobile-meta" aria-label="Contact and social links" data-scroll-bar>
       <span>SAY HI</span>
       <a class="sideb-mobile-mail" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
@@ -63,27 +72,27 @@ const fashion = {
     </aside>
 
     <article class="sideb-content" aria-labelledby="sideb-title">
-      <h1 class="sideb-title" id="sideb-title">(Some bits of irrelevant<br />sh!t I’m into)</h1>
+      <h1 class="sideb-title sideb-appear-text" id="sideb-title" data-appear>(Some bits of irrelevant<br />sh!t I’m into)</h1>
 
       <div class="sideb-main">
         <section class="sideb-intro-block" aria-label="About Side B">
           <div class="sideb-intro-grid">
             <div>
-              <h2 class="sideb-label">Related Links</h2>
-              <p class="sideb-big sideb-related" aria-label="Related profiles">
-                <a target="_blank" rel="noopener noreferrer" class="sideb-pseudo-link" href="https://letterboxd.com/mikigalimberti/">Letterboxd</a><br />
-                <span class="sideb-pseudo-link">Lomography</span><br />
-                <a target="_blank" rel="noopener noreferrer" class="sideb-pseudo-link" href="https://opencloset.myindyx.com/user/mickivainilla">Indyx</a><br />
+              <h2 class="sideb-label" data-appear>Related Links</h2>
+              <p class="sideb-big sideb-related" aria-label="Related profiles" data-appear>
+                <a target="_blank" rel="noopener noreferrer" class="sideb-pseudo-link" href="https://letterboxd.com/mikigalimberti/">Letterboxd</a>
+                <a target="_blank" rel="noopener noreferrer" class="sideb-pseudo-link" href="https://www.lomography.es/homes/itsmicki">Lomography</a>
+                <a target="_blank" rel="noopener noreferrer" class="sideb-pseudo-link" href="https://opencloset.myindyx.com/user/mickivainilla">Indyx</a>
                 <a target="_blank" rel="noopener noreferrer" class="sideb-pseudo-link" href="https://substack.com/@itsmicki">Substack</a>
               </p>
             </div>
             <div>
-              <h2 class="sideb-label">In a Nutshell</h2>
-              <p class="sideb-big">Hey — On my B-side, I’m still micki, just a little more laid-back and messy. I study fashion design, take photos, make endless playlists, sell vintage and secondhand clothes, and can spend hours scrolling or watching the most cursed YouTube videos imaginable.</p>
+              <h2 class="sideb-label" data-appear>In a Nutshell</h2>
+              <p class="sideb-big" data-appear>Hey — On my B-side, I’m still micki, just a little more laid-back and messy. I study fashion design, take photos, make endless playlists, sell vintage and secondhand clothes, and can spend hours scrolling or watching the most cursed YouTube videos imaginable.</p>
             </div>
           </div>
 
-          <div class="sideb-strip" data-marquee aria-label="A moving collage of Micaela's visual references">
+          <div class="sideb-strip" data-marquee data-appear aria-label="A moving collage of Micaela's visual references">
             <div class="sideb-strip-track" data-marquee-track>
               {[false, true].map((duplicate) => (
                 <div class="sideb-strip-set" data-marquee-set={duplicate ? undefined : ''} aria-hidden={duplicate ? 'true' : undefined}>
@@ -107,14 +116,14 @@ const fashion = {
         </section>
 
         <section class="sideb-section" aria-labelledby="fashion-title">
-          <h2 class="sideb-section-title" id="fashion-title">(fashion &amp;<br />aesthetics)</h2>
+          <h2 class="sideb-section-title" id="fashion-title" data-appear>(fashion &amp;<br />aesthetics)</h2>
           <div class="sideb-section-column">
-            <p class="sideb-big">I run a <span class="sideb-pseudo-link">digital vintage shop</span> centered on curating designer pieces and extending their life through reuse. I'm fascinated by the way objects can be recontextualized, transformed, and given new meaning over time in a world where trends are fleeting.</p>
+            <p class="sideb-big" data-appear>I run a <span class="sideb-pseudo-link">digital vintage shop</span> centered on curating designer pieces and extending their life through reuse. I'm fascinated by the way objects can be recontextualized, transformed, and given new meaning over time in a world where trends are fleeting.</p>
 
-            <div class="sideb-fashion-reveal" data-sideb-reveal>
-              <figure class="sideb-fashion-media">
+            <div class="sideb-fashion-reveal" data-appear>
+              <figure class="sideb-fashion-media" data-parallax>
                 <video
-                  data-parallax
+                  class="sideb-fashion-video"
                   src="/04_SideB/Fashion_SideB.mp4"
                   poster={fashion.src}
                   width={fashion.width}
@@ -132,20 +141,20 @@ const fashion = {
             </div>
 
             <div class="sideb-body-pair">
-              <p>I'm currently pursuing a Bachelor's degree in Design and Aesthetic Management, a multidisciplinary program that explores fashion, graphic, interior, and product design. What fascinates me most is the idea that aesthetics are never superficial. Every visual decision, from the spaces we inhabit to the clothes we wear, communicates identity, values, and culture.</p>
-              <p>I see the way I dress as an extension of my design practice. It's one of the most immediate ways I present myself to the world, just as branding, art direction, or digital experiences shape how people perceive a brand. Studying aesthetics across different disciplines has expanded the way I think about communication, helping me design with greater intention, coherence, and emotional depth.</p>
+              <p data-appear>I'm currently pursuing a Bachelor's degree in Design and Aesthetic Management, a multidisciplinary program that explores fashion, graphic, interior, and product design. What fascinates me most is the idea that aesthetics are never superficial. Every visual decision, from the spaces we inhabit to the clothes we wear, communicates identity, values, and culture.</p>
+              <p data-appear>I see the way I dress as an extension of my design practice. It's one of the most immediate ways I present myself to the world, just as branding, art direction, or digital experiences shape how people perceive a brand. Studying aesthetics across different disciplines has expanded the way I think about communication, helping me design with greater intention, coherence, and emotional depth.</p>
             </div>
           </div>
         </section>
 
         <section class="sideb-section sideb-music-section" aria-labelledby="music-title">
-          <h2 class="sideb-section-title" id="music-title">(music)</h2>
+          <h2 class="sideb-section-title" id="music-title" data-appear>(music)</h2>
           <div class="sideb-section-column">
-            <p class="sideb-big"><span class="sideb-music-lead">Music taught me that complexity doesn't have to feel chaotic. I'm fascinated by sound, noise, and the absence of both.</span> <span class="sideb-music-body">Through music, I found the same eclectic spirit that defines my work across design, fashion, and aesthetics: different influences, multiple layers, and unexpected contrasts coming together to create something cohesive. My next creative goal is to dive deeper into sound design and music production, expanding the way I think about storytelling beyond the visual.</span></p>
+            <p class="sideb-big" data-appear><span class="sideb-music-lead">Music taught me that complexity doesn't have to feel chaotic. I'm fascinated by sound, noise, and the absence of both.</span> <span class="sideb-music-body">Through music, I found the same eclectic spirit that defines my work across design, fashion, and aesthetics: different influences, multiple layers, and unexpected contrasts coming together to create something cohesive. My next creative goal is to dive deeper into sound design and music production, expanding the way I think about storytelling beyond the visual.</span></p>
           </div>
         </section>
 
-        <section class="sideb-spotify" data-sideb-reveal aria-label="Micaela's Spotify playlist">
+        <section class="sideb-spotify" data-appear aria-label="Micaela's Spotify playlist">
           <div class="sideb-spotify-frame">
             <iframe
               title="Micaela's Spotify playlist"
@@ -159,28 +168,27 @@ const fashion = {
         </section>
 
         <section class="sideb-section sideb-film-section" aria-labelledby="film-title">
-          <h2 class="sideb-section-title" id="film-title">(film)</h2>
+          <h2 class="sideb-section-title" id="film-title" data-appear>(film)</h2>
           <div class="sideb-section-column">
-            <p class="sideb-big">Shooting on film completely changed the way I approach uncertainty. I fell in love with its grain, textures, light leaks, and chemical imperfections, elements that digital workflows often try to eliminate.</p>
+            <p class="sideb-big" data-appear>Shooting on film completely changed the way I approach uncertainty. I fell in love with its grain, textures, light leaks, and chemical imperfections, elements that digital workflows often try to eliminate.</p>
 
-            <div class="sideb-film-carousel" data-film-carousel role="group" aria-label="Film photography pairs">
-              <div class="sideb-film-track" data-film-track>
-                {filmPairs.map((item, index) => (
-                  <figure class="sideb-film-cell" aria-hidden={index === 0 ? 'false' : 'true'}>
-                    <img src={item.src} alt={item.alt} width={item.width} height={item.height} loading="lazy" decoding="async" draggable="false" />
-                  </figure>
+            <div class="sideb-film-strip" data-marquee data-appear role="group" aria-label="Film photography">
+              <div class="sideb-film-strip-track" data-marquee-track>
+                {[false, true].map((duplicate) => (
+                  <div class="sideb-film-strip-set" data-marquee-set={duplicate ? undefined : ''} aria-hidden={duplicate ? 'true' : undefined}>
+                    {filmPairs.map((item) => (
+                      <figure class="sideb-film-strip-item">
+                        <img src={item.src} alt={duplicate ? '' : item.alt} width={item.width} height={item.height} loading="lazy" decoding="async" draggable="false" />
+                      </figure>
+                    ))}
+                  </div>
                 ))}
               </div>
-              <span class="sideb-film-progress" aria-hidden="true">
-                {filmPairs.map((_, index) => (
-                  <i class:list={{ 'is-active': index === 0 }}><b></b></i>
-                ))}
-              </span>
             </div>
 
             <div class="sideb-body-pair">
-              <p>What fascinates me most is capturing moments that might seem ordinary or even unnoticed to everyone else, but somehow feel worth preserving to me. Photography gives me the chance to steal those fleeting moments and reveal the beauty hidden in what others might overlook.</p>
-              <p>Every frame demands patience, intention, and the acceptance that the outcome is never fully under your control. That process has deeply influenced the way I approach design: slowing down, trusting the process, and finding beauty in what wasn't planned. I learned that uncertainty isn't the opposite of good design. Sometimes it's what gives it character.</p>
+              <p data-appear>What fascinates me most is capturing moments that might seem ordinary or even unnoticed to everyone else, but somehow feel worth preserving to me. Photography gives me the chance to steal those fleeting moments and reveal the beauty hidden in what others might overlook.</p>
+              <p data-appear>Every frame demands patience, intention, and the acceptance that the outcome is never fully under your control. That process has deeply influenced the way I approach design: slowing down, trusting the process, and finding beauty in what wasn't planned. I learned that uncertainty isn't the opposite of good design. Sometimes it's what gives it character.</p>
             </div>
           </div>
         </section>
@@ -210,6 +218,8 @@ const fashion = {
   </div>
 
   <script>
+    import { initPageMotion } from '@/scripts/pageMotion';
+
     /* Native scrolling with the same damped wheel interpolation as the reference. */
     (function () {
       const reduceMotion = matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -290,203 +300,75 @@ const fashion = {
       document.querySelectorAll<HTMLElement>('[data-sideb-reveal]').forEach((node) => revealObserver.observe(node));
     }
 
-    const marquee = document.querySelector<HTMLElement>('[data-marquee]');
-    const marqueeTrack = marquee?.querySelector<HTMLElement>('[data-marquee-track]');
-    const marqueeSet = marquee?.querySelector<HTMLElement>('[data-marquee-set]');
+    /* ============ IMAGE STRIP: drifts on its own and can be dragged, swiped or scrolled sideways ============ */
+    const initStrip = (strip: HTMLElement) => {
+      const stripTrack = strip.querySelector<HTMLElement>('[data-marquee-track]');
+      const stripSet = strip.querySelector<HTMLElement>('[data-marquee-set]');
+      if (!stripTrack || !stripSet) return;
+      // `target` is where the strip wants to be; `offset` eases toward it for a soft, inertial feel.
+      let setWidth = 0, target = 0, offset = 0, velocity = 0, lastX = 0, moved = 0, holdUntil = 0;
+      let dragging = false, pointerId = -1, previousTime = 0;
 
-    if (marquee && marqueeTrack && marqueeSet) {
-      let setWidth = 0;
-      let offset = 0;
-      let lastTime = performance.now();
-      let resizeFrame = 0;
-
-      const normalizeOffset = () => {
+      const wrap = () => {
         if (!setWidth) return;
-        while (offset <= -setWidth * 2) offset += setWidth;
-        while (offset > -setWidth) offset -= setWidth;
+        while (offset > 0) { offset -= setWidth; target -= setWidth; }
+        while (offset <= -setWidth) { offset += setWidth; target += setWidth; }
+      };
+      const measure = () => {
+        const gap = parseFloat(getComputedStyle(stripTrack).columnGap || getComputedStyle(stripTrack).gap) || 0;
+        setWidth = stripSet.getBoundingClientRect().width + gap;
+        wrap();
+      };
+      const frame = (now: number) => {
+        const elapsed = previousTime ? Math.min(64, now - previousTime) : 16;
+        previousTime = now;
+        if (!reduceSideBMotion && !dragging && now >= holdUntil) target -= elapsed * .03;
+        offset = reduceSideBMotion ? target : offset + (target - offset) * (1 - Math.exp(-(dragging ? 25 : 9) * elapsed / 1000));
+        wrap();
+        stripTrack.style.transform = `translate3d(${offset}px, 0, 0)`;
+        requestAnimationFrame(frame);
       };
 
-      const renderMarquee = () => {
-        marqueeTrack.style.transform = `translate3d(${offset}px, 0, 0)`;
-      };
-
-      const measureMarquee = () => {
-        const gap = parseFloat(getComputedStyle(marqueeTrack).columnGap || getComputedStyle(marqueeTrack).gap) || 0;
-        setWidth = marqueeSet.getBoundingClientRect().width + gap;
-        offset = -setWidth;
-        renderMarquee();
-      };
-
-      const animateMarquee = (now: number) => {
-        const deltaTime = Math.min(64, now - lastTime);
-        lastTime = now;
-        if (!reduceSideBMotion) {
-          offset -= deltaTime * .03;
-          normalizeOffset();
-          renderMarquee();
-        }
-        requestAnimationFrame(animateMarquee);
-      };
-
-      addEventListener('resize', () => {
-        cancelAnimationFrame(resizeFrame);
-        resizeFrame = requestAnimationFrame(measureMarquee);
+      strip.addEventListener('dragstart', (event) => event.preventDefault());
+      strip.addEventListener('pointerdown', (event) => {
+        if (!event.isPrimary || event.button !== 0) return;
+        dragging = true; pointerId = event.pointerId; lastX = event.clientX; moved = 0; velocity = 0;
       });
-
-      if (document.fonts?.ready) document.fonts.ready.then(measureMarquee);
-      else measureMarquee();
-      if (!reduceSideBMotion) requestAnimationFrame(animateMarquee);
-    }
-
-    const filmCarousel = document.querySelector<HTMLElement>('[data-film-carousel]');
-    if (filmCarousel) {
-      const track = filmCarousel.querySelector<HTMLElement>('[data-film-track]');
-      const progressItems = Array.from(filmCarousel.querySelectorAll<HTMLElement>('.sideb-film-progress i'));
-      const count = track?.children.length ?? 0;
-      const duration = 3800;
-      let index = 0;
-      let timer: number | undefined;
-      let isVisible = false;
-      let dragging = false;
-      let pointerId = -1;
-      let dragStartX = 0;
-      let dragDistance = 0;
-      let wheelTimer: number | undefined;
-      let wheelDistance = 0;
-
-      const renderFilm = () => {
-        if (!track) return;
-        track.style.transform = `translate3d(${-index * 100}%, 0, 0)`;
-        Array.from(track.children).forEach((cell, cellIndex) => {
-          cell.setAttribute('aria-hidden', cellIndex === index ? 'false' : 'true');
-        });
-        progressItems.forEach((item, itemIndex) => {
-          const fill = item.querySelector<HTMLElement>('b');
-          item.classList.toggle('is-active', itemIndex === index);
-          if (!fill) return;
-          fill.getAnimations().forEach((animation) => animation.cancel());
-          fill.style.transform = itemIndex === index && reduceSideBMotion ? 'scaleX(1)' : 'scaleX(0)';
-          if (itemIndex === index && !reduceSideBMotion && isVisible && !dragging && wheelTimer === undefined && !document.hidden) {
-            fill.animate(
-              [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
-              { duration, easing: 'linear', fill: 'forwards' },
-            );
-          }
-        });
-      };
-
-      const goTo = (nextIndex: number) => {
-        if (!count) return;
-        index = (nextIndex + count) % count;
-        renderFilm();
-      };
-
-      const stopFilm = () => {
-        if (timer !== undefined) window.clearTimeout(timer);
-        timer = undefined;
-      };
-
-      const startFilm = () => {
-        stopFilm();
-        if (reduceSideBMotion || !isVisible || document.hidden || count < 2 || dragging || wheelTimer !== undefined) return;
-        timer = window.setTimeout(() => {
-          goTo(index + 1);
-          startFilm();
-        }, duration);
-      };
-
-      filmCarousel.addEventListener('dragstart', (event) => event.preventDefault());
-      filmCarousel.addEventListener('pointerdown', (event) => {
-        if (!event.isPrimary || event.button !== 0 || wheelTimer !== undefined) return;
-        if (!track || count < 2) return;
-        dragging = true;
-        pointerId = event.pointerId;
-        dragStartX = event.clientX;
-        dragDistance = 0;
-        stopFilm();
-        progressItems.forEach((item) => item.querySelector('b')?.getAnimations().forEach((animation) => animation.pause()));
-        track.style.transition = 'none';
-        filmCarousel.setPointerCapture(pointerId);
+      strip.addEventListener('pointermove', (event) => {
+        if (!dragging || event.pointerId !== pointerId) return;
+        const dx = event.clientX - lastX;
+        lastX = event.clientX;
+        moved += Math.abs(dx);
+        if (moved > 6 && !strip.hasPointerCapture(pointerId)) strip.setPointerCapture(pointerId);
+        target += dx;
+        velocity = velocity * .6 + dx * .4;
       });
-
-      filmCarousel.addEventListener('pointermove', (event) => {
-        if (!track || !dragging || event.pointerId !== pointerId) return;
-        dragDistance = event.clientX - dragStartX;
-        track.style.transform = `translate3d(calc(${-index * 100}% + ${dragDistance}px), 0, 0)`;
-      });
-
-      const finishFilmDrag = (event: PointerEvent) => {
-        if (!track || !dragging || event.pointerId !== pointerId) return;
+      const release = (event: PointerEvent) => {
+        if (!dragging || event.pointerId !== pointerId) return;
         dragging = false;
-        if (filmCarousel.hasPointerCapture(pointerId)) filmCarousel.releasePointerCapture(pointerId);
-        const threshold = Math.min(90, filmCarousel.clientWidth * .14);
-        const direction = Math.abs(dragDistance) >= threshold ? (dragDistance < 0 ? 1 : -1) : 0;
-        track.style.removeProperty('transition');
-        goTo(index + direction);
-        startFilm();
+        if (moved > 6 && !reduceSideBMotion) target += velocity * 14;
+        holdUntil = performance.now() + 600;
       };
-
-      filmCarousel.addEventListener('pointerup', finishFilmDrag);
-      filmCarousel.addEventListener('pointercancel', finishFilmDrag);
-      filmCarousel.addEventListener('lostpointercapture', finishFilmDrag);
-      filmCarousel.addEventListener('wheel', (event) => {
-        if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || count < 2 || !track) return;
+      addEventListener('pointerup', release);
+      addEventListener('pointercancel', release);
+      strip.addEventListener('lostpointercapture', release);
+      // Sideways trackpad/wheel gestures move the strip; vertical ones keep scrolling the page.
+      strip.addEventListener('wheel', (event) => {
+        if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
         event.preventDefault();
-        if (dragging) return;
-        stopFilm();
-        progressItems.forEach((item) => item.querySelector('b')?.getAnimations().forEach((animation) => animation.pause()));
-        if (wheelTimer !== undefined) window.clearTimeout(wheelTimer);
-        const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? filmCarousel.clientWidth : 1;
-        wheelDistance = Math.max(-filmCarousel.clientWidth, Math.min(filmCarousel.clientWidth, wheelDistance + event.deltaX * unit));
-        // Follow the gesture directly; settle once its momentum events have ended.
-        const previewDistance = (index === 0 && wheelDistance < 0) || (index === count - 1 && wheelDistance > 0) ? wheelDistance * .15 : wheelDistance;
-        track.style.transition = 'none';
-        track.style.transform = `translate3d(calc(${-index * 100}% - ${previewDistance}px), 0, 0)`;
-        wheelTimer = window.setTimeout(() => {
-          wheelTimer = undefined;
-          const direction = Math.abs(wheelDistance) >= Math.min(90, filmCarousel.clientWidth * .14) ? Math.sign(wheelDistance) : 0;
-          wheelDistance = 0;
-          track.style.removeProperty('transition');
-          goTo(index + direction);
-          startFilm();
-        }, 200);
+        const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? strip.clientWidth : 1;
+        target -= event.deltaX * unit;
+        holdUntil = performance.now() + 400;
       }, { passive: false });
 
-      const visibilityObserver = new IntersectionObserver(([entry]) => {
-        isVisible = entry.isIntersecting;
-        if (!dragging && wheelTimer === undefined) renderFilm();
-        startFilm();
-      }, { threshold: .08, rootMargin: '10% 0px' });
+      addEventListener('resize', measure);
+      if (document.fonts?.ready) document.fonts.ready.then(measure);
+      measure();
+      requestAnimationFrame(frame);
+    };
+    document.querySelectorAll<HTMLElement>('[data-marquee]').forEach(initStrip);
 
-      document.addEventListener('visibilitychange', startFilm);
-      visibilityObserver.observe(filmCarousel);
-      renderFilm();
-    }
-
-    if (!reduceSideBMotion) {
-      const parallaxItems = Array.from(document.querySelectorAll<HTMLElement>('[data-parallax]'));
-      let parallaxFrame = 0;
-
-      const updateParallax = () => {
-        parallaxFrame = 0;
-        parallaxItems.forEach((item) => {
-          const frame = item.parentElement;
-          if (!frame) return;
-          const rect = frame.getBoundingClientRect();
-          if (rect.bottom < -300 || rect.top > innerHeight + 300) return;
-          const progress = (rect.top + rect.height / 2 - innerHeight / 2) / (innerHeight + rect.height);
-          item.style.transform = `translate3d(0, ${progress * rect.height * -.14}px, 0)`;
-        });
-      };
-
-      const requestParallax = () => {
-        if (!parallaxFrame) parallaxFrame = requestAnimationFrame(updateParallax);
-      };
-
-      addEventListener('scroll', requestParallax, { passive: true });
-      addEventListener('resize', requestParallax);
-      requestParallax();
-    }
+    initPageMotion(document.querySelector<HTMLElement>('.sideb-page'));
   </script>
 </BaseLayout>
 
@@ -581,11 +463,12 @@ const fashion = {
     display: none;
   }
 
+  /* Same size, left edge and first baseline as the titles on /projects and /deets. */
   .sideb-title {
-    margin: clamp(30px, 5.5vw, 88px) 0 0;
-    padding-inline: var(--sideb-pad);
+    margin: 5.9375vw 0 0;
+    padding-inline: 1.4vw var(--sideb-pad);
     font-family: 'OT Neue Montreal SideB Extra', Impact, sans-serif;
-    font-size: 20.77vw;
+    font-size: 20.2vw;
     font-weight: 500;
     line-height: .854;
     letter-spacing: -.04em;
@@ -635,6 +518,8 @@ const fashion = {
     height: 40.4vw;
     margin-top: clamp(20px, 2.6vw, 40px);
     overflow: hidden;
+    touch-action: pan-y;
+    user-select: none;
   }
 
   .sideb-strip-track,
@@ -651,17 +536,54 @@ const fashion = {
   }
 
   .sideb-strip-item {
+    display: flex;
     flex: 0 0 var(--strip-width);
+    align-items: center;
+    justify-content: center;
     width: var(--strip-width);
-    aspect-ratio: var(--strip-ratio);
     margin: 0;
   }
 
   .sideb-strip-item img {
     display: block;
+    width: var(--strip-inner, 100%);
+    height: auto;
+    pointer-events: none;
+    rotate: var(--strip-rotate, 0deg);
+  }
+
+  .sideb-filters { position: absolute; width: 0; height: 0; overflow: hidden; }
+  .sideb-fashion-video { filter: url(#sideb-video-wb); }
+
+  /* Film photos: an endless strip that drifts on its own and can be dragged or scrolled sideways. */
+  .sideb-film-strip {
     width: 100%;
+    height: 42.25vw;
+    overflow: hidden;
+    touch-action: pan-y;
+    user-select: none;
+  }
+
+  .sideb-film-strip-track,
+  .sideb-film-strip-set {
+    display: flex;
+    width: max-content;
     height: 100%;
-    object-fit: contain;
+    gap: 1.4734vw;
+  }
+
+  .sideb-film-strip-track { will-change: transform; }
+
+  .sideb-film-strip-item {
+    flex: 0 0 auto;
+    height: 100%;
+    margin: 0;
+  }
+
+  .sideb-film-strip-item img {
+    display: block;
+    width: auto;
+    height: 100%;
     pointer-events: none;
   }
 
@@ -690,8 +612,6 @@ const fashion = {
     aspect-ratio: 1265 / 572;
     margin: 0;
     overflow: hidden;
-    clip-path: inset(0 0 100% 0);
-    transition: clip-path 1s var(--sideb-ease);
   }
 
   .sideb-fashion-reveal {
@@ -701,25 +621,16 @@ const fashion = {
     align-self: flex-start;
   }
 
+  /* Same parallax as /projects and /deets: the video is 40% taller than its frame and slides through it. */
   .sideb-fashion-media video {
     position: absolute;
-    top: -7%;
+    top: 0;
     left: 0;
     display: block;
     width: 100%;
-    height: 114%;
+    height: 140%;
     object-fit: cover;
-    scale: 1.05;
-    transition: scale 1.4s var(--sideb-ease);
-    will-change: transform;
-  }
-
-  .sideb-fashion-reveal.is-visible .sideb-fashion-media {
-    clip-path: inset(0);
-  }
-
-  .sideb-fashion-reveal.is-visible .sideb-fashion-media video {
-    scale: 1;
+    translate: 0 calc(-23% + 23% * var(--parallax-progress, .5));
   }
 
   .sideb-body-pair {
@@ -783,22 +694,6 @@ const fashion = {
     text-underline-offset: .08em;
   }
 
-  .sideb-film-carousel {
-    position: relative;
-    width: min(100%, 1275px);
-    aspect-ratio: 1275 / 676;
-    margin-bottom: 7px;
-    overflow: hidden;
-    align-self: flex-start;
-    touch-action: pan-y;
-    cursor: grab;
-    user-select: none;
-  }
-
-  .sideb-film-carousel:active {
-    cursor: grabbing;
-  }
-
   .sideb-music-section {
     margin-top: 7px;
   }
@@ -807,76 +702,9 @@ const fashion = {
     margin-top: calc(-1.375vw + 2px);
   }
 
-  .sideb-film-track {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    transition: transform .85s var(--sideb-ease);
-    will-change: transform;
-  }
-
-  .sideb-film-cell {
-    position: relative;
-    flex: 0 0 100%;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-  }
-
-  .sideb-film-cell img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    pointer-events: none;
-  }
-
-  .sideb-film-progress {
-    position: absolute;
-    bottom: 3.3%;
-    left: 50%;
-    z-index: 3;
-    display: flex;
-    width: clamp(74px, 12.1%, 106px);
-    height: clamp(15px, 2.68%, 23px);
-    align-items: center;
-    gap: clamp(2px, .46%, 4px);
-    padding: 0 clamp(5px, .9%, 8px);
-    border-radius: 48px;
-    background: rgb(217 217 217 / 22%);
-    backdrop-filter: blur(14px) saturate(1.15);
-    transform: translateX(-50%);
-  }
-
-  .sideb-film-progress i {
-    position: relative;
-    display: block;
-    min-width: 0;
-    height: clamp(3px, .55%, 5px);
-    flex: 1 1 0;
-    overflow: hidden;
-    border-radius: 32px;
-    background: rgb(250 250 250 / 30%);
-  }
-
-  .sideb-film-progress i.is-active {
-    flex-grow: 2.75;
-  }
-
-  .sideb-film-progress b {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 100%;
-    border-radius: inherit;
-    background: var(--sideb-paper);
-    transform: scaleX(0);
-    transform-origin: left center;
-  }
-
   .sideb-footer {
     position: relative;
-    margin-top: 11.25vw;
+    margin-top: clamp(26px, 3.6vw, 56px);
     overflow: hidden;
   }
 
@@ -954,6 +782,124 @@ const fashion = {
     opacity: 1;
     transform: translateY(0);
   }
+
+  /* Desktop measurements from Figma 392:9991 (1600px frame → vw): 129px between blocks, 64.53px copy on 56px
+     lines, 35.48px body on 34.265px lines, 24px labels, columns of 556/994 and 281/1269px. */
+  @media (min-width: 761px) {
+    .sideb-main {
+      gap: 8.0625vw;
+      margin-top: 5.1365vw;
+    }
+
+    .sideb-intro-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5vw;
+    }
+
+    .sideb-intro-grid {
+      display: flex;
+      justify-content: space-between;
+      width: 96.841vw;
+      margin-left: 1.3975vw;
+      padding: 0;
+    }
+
+    .sideb-intro-grid > div:first-child { width: 34.75vw; }
+    .sideb-intro-grid > div:last-child { width: 62.118vw; }
+
+    .sideb-label {
+      margin: 0 0 1.125vw;
+      font-size: 1.5vw;
+      line-height: normal;
+      letter-spacing: -.01em;
+    }
+
+    .sideb-big,
+    .sideb-section-title {
+      font-size: 4.033125vw;
+      line-height: .86781;
+      letter-spacing: -.03em;
+    }
+
+    .sideb-related a { display: block; }
+    .sideb-related a + a { margin-top: 1.125vw; }
+
+    .sideb-strip {
+      height: 39.3125vw;
+      margin-top: 0;
+    }
+
+    .sideb-strip-track,
+    .sideb-strip-set { gap: .75vw; }
+
+    .sideb-section {
+      grid-template-columns: 17.558vw 79.3125vw;
+      gap: 0;
+      padding-left: 1.3975vw;
+    }
+
+    .sideb-section-title { margin-left: 0; }
+
+    .sideb-section-column {
+      gap: 3vw;
+      align-items: flex-start;
+    }
+
+    .sideb-fashion-reveal {
+      width: 79.0625vw;
+      margin: 0;
+    }
+
+    .sideb-body-pair {
+      justify-content: space-between;
+      gap: 0;
+    }
+
+    .sideb-body-pair p {
+      font-size: 2.2175vw;
+      line-height: .96576;
+      letter-spacing: -.01em;
+    }
+
+    .sideb-body-pair p:first-child { width: 36.367vw; }
+    .sideb-body-pair p:last-child { width: 40.946vw; }
+
+    .sideb-music-section,
+    .sideb-film-section { margin-top: 0; }
+
+    /* Spotify belongs to the music block: 48px under its copy instead of the 129px block gap. */
+    .sideb-spotify {
+      width: 97.226vw;
+      margin: -5.0625vw 0 0 1.3975vw;
+    }
+
+    .sideb-spotify-frame { aspect-ratio: 1555.617 / 740.818; }
+    .sideb-spotify > a { display: none; }
+  }
+
+  /* Load-in: same as /projects and /deets. */
+  :root.appear-ready .sideb-page [data-appear] {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: opacity .75s cubic-bezier(.22, 1, .36, 1), transform .75s cubic-bezier(.22, 1, .36, 1);
+    transition-delay: calc(.1s * var(--delay-order, 0));
+  }
+
+  :root.appear-ready .sideb-page [data-appear].is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  :root.appear-ready .sideb-page .sideb-appear-text[data-appear] {
+    transform: translateY(50%) skewY(6deg);
+    transform-origin: 0 100%;
+    transition-duration: 1s;
+  }
+
+  :root.appear-ready .sideb-page .sideb-appear-text[data-appear].is-visible { transform: none; }
+
+  .sideb-intro-grid > div:last-child, .sideb-body-pair p:last-child { --delay-order: 1; }
 
   @media (max-width: 760px) {
     body:has(.sideb-page) {
@@ -1118,14 +1064,14 @@ const fashion = {
       gap: min(15.841px, 4.061795vw);
     }
 
-    .sideb-strip-item:nth-child(1) { --strip-width: min(159.575px, 40.916667vw); }
-    .sideb-strip-item:nth-child(2) { --strip-width: min(196.121px, 50.287436vw); transform: rotate(8.92deg); }
-    .sideb-strip-item:nth-child(3) { --strip-width: min(133.404px, 34.206154vw); transform: rotate(-4.98deg); }
-    .sideb-strip-item:nth-child(4) { --strip-width: min(130.213px, 33.388vw); }
-    .sideb-strip-item:nth-child(5) { --strip-width: min(190.613px, 48.875128vw); }
-    .sideb-strip-item:nth-child(6) { --strip-width: min(146.179px, 37.481795vw); }
-    .sideb-strip-item:nth-child(7) { --strip-width: min(138.972px, 35.633846vw); }
-    .sideb-strip-item:nth-child(8) { --strip-width: min(187.671px, 48.120769vw); transform: rotate(6.33deg); }
+    .sideb-strip-item:nth-child(1) { --strip-width: min(152.651px, 39.141282vw) !important; }
+    .sideb-strip-item:nth-child(2) { --strip-width: min(197.691px, 50.690000vw) !important; }
+    .sideb-strip-item:nth-child(3) { --strip-width: min(138.184px, 35.431795vw) !important; }
+    .sideb-strip-item:nth-child(4) { --strip-width: min(122.961px, 31.528462vw) !important; }
+    .sideb-strip-item:nth-child(5) { --strip-width: min(181.544px, 46.549744vw) !important; }
+    .sideb-strip-item:nth-child(6) { --strip-width: min(135.569px, 34.761282vw) !important; }
+    .sideb-strip-item:nth-child(7) { --strip-width: min(133.037px, 34.112051vw) !important; }
+    .sideb-strip-item:nth-child(8) { --strip-width: min(167.168px, 42.863590vw) !important; }
 
     .sideb-section {
       position: absolute;
@@ -1266,18 +1212,6 @@ const fashion = {
       margin: 0;
     }
 
-    .sideb-film-carousel {
-      position: absolute;
-      top: min(581px, 148.974359vw);
-      left: 0;
-      width: 100%;
-      height: min(191.004px, 48.975385vw);
-      margin: 0;
-      aspect-ratio: auto;
-    }
-
-    .sideb-film-progress { display: none; }
-
     .sideb-film-section .sideb-body-pair p:first-child {
       top: min(804.004px, 206.154872vw);
     }
@@ -1314,6 +1248,114 @@ const fashion = {
     .sideb-footer-wordmark span:first-child { margin-left: -1.5vw; }
     .sideb-footer-wordmark span:last-child { margin-right: -1.4vw; }
     .sideb-footer-info { display: none; }
+  }
+
+  /* Mobile: content flows block after block with the measured spacing (12–16px label → copy, 32px inside a
+     section, 40px between sections). The title matches /projects and /deets; the footer matches /projects. */
+  @media (max-width: 760px) {
+    .sideb-page {
+      display: flow-root;
+      height: auto;
+      overflow: clip;
+      padding-bottom: calc(min(48px, 12.307692vw) + env(safe-area-inset-bottom));
+    }
+
+    .sideb-title {
+      top: 27.7vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
+      height: auto;
+      font-size: 25.3vw;
+      line-height: .755;
+    }
+
+    .sideb-main {
+      position: relative;
+      top: auto;
+      left: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      height: auto;
+      margin: 85.51vw 0 0 min(15.871px, 4.069487vw);
+    }
+
+    .sideb-intro-block { display: contents; }
+
+    .sideb-intro-grid > div:last-child { position: relative; top: auto; height: auto; order: 1; }
+    .sideb-strip { position: relative; top: auto; order: 2; margin-top: min(44px, 11.282051vw); }
+    .sideb-intro-grid > div:first-child { position: relative; top: auto; height: auto; order: 3; margin-top: min(40px, 10.25641vw); }
+
+    .sideb-section,
+    .sideb-section:not(.sideb-music-section):not(.sideb-film-section) {
+      position: relative;
+      top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      height: auto;
+    }
+
+    .sideb-section:not(.sideb-music-section):not(.sideb-film-section) { order: 4; margin-top: min(76px, 19.487179vw); }
+    .sideb-music-section { order: 5; margin-top: min(40px, 10.25641vw); }
+    .sideb-spotify { position: relative; top: auto; order: 6; margin-top: min(32px, 8.205128vw); }
+    .sideb-film-section { order: 7; margin-top: min(40px, 10.25641vw); }
+
+    .sideb-section-title,
+    .sideb-section > .sideb-section-column > .sideb-big,
+    .sideb-section .sideb-body-pair p,
+    .sideb-section:not(.sideb-music-section):not(.sideb-film-section) .sideb-body-pair p:first-child,
+    .sideb-section:not(.sideb-music-section):not(.sideb-film-section) .sideb-body-pair p:last-child,
+    .sideb-film-section .sideb-body-pair p:first-child,
+    .sideb-film-section .sideb-body-pair p:last-child,
+    .sideb-fashion-reveal {
+      position: relative;
+      top: auto;
+    }
+
+    .sideb-section > .sideb-section-column > .sideb-big { margin-top: min(16px, 4.102564vw); }
+    .sideb-fashion-reveal { margin-top: min(32px, 8.205128vw); }
+    .sideb-section .sideb-body-pair p:first-child { margin-top: min(32px, 8.205128vw); }
+    .sideb-section .sideb-body-pair p:last-child { margin-top: min(16px, 4.102564vw); }
+
+    .sideb-music-section .sideb-big { display: block; }
+    .sideb-music-lead { position: relative; top: auto; }
+    .sideb-music-body { position: relative; top: auto; margin-top: min(32px, 8.205128vw); }
+
+    /* Stickers keep their mobile sizes; the tilt now lives on the image so the slot stays upright. */
+    .sideb-strip-item { transform: none !important; }
+
+    .sideb-film-strip {
+      position: relative;
+      height: min(191px, 48.974359vw);
+      margin-top: min(32px, 8.205128vw);
+    }
+
+    .sideb-film-strip-track,
+    .sideb-film-strip-set { gap: min(8px, 2.051282vw); }
+
+    .sideb-footer {
+      position: relative;
+      top: auto;
+      height: min(169px, 43.333333vw);
+      margin-top: min(64px, 16.410256vw);
+      overflow: hidden;
+    }
+
+    .sideb-footer-wordmark {
+      top: min(2px, .512821vw);
+      right: min(-8px, -2.051282vw);
+      bottom: auto;
+      left: min(-8.369px, -2.145897vw);
+      width: auto;
+      justify-content: space-between;
+      font-size: min(176.756px, 45.322051vw);
+      line-height: normal;
+      text-box-trim: none;
+    }
+
+    .sideb-footer-wordmark span:first-child { margin-left: -2.051282vw; }
+    .sideb-footer-wordmark span:last-child { margin-right: -2.051282vw; }
   }
 
   @media (prefers-reduced-motion: reduce) {
