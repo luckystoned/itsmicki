@@ -195,8 +195,9 @@ const loops = [0, 1, 2];
     .home-footer { position: absolute; z-index: auto; inset: 0; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; pointer-events: none; }
     .home-subfooter { position: absolute; z-index: 1; inset: 0; display: block; color: #2e2e2e; font-size: var(--footer-wordmark-size); font-weight: 500; line-height: .8; letter-spacing: -.04em; }
     .home-subfooter span { position: absolute; bottom: 0; transform: translateY(var(--footer-wordmark-edge)); }
-    .home-subfooter span:first-child { left: max(-22.69px, -1.418125vw, -2.196515svh); margin: 0; }
-    .home-subfooter span:last-child { right: max(-22px, -1.375vw, -2.129719svh); margin: 0; }
+    /* The ink of "I" and "6" touches both edges of the screen, like every other footer. */
+    .home-subfooter span:first-child { left: -.032em; margin: 0; }
+    .home-subfooter span:last-child { right: .016em; margin: 0; }
 
     .home-footer-meta { position: absolute; z-index: 3; inset: auto 0 min(86.46px, 5.40375vw, 8.369797svh); display: block; padding: 0; font-size: min(21px, 1.3125vw, 2.032914svh); font-weight: 400; line-height: 1; letter-spacing: -.02em; pointer-events: none; }
     .home-footer-meta a { pointer-events: auto; }

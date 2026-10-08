@@ -102,8 +102,8 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
     role: 'UX—UI Lead, Visual<br>& Motion Designer',
     nutshell: `Winona is a women's wellness center that provides support and care via educational resources and hormone replacement therapy. At <a href="https://outliant.com/" target="_blank" rel="noreferrer">Outliant</a>, we developed a purpose-built venture by implementing branding, strategy, and design.`,
     drags: [
-      { src: '/02_Projects/01_Winona/01_Winona_Drag.webp', left: '79.2588vw', top: '0', width: '24.5894vw', rotation: '0deg' },
-      { src: '/02_Projects/01_Winona/02_Winona_Drag.webp', left: '56.3vw', top: '10.5625vw', width: '24.6656vw', rotation: '0deg' },
+      { src: '/02_Projects/01_Winona/01_Winona_Drag.webp', left: '73.18vw', top: '.23vw', width: '24.5894vw', rotation: '0deg' },
+      { src: '/02_Projects/01_Winona/02_Winona_Drag.webp', left: '56vw', top: '8.26vw', width: '24.6656vw', rotation: '0deg' },
     ],
     blocks: [
       single(video('1215371662', 'Winona website motion reel', '1556 / 870', '16 / 9')),

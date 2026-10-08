@@ -722,9 +722,9 @@ const fashion = {
     }
   }
 
-  /* Same bleed past the edges as the home wordmark. */
-  .sideb-footer-wordmark span:first-child { margin-left: max(-22.69px, -1.418125vw, -2.196515svh); }
-  .sideb-footer-wordmark span:last-child { margin-right: max(-22px, -1.375vw, -2.129719svh); }
+  /* The ink of "I" and "6" touches both edges of the screen. */
+  .sideb-footer-wordmark span:first-child { margin-left: -.032em; }
+  .sideb-footer-wordmark span:last-child { margin-right: .016em; }
 
   .sideb-footer-info {
     position: absolute;
@@ -1032,6 +1032,9 @@ const fashion = {
       line-height: normal;
       letter-spacing: -.01em;
     }
+
+    /* Same 16px between "In a Nutshell" and its copy as on /deets. */
+    .sideb-intro-grid > div:last-child .sideb-label { margin-bottom: min(16px, 4.102564vw); }
 
     .sideb-intro-grid > div:last-child .sideb-big {
       font-size: min(32px, 8.205128vw);

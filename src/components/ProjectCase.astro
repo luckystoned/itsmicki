@@ -16,6 +16,7 @@ const ratioValue = (ratio: string) => {
 
 const mediaStyle = (media: CaseMedia) => {
   let style = `--media-ratio:${media.ratio}`;
+  if (media.type === 'video') style += `;--source-ratio:${media.sourceRatio ? ratioValue(media.sourceRatio) : 16 / 9}`;
   if (media.type !== 'video' || !media.sourceRatio) return style;
 
   const targetRatio = ratioValue(media.ratio);
@@ -787,6 +788,15 @@ const vimeoUrl = (id: string) =>
     line-height: 1;
   }
 
+  /* The two intro columns share the right column instead of overflowing past the screen edge. */
+  @media (min-width: 761px) {
+    .case-intro-columns p {
+      flex: 1 1 0;
+      min-width: 0;
+      width: auto;
+    }
+  }
+
   .case-text-columns p {
     line-height: .966;
   }
@@ -872,12 +882,19 @@ const vimeoUrl = (id: string) =>
     object-fit: cover;
   }
 
+  /* Videos always cover their frame, whatever its final size: no white edges from letterboxing. */
+  .case-media-content:has(> iframe) {
+    container-type: size;
+    overflow: hidden;
+  }
+
   .case-media-content iframe {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: var(--video-width, 100%);
-    height: var(--video-height, 100%);
+    width: calc(max(100cqw, 100cqh * var(--source-ratio, 1.7778)) + 2px);
+    height: calc(max(100cqh, 100cqw / var(--source-ratio, 1.7778)) + 2px);
+    max-width: none;
     transform: translate(-50%, -50%);
   }
 

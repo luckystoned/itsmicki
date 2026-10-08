@@ -338,7 +338,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   /* Everything moves up 4.2vw so the heading sits at the height of the Side B title, keeping all spacing. */
   .deets-canvas {
     /* Right column: 62.118vw wide and ending at the home side margin, same as the Side B intro. */
-    --deets-col: calc(100vw - var(--gutter) - 62.118164vw);
+    --deets-col: calc(100% - var(--gutter) - 62.118164vw);
     position: relative;
     top: -4.2vw;
     width: 100%;
@@ -354,7 +354,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   .deets-title {
     top: 10.1355vw;
     left: var(--gutter);
-    width: calc(100vw - 2 * var(--gutter));
+    width: calc(100% - 2 * var(--gutter));
     font-family: 'OT Neue Montreal Deets Extra', Impact, sans-serif;
     font-size: 20.2vw;
     font-weight: 500;
@@ -424,7 +424,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     white-space: nowrap;
   }
   .deets-skills-copy { top: 120.802856vw; left: var(--deets-col); width: 62.118164vw; }
-  .deets-image-two { top: 138.865356vw; left: var(--gutter); width: calc(100vw - 2 * var(--gutter)); height: 46.301147vw; }
+  .deets-image-two { top: 138.865356vw; left: var(--gutter); width: calc(100% - 2 * var(--gutter)); height: 46.301147vw; }
   .deets-story-label { top: 189.716919vw; left: var(--gutter); width: 17.5vw; font-size: 4.033125vw; line-height: .86781; letter-spacing: -.03em; }
   /* Desktop structure (Figma 392:9900): the story and closing copy flow in the right column, aligned with the large photo. */
   .deets-story-column {
@@ -475,7 +475,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   }
   .deets-story-images { display: contents; }
   .deets-image-three { top: 220.80957vw; left: var(--deets-col); width: 26vw; height: 32.5vw; }
-  .deets-image-four { top: 220.80957vw; left: calc(100vw - var(--gutter) - 28.1875vw); width: 28.1875vw; height: 42.25vw; }
+  .deets-image-four { top: 220.80957vw; left: calc(100% - var(--gutter) - 28.1875vw); width: 28.1875vw; height: 42.25vw; }
   .deets-statement {
     font-size: 3.533125vw;
     line-height: .99062;
@@ -509,9 +509,8 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   .deets-footer-wordmark {
     position: absolute;
     top: 0;
-    /* Same bleed past the edges as the home wordmark. */
-    right: max(-22px, -1.375vw, -2.129719svh);
-    left: max(-22.69px, -1.418125vw, -2.196515svh);
+    right: 0;
+    left: 0;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -534,8 +533,9 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     }
   }
 
-  .deets-footer-wordmark span:first-child,
-  .deets-footer-wordmark span:last-child { margin: 0; }
+  /* The ink of "I" and "6" touches both edges of the screen. */
+  .deets-footer-wordmark span:first-child { margin-left: -.032em; }
+  .deets-footer-wordmark span:last-child { margin-right: .016em; }
 
   .deets-footer-info {
     position: absolute;

@@ -381,12 +381,16 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     align-items: flex-start;
   }
 
-  .projects-row-primary {
-    justify-content: space-between;
+  /* Both duos: 6px between the photos and the pair spanning margin to margin. */
+  .projects-row {
+    gap: 6px;
   }
 
-  .projects-row-secondary {
-    gap: 6px;
+  @media (min-width: 761px) {
+    .projects-row > .project-card {
+      flex: 1 1 var(--project-width);
+      min-width: 0;
+    }
   }
 
   .project-card {
@@ -524,13 +528,13 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     }
   }
 
-  /* Same bleed past the edges as the home wordmark. */
+  /* The ink of "I" and "6" touches both edges of the screen. */
   .projects-footer-wordmark span:first-child {
-    margin-left: max(-22.69px, -1.418125vw, -2.196515svh);
+    margin-left: -.032em;
   }
 
   .projects-footer-wordmark span:last-child {
-    margin-right: max(-22px, -1.375vw, -2.129719svh);
+    margin-right: .016em;
   }
 
   .projects-footer-info {

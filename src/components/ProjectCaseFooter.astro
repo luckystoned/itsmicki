@@ -19,13 +19,13 @@ const loops = [0, 1, 2];
   <section class="more-carousel" aria-label="More selected projects" data-more-carousel data-case-text-reveal>
     <div class="more-carousel-track" data-more-carousel-track>
       {loops.map((loop) => carouselProjects.map((project) => {
-        const dimensions = imageMetadata[project.carouselCover] ?? (project.slug === 'amazon' ? { width: 640, height: 360 } : undefined);
+        const dimensions = imageMetadata[project.caseCarouselCover] ?? (project.slug === 'amazon' ? { width: 640, height: 360 } : undefined);
         const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${desktopLength(project.carouselLayout.width)}`;
         const content = (
           <>
             <span class="more-carousel-name" aria-hidden="true"><span class="more-carousel-name-text">{project.carouselLayout.label}</span></span>
             <span class="more-carousel-picture">
-              <img src={project.carouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading="lazy" decoding="async" draggable="false" />
+              <img src={project.caseCarouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading="lazy" decoding="async" draggable="false" />
               {project.carouselLayout.vimeoId && <iframe src={vimeoBackground(project.carouselLayout.vimeoId)} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-carousel-video></iframe>}
             </span>
           </>
@@ -209,9 +209,9 @@ const loops = [0, 1, 2];
       transform: translateY(var(--footer-wordmark-edge));
     }
 
-    /* Same bleed past the edges as the home wordmark. */
-    .case-footer-wordmark > :first-child { margin-left: max(-22.69px, -1.418125vw, -2.196515svh) !important; }
-    .case-footer-wordmark > :last-child { margin-right: max(-22px, -1.375vw, -2.129719svh) !important; }
+    /* The ink of "I" and "6" touches both edges of the screen. */
+    .case-footer-wordmark > :first-child { margin-left: -.032em !important; }
+    .case-footer-wordmark > :last-child { margin-right: .016em !important; }
   }
 
   .case-footer-wordmark > :first-child {
