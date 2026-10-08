@@ -1334,15 +1334,15 @@ const vimeoUrl = (id: string) =>
     }
 
     /* Winona's synopsis is one paragraph split into two columns on desktop: on phones it reads as one. */
-    .project-case-page[data-case='winona'] .case-text-columns {
+    .project-case-page[data-case='winona'] .case-text-content > .case-text-columns {
       display: block;
     }
 
-    .project-case-page[data-case='winona'] .case-text-columns p {
+    .project-case-page[data-case='winona'] .case-text-content > .case-text-columns p {
       display: inline;
     }
 
-    .project-case-page[data-case='winona'] .case-text-columns p + p::before {
+    .project-case-page[data-case='winona'] .case-text-content > .case-text-columns p + p::before {
       content: " ";
     }
 
