@@ -695,7 +695,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
 
     .deets-title {
       top: calc(31.52cqw - min(322.359px, 82.656154cqw) - 34.1cqw);
-      left: calc(2.307692cqw - min(15.871px, 4.069487cqw));
+      left: calc(2.307692cqw - min(9px, 2.307692cqw));
       display: block;
       width: 95.384616cqw;
       height: auto;
@@ -926,7 +926,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
 
     .deets-title {
       top: calc(27.7cqw - 79.93cqw);
-      left: calc(2.307692cqw - min(15.871px, 4.069487cqw));
+      left: calc(2.307692cqw - min(9px, 2.307692cqw));
       font-size: 25.3cqw;
       line-height: .755;
     }
@@ -938,7 +938,8 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
       display: flex;
       flex-direction: column;
       height: auto;
-      margin: 79.93cqw 0 0 min(15.871px, 4.069487cqw);
+      width: calc(100cqw - 2 * min(9px, 2.307692cqw));
+      margin: 79.93cqw 0 0 min(9px, 2.307692cqw); /* Same side margins as /projects. */
     }
 
     .deets-canvas > .deets-node:not(.deets-title),

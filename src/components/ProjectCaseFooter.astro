@@ -395,7 +395,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
 
   @media (max-width: 760px) {
     .case-more {
-      width: calc(100% - 34.28px);
+      width: calc(100% - 2 * min(9px, 2.307692vw));
     }
 
     .case-more-divider {
@@ -425,7 +425,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     }
 
     .case-strip-track {
-      padding-left: 17.14px;
+      padding-left: min(9px, 2.307692vw);
     }
 
     .case-strip-card {
@@ -473,8 +473,8 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='winona'] {
       position: absolute;
       top: 1164.0141vw;
-      left: 4.3959vw;
-      width: 90.2338vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       height: 114.7vw;
       margin: 0;
     }
@@ -500,7 +500,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='winona'] .case-strip {
       position: absolute;
       top: 136px;
-      left: -4.3959vw;
+      left: -2.307692vw;
       width: 100vw;
       height: 94vw;
       margin: 0;
@@ -508,7 +508,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     }
 
     .case-more[data-current-case='winona'] .case-strip-track {
-      padding-left: 4.3959vw;
+      padding-left: 2.307692vw;
     }
 
     .case-more[data-current-case='winona'] .case-strip-set {
@@ -555,8 +555,8 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='outliant'] {
       position: absolute;
       top: 2173.073vw;
-      left: 4.3009vw;
-      width: 90.2338vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       height: 114.7vw;
       margin: 0;
     }
@@ -584,14 +584,14 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='outliant'] .case-strip {
       position: absolute;
       top: 136px;
-      left: -4.3009vw;
+      left: -2.307692vw;
       width: 100vw;
       height: 94vw;
       margin: 0;
       padding: 20px 0 0;
     }
 
-    .case-more[data-current-case='outliant'] .case-strip-track { padding-left: 4.3009vw; }
+    .case-more[data-current-case='outliant'] .case-strip-track { padding-left: 2.307692vw; }
     .case-more[data-current-case='outliant'] .case-strip-set { gap: 1.5256vw; padding-right: 1.5256vw; }
     .case-more[data-current-case='outliant'] .case-strip-card { width: 65.5862vw; height: 87.4485vw; aspect-ratio: auto; }
     .case-more[data-current-case='outliant'] .case-strip-card:nth-child(3n + 1) { height: 65.5862vw; }
@@ -620,8 +620,8 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='lumen'] {
       position: absolute;
       top: 3353.9583vw;
-      left: 4.3169vw;
-      width: 90.2338vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       height: 114.7vw;
       margin: 0;
     }
@@ -638,13 +638,13 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='lumen'] .case-strip {
       position: absolute;
       top: 136px;
-      left: -4.3169vw;
+      left: -2.307692vw;
       width: 100vw;
       height: 94vw;
       margin: 0;
       padding: 20px 0 0;
     }
-    .case-more[data-current-case='lumen'] .case-strip-track { padding-left: 4.3169vw; }
+    .case-more[data-current-case='lumen'] .case-strip-track { padding-left: 2.307692vw; }
     .case-more[data-current-case='lumen'] .case-strip-set { gap: 1.5256vw; padding-right: 1.5256vw; }
     .case-more[data-current-case='lumen'] .case-strip-card { width: 65.5862vw; height: 87.4485vw; aspect-ratio: auto; }
     .case-more[data-current-case='lumen'] .case-strip-card:nth-child(3n + 1) { height: 65.5862vw; }
@@ -667,6 +667,15 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
       transform: none;
     }
     .case-more[data-current-case='lumen'] + .case-footer .case-footer-info { display: none; }
+
+    /* Same side margins as /projects: "Itsmicki ©2026" with the same size and bleed past both edges. */
+    .case-footer .case-footer-wordmark,
+    .case-more[data-current-case] + .case-footer .case-footer-wordmark {
+      /* The cases cut of the face sits .033em wider at each end, so it is pulled back by that much. */
+      margin-right: calc(min(-8px, -2.051282vw) - 2.051282vw + .0306em);
+      margin-left: calc(min(-8.369px, -2.145897vw) - 2.051282vw + .0332em);
+      font-size: min(176.756px, 45.322051vw);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
