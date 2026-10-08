@@ -16,6 +16,7 @@ const ratioValue = (ratio: string) => {
 
 const mediaStyle = (media: CaseMedia) => {
   let style = `--media-ratio:${media.ratio}`;
+  if (media.type === 'video') style += `;--source-ratio:${media.sourceRatio ? ratioValue(media.sourceRatio) : 16 / 9}`;
   if (media.type !== 'video' || !media.sourceRatio) return style;
 
   const targetRatio = ratioValue(media.ratio);
@@ -33,18 +34,15 @@ const vimeoUrl = (id: string) =>
 
 <div class="project-case-page" data-case={caseStudy.slug}>
   <aside class="case-mobile-meta" aria-label="Contact and social links" data-scroll-bar>
-    <span class="case-mobile-column">
-      <span>SAY HI</span>
-      <a href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
-    </span>
-    <span class="case-mobile-column case-mobile-column-right">
-      <span>SOCIALS</span>
-      <span>
-        <a href="https://www.linkedin.com/in/itsmicki/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
-        {" "}<a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,<br />
-        <a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
-        {" "}<a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>, <a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
-      </span>
+    <span>SAY HI</span>
+    <a class="case-mobile-mail" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
+    <span>SOCIALS</span>
+    <span class="case-mobile-socials">
+      <a href="https://www.linkedin.com/in/itsmicki/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+      {" "}<a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
+      {" "}<a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+      {" "}<a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
+      {" "}<a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
     </span>
   </aside>
 
@@ -508,83 +506,59 @@ const vimeoUrl = (id: string) =>
     updateDragLift();
   }
 
-  const strip = document.querySelector<HTMLElement>('[data-case-strip]');
-  const stripTrack = strip?.querySelector<HTMLElement>('[data-case-strip-track]');
-  const stripSet = strip?.querySelector<HTMLElement>('[data-case-strip-set]');
-
-  if (strip && stripTrack && stripSet) {
-    let setWidth = 0;
-    let offset = 0;
-    let lastTime = performance.now();
-    let hovering = false;
-    let dragging = false;
+  // Same infinite carousel as the home (src/pages/index.astro): eased auto-scroll that slows on hover,
+  // drag with inertia and horizontal wheel. Vertical wheel keeps scrolling the page.
+  const carousel = document.querySelector<HTMLElement>('[data-more-carousel]');
+  const carouselTrack = carousel?.querySelector<HTMLElement>('[data-more-carousel-track]');
+  if (carousel && carouselTrack) {
+    const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+    if (reduceCaseMotion) carouselTrack.querySelectorAll<HTMLIFrameElement>('[data-carousel-video]').forEach((video) => {
+      video.addEventListener('load', () => video.contentWindow?.postMessage(JSON.stringify({ method: 'pause' }), 'https://player.vimeo.com'));
+    });
+    let target = 0, offset = 0, cycle = 0, speed = 1, velocity = 0, dragging = false, hovered = false, lastX = 0, moved = 0, wheelUntil = 0;
+    let previousTime = 0;
     let pointerId = -1;
-    let pointerStart = 0;
-    let offsetStart = 0;
-    let moved = false;
-
-    const measure = () => {
-      setWidth = stripSet.getBoundingClientRect().width;
-      if (setWidth) {
-        offset %= setWidth;
-        stripTrack.style.transform = `translate3d(${offset}px, 0, 0)`;
-      }
+    const measure = () => { const first = carouselTrack.children[0] as HTMLElement; const repeat = carouselTrack.children[carouselTrack.children.length / 3] as HTMLElement; cycle = repeat.offsetLeft - first.offsetLeft; };
+    const wrap = () => {
+      if (cycle <= 0) return;
+      while (offset > 0) { offset -= cycle; target -= cycle; }
+      while (offset <= -cycle) { offset += cycle; target += cycle; }
     };
-
-    const animate = (now: number) => {
-      const deltaTime = Math.min(64, now - lastTime);
-      lastTime = now;
-      if (!reduceCaseMotion && !dragging && setWidth) {
-        offset -= deltaTime * (hovering ? .006 : .03);
-        while (offset <= -setWidth) offset += setWidth;
-        while (offset > 0) offset -= setWidth;
-        stripTrack.style.transform = `translate3d(${offset}px, 0, 0)`;
-      }
-      requestAnimationFrame(animate);
+    const frame = (time: number) => {
+      const elapsed = previousTime ? Math.min(time - previousTime, 32) / (1000 / 60) : 1;
+      previousTime = time;
+      const autoSpeed = (matchMedia('(max-width: 760px)').matches ? .5 : .6) * (finePointer.matches ? 1 : 1.08);
+      const designWidth = matchMedia('(max-width: 760px)').matches ? 390 : 1600;
+      const scale = Math.min(innerWidth / designWidth, innerHeight / (designWidth === 390 ? 844 : 1033));
+      speed += ((hovered ? .16 : 1) - speed) * (1 - Math.pow(.95, elapsed));
+      if (!reduceCaseMotion && !dragging && time >= wheelUntil) target -= autoSpeed * scale * speed * elapsed;
+      offset = reduceCaseMotion ? target : offset + (target - offset) * (1 - Math.pow(dragging ? .7 : .91, elapsed));
+      wrap();
+      carouselTrack.style.transform = `translate3d(${offset}px, 0, 0)`;
+      if (hovered) document.dispatchEvent(new Event('project-preview-refresh'));
+      requestAnimationFrame(frame);
     };
-
-    strip.addEventListener('mouseenter', () => { hovering = true; });
-    strip.addEventListener('mouseleave', () => { hovering = false; });
-    strip.addEventListener('dragstart', (event) => event.preventDefault());
-    strip.addEventListener('pointerdown', (event) => {
-      if (!event.isPrimary || event.button !== 0) return;
-      dragging = true;
-      moved = false;
-      pointerId = event.pointerId;
-      pointerStart = event.clientX;
-      offsetStart = offset;
-    });
-    strip.addEventListener('pointermove', (event) => {
-      if (!dragging || event.pointerId !== pointerId) return;
-      const distance = event.clientX - pointerStart;
-      moved ||= Math.abs(distance) > 6;
-      if (moved && !strip.hasPointerCapture(pointerId)) strip.setPointerCapture(pointerId);
-      offset = offsetStart + distance;
-      if (setWidth) {
-        while (offset <= -setWidth) offset += setWidth;
-        while (offset > 0) offset -= setWidth;
-      }
-      stripTrack.style.transform = `translate3d(${offset}px, 0, 0)`;
-    });
-    const endStripDrag = (event: PointerEvent) => {
-      if (!dragging || event.pointerId !== pointerId) return;
+    measure(); addEventListener('resize', measure); requestAnimationFrame(frame);
+    carousel.addEventListener('mouseenter', () => { hovered = true; });
+    carousel.addEventListener('mouseleave', () => { hovered = false; });
+    carousel.addEventListener('dragstart', (event) => event.preventDefault());
+    carousel.addEventListener('pointerdown', (event) => { if (!event.isPrimary || event.button !== 0) return; dragging = true; pointerId = event.pointerId; moved = 0; velocity = 0; lastX = event.clientX; });
+    carousel.addEventListener('pointermove', (event) => { if (!dragging || event.pointerId !== pointerId) return; const dx = event.clientX - lastX; lastX = event.clientX; moved += Math.abs(dx); if (moved > 10 && !carousel.hasPointerCapture(pointerId)) carousel.setPointerCapture(pointerId); target += dx; velocity = velocity * .6 + dx * .4; });
+    const release = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId || !dragging) return;
       dragging = false;
-      if (strip.hasPointerCapture(pointerId)) strip.releasePointerCapture(pointerId);
+      if (moved > 10 && !reduceCaseMotion) { target += velocity * 14; wheelUntil = performance.now() + 500; }
     };
-    window.addEventListener('pointerup', endStripDrag);
-    window.addEventListener('pointercancel', endStripDrag);
-    strip.addEventListener('lostpointercapture', endStripDrag);
-    strip.addEventListener('click', (event) => {
-      if (moved) {
-        event.preventDefault();
-        event.stopPropagation();
-        moved = false;
-      }
-    }, true);
-
-    new ResizeObserver(measure).observe(stripSet);
-    measure();
-    requestAnimationFrame(animate);
+    window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); carousel.addEventListener('lostpointercapture', release);
+    carousel.addEventListener('click', (event) => { if (moved > 10) event.preventDefault(); }, true);
+    carousel.addEventListener('wheel', (event) => {
+      if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+      event.preventDefault();
+      wheelUntil = performance.now() + 300;
+      if (dragging) return;
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? carousel.clientWidth : 1;
+      target -= event.deltaX * unit;
+    }, { passive: false });
   }
 </script>
 
@@ -625,7 +599,7 @@ const vimeoUrl = (id: string) =>
 
   body:has(.project-case-page) a,
   body:has(.project-case-page) [data-case-drag],
-  body:has(.project-case-page) [data-case-strip] {
+  body:has(.project-case-page) [data-more-carousel] {
     cursor: url('/cursors/view.png') 0 0, auto;
   }
 
@@ -642,7 +616,7 @@ const vimeoUrl = (id: string) =>
     position: relative;
     top: auto;
     z-index: 20;
-    padding: 24px clamp(14px, 1.42vw, 22px) 0;
+    padding: 24px var(--gutter) 0;
     color: var(--case-ink);
     background: transparent;
     backdrop-filter: none;
@@ -699,14 +673,16 @@ const vimeoUrl = (id: string) =>
     display: none;
   }
 
+  /* Same side margins as the home. */
   .project-case-canvas {
-    width: 97.2668vw;
+    width: calc(100% - 2 * var(--gutter));
     margin: 0 auto;
   }
 
+  /* The title's first line sits where the /projects, /deets and /side-b titles start. */
   .editorial-case-hero {
     position: relative;
-    margin-top: 2.85vw;
+    margin-top: 5.933vw;
   }
 
   .case-title-line {
@@ -807,6 +783,15 @@ const vimeoUrl = (id: string) =>
     line-height: 1;
   }
 
+  /* The two intro columns share the right column instead of overflowing past the screen edge. */
+  @media (min-width: 761px) {
+    .case-intro-columns p {
+      flex: 1 1 0;
+      min-width: 0;
+      width: auto;
+    }
+  }
+
   .case-text-columns p {
     line-height: .966;
   }
@@ -815,8 +800,9 @@ const vimeoUrl = (id: string) =>
     display: flow-root;
   }
 
+  /* 6px between images, the same spacing as the /projects grid. */
   .case-media-block {
-    margin-top: 1.81vw;
+    margin-top: 6px;
   }
 
   .case-intro + .case-flow > .case-media-block:first-child,
@@ -831,7 +817,7 @@ const vimeoUrl = (id: string) =>
   .case-media-pair {
     display: flex;
     align-items: flex-start;
-    gap: 1.81vw;
+    gap: 6px;
     width: 100%;
   }
 
@@ -839,9 +825,10 @@ const vimeoUrl = (id: string) =>
     align-items: flex-end;
   }
 
+  /* Cells keep their Figma proportions and grow to fill the row up to the side margins. */
   .case-media-cell {
-    flex: 0 0 auto;
-    width: var(--cell-width);
+    flex: 1 1 var(--cell-width);
+    min-width: 0;
   }
 
   .case-media-cell .case-media-surface {
@@ -874,12 +861,19 @@ const vimeoUrl = (id: string) =>
     object-fit: cover;
   }
 
+  /* Videos always cover their frame, whatever its final size: no white edges from letterboxing. */
+  .case-media-content:has(> iframe) {
+    container-type: size;
+    overflow: hidden;
+  }
+
   .case-media-content iframe {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: var(--video-width, 100%);
-    height: var(--video-height, 100%);
+    width: calc(max(100cqw, 100cqh * var(--source-ratio, 1.7778)) + 2px);
+    height: calc(max(100cqh, 100cqw / var(--source-ratio, 1.7778)) + 2px);
+    max-width: none;
     transform: translate(-50%, -50%);
   }
 
@@ -1049,7 +1043,7 @@ const vimeoUrl = (id: string) =>
 
   @media (min-width: 761px) {
     .project-case-page[data-case='maxmaher'] .editorial-case-hero {
-      margin-top: 4.75vw;
+      margin-top: 2.424vw;
     }
 
     .project-case-page[data-case='maxmaher'] .case-title-line {
@@ -1101,14 +1095,14 @@ const vimeoUrl = (id: string) =>
       border-top-width: .5px;
     }
 
-    .project-case-page[data-case='winona'] .case-credit-list {
+    /* Credits at the Winona size on every case. */
+    .project-case-page .case-credit-list {
       font-size: 2.2175vw;
       line-height: .966;
       letter-spacing: -.01em;
     }
 
-    .project-case-page[data-case='outliant'] .case-text h2,
-    .project-case-page[data-case='outliant'] .case-credits h2 {
+    .project-case-page[data-case='outliant'] .case-text h2 {
       font-size: 2.2175vw;
       line-height: .966;
       letter-spacing: -.01em;
@@ -1121,12 +1115,6 @@ const vimeoUrl = (id: string) =>
       letter-spacing: -.03em;
     }
 
-    .project-case-page[data-case='outliant'] .case-credit-list {
-      font-size: 2.2175vw;
-      line-height: .966;
-      letter-spacing: -.01em;
-    }
-
     .project-case-page[data-case='outliant'] .case-credits {
       border-top-width: .5px;
       border-top-color: #2e2e2e;
@@ -1135,40 +1123,64 @@ const vimeoUrl = (id: string) =>
   }
 
   @media (max-width: 760px) {
-    body:has(.project-case-page) .site-header {
-      display: none;
+    /* Navigation pinned to the bottom on every case, with the same size and spacing as /projects. */
+    body:has(.project-case-page) .site-header[data-header] {
+      position: fixed !important;
+      z-index: 2000 !important;
+      inset: auto 0 0 !important;
+      display: flex !important;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: calc((100vw - min(20px, 5.128205vw) - min(332px, 85.128205vw)) / 3);
+      width: 100vw !important;
+      height: auto !important;
+      min-height: 0 !important;
+      padding: min(8px, 2.051282vw) min(10px, 2.564103vw) !important;
+      background: #fafafa !important;
+      color: #2e2e2e !important;
+      font-size: min(26.498px, 6.794359vw) !important;
+      line-height: normal !important;
+      letter-spacing: -.02em;
+      pointer-events: auto !important;
     }
 
+    body:has(.project-case-page) .site-header nav {
+      flex: 1 1 auto;
+      justify-content: space-between;
+      gap: 0;
+    }
+
+    body:has(.project-case-page) .site-header a {
+      white-space: nowrap;
+    }
+
+    /* Same contact bar as /projects, /deets and /side-b. */
     .case-mobile-meta {
       position: absolute;
-      top: 8px;
-      right: 12px;
-      left: 12px;
-      z-index: 20;
-      display: flex;
-      justify-content: space-between;
-      font-size: 16px;
-      line-height: 1.05;
+      z-index: 30;
+      top: max(min(8px, 2.051282vw), env(safe-area-inset-top));
+      right: env(safe-area-inset-right);
+      left: env(safe-area-inset-left);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      color: var(--case-ink);
+      font-size: min(16px, 4.102564vw);
+      line-height: normal;
       letter-spacing: -.02em;
       text-transform: uppercase;
     }
 
-    .case-mobile-column {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1px;
-      max-width: 48%;
-    }
-
-    .case-mobile-column-right {
-      align-items: flex-end;
-      text-align: right;
-    }
-
-    .case-mobile-meta a {
-      color: var(--case-paper);
+    .case-mobile-mail,
+    .case-mobile-socials {
+      justify-self: end;
       background: var(--case-ink);
+      color: var(--case-paper);
+      white-space: nowrap;
+    }
+
+    .case-mobile-meta :is(.case-mobile-mail, .case-mobile-socials a) {
+      color: var(--case-paper);
       text-decoration: underline;
       text-decoration-thickness: 1px;
       text-underline-offset: .08em;
@@ -1179,9 +1191,9 @@ const vimeoUrl = (id: string) =>
     }
 
     .editorial-case-hero {
-      width: 96.9231%;
+      width: 97.692308%;
       margin-top: 96px;
-      margin-left: 3.0769%;
+      margin-left: 2.307692%;
     }
 
     .case-title-line {
@@ -1259,7 +1271,7 @@ const vimeoUrl = (id: string) =>
     }
 
     .case-intro {
-      width: 90.5128%;
+      width: calc(100% - 2 * min(9px, 2.307692vw));
       grid-template-columns: 1fr;
       gap: 38px;
       margin-top: 30px;
@@ -1305,7 +1317,10 @@ const vimeoUrl = (id: string) =>
       line-height: 29px;
     }
 
-    .case-media-block,
+    .case-media-block {
+      margin-top: 6px;
+    }
+
     .case-intro + .case-flow > .case-media-block:first-child,
     .case-text + .case-media-block {
       margin-top: 32px;
@@ -1313,17 +1328,18 @@ const vimeoUrl = (id: string) =>
 
     .case-flow,
     .case-credits {
-      width: 90.5128%;
+      width: calc(100% - 2 * min(9px, 2.307692vw));
       margin-right: auto;
       margin-left: auto;
     }
 
     .case-media-pair {
       flex-direction: column;
-      gap: 12px;
+      gap: 6px;
     }
 
     .case-media-cell {
+      flex: none;
       width: 100%;
     }
 
@@ -1358,10 +1374,15 @@ const vimeoUrl = (id: string) =>
       margin-left: 0;
     }
 
-    .case-text h2,
-    .case-credits h2 {
+    .case-text h2 {
       font-size: 24px;
       line-height: 1;
+    }
+
+    /* Credits at the Winona size on every case. */
+    .case-credits h2 {
+      font-size: 24px;
+      line-height: 29px;
     }
 
     .case-text-lead,
@@ -1373,68 +1394,19 @@ const vimeoUrl = (id: string) =>
     }
 
     .case-credit-list {
-      gap: 7px;
+      gap: 0;
       text-align: left;
-      font-size: 16px;
-      line-height: 1.1;
+      font-size: 24px;
+      line-height: 34.265px;
     }
 
     /* Mobile / Project Open / Winona (Figma frame 392:10324). */
-    body:has(.project-case-page[data-case='winona']) .site-header[data-header] {
-      position: fixed !important;
-      top: auto !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      z-index: 2000 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      width: 100% !important;
-      height: 48px !important;
-      min-height: 0 !important;
-      box-sizing: border-box !important;
-      padding: 8px 10px !important;
-      color: #2e2e2e !important;
-      background: #fafafa !important;
-      font-size: 26.498px !important;
-      line-height: 1 !important;
-    }
-
     .project-case-page[data-case='winona'] {
       position: relative;
       width: 100%;
       height: 1326.4103vw;
       min-height: 0;
       overflow: hidden;
-    }
-
-    .project-case-page[data-case='winona'] .case-mobile-meta {
-      top: 8px;
-      right: 0;
-      left: 0;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0 8px;
-      padding: 0;
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    .project-case-page[data-case='winona'] .case-mobile-column {
-      display: contents;
-      max-width: none;
-    }
-
-    .project-case-page[data-case='winona'] .case-mobile-column > :nth-child(even),
-    .project-case-page[data-case='winona'] .case-mobile-column-right > :last-child {
-      justify-self: end;
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    .project-case-page[data-case='winona'] .case-mobile-meta br {
-      display: none;
     }
 
     .project-case-page[data-case='winona'] .project-case-canvas,
@@ -1465,7 +1437,7 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='winona'] .case-title {
       position: absolute;
       top: 24.6154vw;
-      left: 2.9672vw;
+      left: 2.2008vw;
       font-family: var(--case-sans);
       font-size: 24.875vw;
       line-height: 1.2;
@@ -1508,8 +1480,8 @@ const vimeoUrl = (id: string) =>
 
     .project-case-page[data-case='winona'] .case-intro > div {
       position: absolute;
-      left: 4.6072vw;
-      width: 90.5282vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       margin: 0;
     }
 
@@ -1542,8 +1514,8 @@ const vimeoUrl = (id: string) =>
 
     .project-case-page[data-case='winona'] .case-flow > * {
       position: absolute;
-      left: 4.6154vw;
-      width: 90.5128vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       margin: 0 !important;
     }
 
@@ -1580,13 +1552,13 @@ const vimeoUrl = (id: string) =>
 
     .project-case-page[data-case='winona'] .case-flow > :nth-child(3) .case-media-cell:first-child {
       inset: 0 auto 0 0;
-      width: 50.9787vw;
+      width: 53.7226vw;
     }
 
     .project-case-page[data-case='winona'] .case-flow > :nth-child(3) .case-media-cell:last-child {
       top: 0;
       right: 0;
-      width: 37.75vw;
+      width: 39.7819vw;
       height: 37.5213vw;
     }
 
@@ -1612,12 +1584,12 @@ const vimeoUrl = (id: string) =>
 
     .project-case-page[data-case='winona'] .case-flow > :nth-child(6) .case-media-cell:first-child {
       inset: 0 auto 0 0;
-      width: 37.6599vw;
+      width: 39.6869vw;
     }
 
     .project-case-page[data-case='winona'] .case-flow > :nth-child(6) .case-media-cell:last-child {
       inset: 0 0 0 auto;
-      width: 51.1513vw;
+      width: 53.9045vw;
     }
 
     .project-case-page[data-case='winona'] .case-flow > :nth-child(10) .case-media-cell:first-child {
@@ -1679,9 +1651,9 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='winona'] .case-credits {
       position: absolute;
       top: 1132.7597vw;
-      left: 4.6154vw;
+      left: 2.307692vw;
       display: block;
-      width: 90.5128vw;
+      width: 95.384616vw;
       height: 17.9487vw;
       margin: 0;
       padding: 0;
@@ -1704,61 +1676,12 @@ const vimeoUrl = (id: string) =>
     }
 
     /* Mobile / Project Open / Outliant (Figma Frame 96). */
-    body:has(.project-case-page[data-case='outliant']) .site-header[data-header] {
-      position: fixed !important;
-      top: auto !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      z-index: 2000 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      box-sizing: border-box !important;
-      width: 100% !important;
-      height: 48px !important;
-      min-height: 0 !important;
-      padding: 8px 10px !important;
-      color: #2e2e2e !important;
-      background: #fafafa !important;
-      font-size: 26.498px !important;
-      line-height: 1 !important;
-    }
-
     .project-case-page[data-case='outliant'] {
       position: relative;
       width: 100%;
       height: 2335.3846vw;
       min-height: 0;
       overflow: hidden;
-    }
-
-    .project-case-page[data-case='outliant'] .case-mobile-meta {
-      top: 7.6719px;
-      right: -9.1465px;
-      left: -4.1793px;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0 8px;
-      padding: 0;
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    .project-case-page[data-case='outliant'] .case-mobile-column {
-      display: contents;
-      max-width: none;
-    }
-
-    .project-case-page[data-case='outliant'] .case-mobile-column > :nth-child(even),
-    .project-case-page[data-case='outliant'] .case-mobile-column-right > :last-child {
-      justify-self: end;
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    .project-case-page[data-case='outliant'] .case-mobile-meta br {
-      display: none;
     }
 
     .project-case-page[data-case='outliant'] .project-case-canvas,
@@ -1789,7 +1712,7 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='outliant'] .case-title {
       position: absolute;
       top: 24.6154vw;
-      left: 3.0769vw;
+      left: 2.3227vw;
       font-family: var(--case-sans);
       font-size: 24.875vw;
       line-height: 1.2;
@@ -1830,20 +1753,20 @@ const vimeoUrl = (id: string) =>
 
     .project-case-page[data-case='outliant'] .case-intro > div {
       position: absolute;
-      width: 92.3077vw;
+      width: 95.384616vw;
       margin: 0;
     }
 
     .project-case-page[data-case='outliant'] .case-intro > div:first-child {
       top: 60.4287vw;
-      left: 4.9603vw;
-      width: 90.5282vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       height: 45.8974vw;
     }
 
     .project-case-page[data-case='outliant'] .case-intro > div:nth-child(2) {
       top: 116.5825vw;
-      left: 4.0705vw;
+      left: 2.307692vw;
       height: 90vw;
     }
 
@@ -1879,8 +1802,8 @@ const vimeoUrl = (id: string) =>
 
     .project-case-page[data-case='outliant'] .case-flow > * {
       position: absolute;
-      left: 4.0705vw;
-      width: 92.3077vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       margin: 0 !important;
     }
 
@@ -1915,10 +1838,10 @@ const vimeoUrl = (id: string) =>
       margin: 0;
     }
 
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(2) .case-media-cell:first-child { inset: 0 auto 0 0; width: 38.598vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(2) .case-media-cell:last-child { inset: 0 0 0 auto; width: 52.137vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(3) .case-media-cell:first-child { inset: 0 auto 0 0; width: 53.363vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(3) .case-media-cell:last-child { inset: 0 0 0 auto; width: 37.6396vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(2) .case-media-cell:first-child { inset: 0 auto 0 0; width: 39.8846vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(2) .case-media-cell:last-child { inset: 0 0 0 auto; width: 53.8749vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(3) .case-media-cell:first-child { inset: 0 auto 0 0; width: 55.1418vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(3) .case-media-cell:last-child { inset: 0 0 0 auto; width: 38.8943vw; }
 
     .project-case-page[data-case='outliant'] .case-flow > :nth-child(5) .case-media-cell,
     .project-case-page[data-case='outliant'] .case-flow > :nth-child(13) .case-media-cell {
@@ -2000,9 +1923,9 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='outliant'] .case-credits {
       position: absolute;
       top: 2134.9633vw;
-      left: 4.0705vw;
+      left: 2.307692vw;
       display: block;
-      width: 92.3077vw;
+      width: 95.384616vw;
       height: 26.2014vw;
       margin: 0;
       padding: 32px 0 0;
@@ -2027,24 +1950,6 @@ const vimeoUrl = (id: string) =>
     }
 
     /* Mobile / Project Open / Lumen (Figma frame 613:4753 / Frame 98). */
-    body:has(.project-case-page[data-case='lumen']) .site-header[data-header] {
-      position: fixed !important;
-      inset: auto 0 0 !important;
-      z-index: 2000 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      box-sizing: border-box !important;
-      width: 100% !important;
-      height: 48px !important;
-      min-height: 0 !important;
-      padding: 8px 10px !important;
-      color: #2e2e2e !important;
-      background: #fafafa !important;
-      font-size: 26.498px !important;
-      line-height: 1 !important;
-    }
-
     .project-case-page[data-case='lumen'] {
       position: relative;
       width: 100%;
@@ -2052,27 +1957,6 @@ const vimeoUrl = (id: string) =>
       min-height: 0;
       overflow: hidden;
     }
-
-    .project-case-page[data-case='lumen'] .case-mobile-meta {
-      top: 7.7188px;
-      right: -9.64px;
-      left: -4.674px;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0 8px;
-      padding: 0;
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    .project-case-page[data-case='lumen'] .case-mobile-column { display: contents; max-width: none; }
-    .project-case-page[data-case='lumen'] .case-mobile-column > :nth-child(even),
-    .project-case-page[data-case='lumen'] .case-mobile-column-right > :last-child {
-      justify-self: end;
-      text-align: right;
-      white-space: nowrap;
-    }
-    .project-case-page[data-case='lumen'] .case-mobile-meta br { display: none; }
 
     .project-case-page[data-case='lumen'] .project-case-canvas,
     .project-case-page[data-case='lumen'] .case-flow { position: static; width: 100%; margin: 0; }
@@ -2098,7 +1982,7 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='lumen'] .case-title {
       position: absolute;
       top: 24.6154vw;
-      left: 3.0769vw;
+      left: 2.4499vw;
       font-family: var(--case-sans);
       font-size: 24.875vw;
       line-height: 1.2;
@@ -2131,46 +2015,46 @@ const vimeoUrl = (id: string) =>
     }
 
     .project-case-page[data-case='lumen'] .case-intro { display: contents; width: auto; margin: 0; }
-    .project-case-page[data-case='lumen'] .case-intro > div { position: absolute; width: 92.3077vw; margin: 0; }
+    .project-case-page[data-case='lumen'] .case-intro > div { position: absolute; width: 95.384616vw; margin: 0; }
     .project-case-page[data-case='lumen'] .case-intro > div:first-child {
-      top: 60.4407vw; left: 4.8331vw; width: 90.5282vw; height: 45.8974vw;
+      top: 60.4407vw; left: 2.307692vw; width: 95.384616vw; height: 45.8974vw;
     }
     .project-case-page[data-case='lumen'] .case-intro > div:nth-child(2) {
-      top: 116.5946vw; left: 3.9433vw; height: 98.7179vw;
+      top: 116.5946vw; left: 2.307692vw; height: 98.7179vw;
     }
     .project-case-page[data-case='lumen'] .case-label { margin: 0 0 12px; font-size: 24px; line-height: 29px; }
     .project-case-page[data-case='lumen'] .case-intro-large { margin: 0; font-size: 13.5246vw; line-height: .868; }
     .project-case-page[data-case='lumen'] .case-nutshell { font-size: 32px; line-height: 34px; }
     .project-case-page[data-case='lumen'] .case-intro-columns {
-      position: absolute; top: 148.1731vw; left: 3.9433vw; display: flex; gap: 16px; width: 92.3077vw; margin: 0;
+      position: absolute; top: 148.1731vw; left: 0; display: flex; gap: 16px; width: 100%; margin: 0;
     }
     .project-case-page[data-case='lumen'] .case-intro-columns p { margin: 0; font-size: 24px; line-height: 34px; }
 
     .project-case-page[data-case='lumen'] .case-flow > * {
       position: absolute;
-      left: 3.9433vw;
-      width: 92.3077vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       margin: 0 !important;
     }
 
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(1) { top: 225.569vw; left: 3.2438vw; width: 93.7065vw; height: 34.3269vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(1) { top: 225.569vw; left: 2.307692vw; width: 95.384616vw; height: 34.3269vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(2) { top: 352.2035vw; height: 181.2821vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(3) { top: 541.6907vw; height: 51.6027vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(4) { top: 594.8318vw; height: 62.4387vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(5) { top: 667.527vw; height: 227.4359vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6) { top: 903.168vw; width: 91.4203vw; height: 216.0261vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6) { top: 903.168vw; width: 95.384616vw; height: 216.0261vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(7) { top: 1129.4505vw; height: 120.2564vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(8) { top: 1259.9633vw; left: 3.7035vw; width: 92.7872vw; height: 53.5372vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(8) { top: 1259.9633vw; left: 2.307692vw; width: 95.384616vw; height: 53.5372vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(9) { top: 1323.7569vw; height: 244.1026vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(10) { top: 1576.0646vw; height: 52.0272vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(11) { top: 1629.6303vw; height: 206.3367vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(12) { top: 1846.2233vw; height: 190vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(13) { top: 2046.4797vw; height: 209.1672vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(14) { top: 2265.9033vw; height: 272.3077vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(15) { top: 2548.4674vw; left: 3.7204vw; width: 92.7535vw; height: 51.9466vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(16) { top: 2601.9525vw; left: 3.7204vw; width: 92.7535vw; height: 51.9466vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(15) { top: 2548.4674vw; left: 2.307692vw; width: 95.384616vw; height: 51.9466vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(16) { top: 2601.9525vw; left: 2.307692vw; width: 95.384616vw; height: 51.9466vw; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(17) { top: 2664.1562vw; height: 367.1795vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(18) { top: 3051.8485vw; left: 3.7204vw; width: 92.7535vw; height: 206.8511vw; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(18) { top: 3051.8485vw; left: 2.307692vw; width: 95.384616vw; height: 206.8511vw; }
 
     .project-case-page[data-case='lumen'] .case-media-surface,
     .project-case-page[data-case='lumen'] .case-media-cell .case-media-surface { width: 100%; height: 100%; aspect-ratio: auto; }
@@ -2206,9 +2090,9 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='lumen'] .case-credits {
       position: absolute;
       top: 3268.955vw;
-      left: 3.9433vw;
+      left: 2.307692vw;
       display: block;
-      width: 92.3077vw;
+      width: 95.384616vw;
       height: 76.5385vw;
       margin: 0;
       padding: 32.5px 0 0;

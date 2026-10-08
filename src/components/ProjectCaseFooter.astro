@@ -1,68 +1,11 @@
 ---
 import { imageMetadata } from '@/data/imageMetadata';
 import { projectCases } from '@/data/projectCases';
-
-const cards = [
-  {
-    slug: 'winona',
-    src: '/02_Projects/01_Winona/01_Winona_Portada.webp',
-    label: '01_Winona_UX—UI Lead, Visual & Motion Designer',
-    width: '22.0249vw',
-    height: '21.8914vw',
-    ratio: '22.0249 / 21.8914',
-  },
-  {
-    slug: 'genova',
-    src: '/02_Projects/02_Genova/01_Genova_Portada.webp',
-    label: '02_Genova_Art Direction+Visual Design',
-    width: '22.0694vw',
-    height: '29.2331vw',
-    ratio: '22.0694 / 29.2331',
-  },
-  {
-    slug: 'amazon',
-    src: '/02_Projects/03_Amazon/01_Amazon_Portada.jpg',
-    label: '03_Amazon_UXUI Lead+Art Direction+Visual Design',
-    width: '21.8914vw',
-    height: '14.4608vw',
-    ratio: '21.8914 / 14.4608',
-  },
-  {
-    slug: 'maxmaher',
-    src: '/02_Projects/04_MaxMaher/01_MaxMaher_Portada.webp',
-    label: '04_MaxMaher_Art Direction+Visual Design',
-    width: '22.0249vw',
-    height: '21.8469vw',
-    ratio: '22.0249 / 21.8469',
-  },
-  {
-    slug: 'outliant',
-    src: '/02_Projects/05_Outliant/01_Outliant_Portada.webp',
-    label: '05_Outliant_Art Direction+Visual Design+UXUI Lead',
-    width: '22vw',
-    height: '26.0625vw',
-    ratio: '22 / 26.0625',
-  },
-  {
-    slug: 'lumen',
-    src: '/02_Projects/06_Lumen/01_Lumen_Portada.webp',
-    label: '06_Lumen_Art Direction+Visual Design',
-    width: '22.0249vw',
-    height: '13.1798vw',
-    ratio: '22.0249 / 13.1798',
-  },
-  {
-    slug: 'blend360',
-    src: '/02_Projects/07_Blend360/01_Blend360_Portada.webp',
-    label: '07_Blend360_UX—UI Lead, Visual & Motion Designer',
-    width: '22.0694vw',
-    height: '29.2331vw',
-    ratio: '22.0694 / 29.2331',
-  },
-] as const;
+import { carouselProjects, desktopLength, vimeoBackground } from '@/data/carousel';
 
 const { currentSlug } = Astro.props;
 const publishedCaseSlugs = new Set(Object.keys(projectCases));
+const loops = [0, 1, 2];
 ---
 
 <div class="case-more" data-current-case={currentSlug}>
@@ -72,42 +15,27 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     <a href="/projects" data-case-text-reveal style="--reveal-delay:70ms"><span class="case-more-link-label">See All</span> (<span class="case-more-link-plus">+</span>)</a>
   </div>
 
-  <div class="case-strip" data-case-strip data-case-text-reveal aria-label="More selected projects">
-    <div class="case-strip-track" data-case-strip-track>
-      {[0, 1].map((setIndex) => (
-        <div class="case-strip-set" data-case-strip-set={setIndex === 0 ? '' : undefined} aria-hidden={setIndex === 1 ? 'true' : undefined}>
-          {cards.map((card) => {
-            const dimensions = imageMetadata[card.src];
-            const style = `--card-width:${card.width};--card-height:${card.height};--card-ratio:${card.ratio}`;
-            const href = publishedCaseSlugs.has(card.slug) ? `/projects/${card.slug}` : undefined;
-            const content = (
-              <>
-                <span class="case-strip-name">{card.label}</span>
-                <span class="case-strip-picture">
-                  <img
-                    src={card.src}
-                    alt={setIndex === 0 ? `${card.slug} project cover` : ''}
-                    width={dimensions.width}
-                    height={dimensions.height}
-                    loading="lazy"
-                    decoding="async"
-                    draggable="false"
-                  />
-                </span>
-              </>
-            );
-            return href ? (
-              <a class:list={['case-strip-card', { current: currentSlug === card.slug }]} data-project-preview="ready" href={href} style={style} tabindex={setIndex === 1 ? '-1' : undefined}>
-                {content}
-              </a>
-            ) : (
-              <div class="case-strip-card is-coming" data-project-preview="coming" aria-label={`${card.slug}, coming soon`} style={style}>{content}</div>
-            );
-          })}
-        </div>
-      ))}
+  <!-- Same infinite carousel as the home: cards, sizes, hover, speed, drag and wheel. -->
+  <section class="more-carousel" aria-label="More selected projects" data-more-carousel data-case-text-reveal>
+    <div class="more-carousel-track" data-more-carousel-track>
+      {loops.map((loop) => carouselProjects.map((project) => {
+        const dimensions = imageMetadata[project.caseCarouselCover] ?? (project.slug === 'amazon' ? { width: 640, height: 360 } : undefined);
+        const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${desktopLength(project.carouselLayout.width)}`;
+        const content = (
+          <>
+            <span class="more-carousel-name" aria-hidden="true"><span class="more-carousel-name-text">{project.carouselLayout.label}</span></span>
+            <span class="more-carousel-picture">
+              <img src={project.caseCarouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading="lazy" decoding="async" draggable="false" />
+              {project.carouselLayout.vimeoId && <iframe src={vimeoBackground(project.carouselLayout.vimeoId)} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-carousel-video></iframe>}
+            </span>
+          </>
+        );
+        return publishedCaseSlugs.has(project.slug) && !project.comingSoon
+          ? <a class="more-carousel-card" data-project-preview="ready" style={cardStyle} href={`/projects/${project.slug}`} aria-current={project.slug === currentSlug ? 'page' : undefined} aria-hidden={loop !== 0 ? 'true' : undefined} tabindex={loop !== 0 ? -1 : undefined}>{content}</a>
+          : <div class="more-carousel-card" data-project-preview="coming" aria-label={`${project.title}, coming soon`} style={cardStyle} aria-hidden={loop !== 0 ? 'true' : undefined}>{content}</div>;
+      }))}
     </div>
-  </div>
+  </section>
 </div>
 
 <footer class="case-footer">
@@ -133,7 +61,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
 
 <style>
   .case-more {
-    width: 97.2668vw;
+    width: calc(100% - 2 * var(--gutter)); /* Same side margins as the home. */
     margin: 0 auto;
   }
 
@@ -193,88 +121,39 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     transform: scaleY(1.5);
   }
 
-  .case-strip {
+  /* Same infinite carousel as the home (src/pages/index.astro): card sizes, 6px gaps, names and hover. */
+  .more-carousel {
+    position: relative;
+    z-index: 2;
     width: 100vw;
     margin-top: 3.7vw;
     margin-left: calc(50% - 50vw);
-    padding-block: 1.8vw 1vw;
-    overflow: hidden;
+    overflow: visible;
     touch-action: pan-y;
+    user-select: none;
   }
 
-  .case-strip-track,
-  .case-strip-set {
-    display: flex;
-    align-items: flex-start;
+  .more-carousel-track { isolation: isolate; display: flex; align-items: flex-start; width: max-content; overflow: visible; will-change: transform; }
+  .more-carousel-card { --name-size: min(20px, 1.25vw, 1.936108svh); position: relative; z-index: 0; display: block; flex: 0 0 var(--card-width); aspect-ratio: var(--card-aspect); margin-right: 6px; overflow: visible; color: inherit; }
+  .more-carousel-name { position: absolute; z-index: 2; top: 0; left: 0; display: block; max-width: 100%; overflow: hidden; color: #2e2e2e; font-size: var(--name-size); font-weight: 400; line-height: 1.24; letter-spacing: -.01em; white-space: nowrap; pointer-events: none; }
+  .more-carousel-name-text { display: block; transform: translateY(105%); transition: transform .16s cubic-bezier(.55,0,.75,0); }
+  .more-carousel-picture { position: absolute; z-index: 1; inset: 0; display: block; overflow: hidden; transition: transform .6s cubic-bezier(.65,0,.35,1) .14s; }
+  .more-carousel-picture img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; transition: transform .8s cubic-bezier(.16,1,.3,1); }
+  .more-carousel-picture iframe { position: absolute; top: 50%; left: 50%; width: auto; min-width: 100%; height: 100%; aspect-ratio: 426 / 240; border: 0; pointer-events: none; transform: translate(-50%, -50%); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+  @media (hover: hover) and (pointer: fine) {
+    .more-carousel-card:is(:hover, :focus-visible) { z-index: 1000; }
+    .more-carousel-card:is(:hover, :focus-visible) .more-carousel-picture { transform: translateY(calc(var(--name-size) * 1.24 + 8px)); transition: transform .6s cubic-bezier(.65,0,.35,1); }
+    .more-carousel-card:is(:hover, :focus-visible) img { transform: scale(1.15); }
+    .more-carousel-card:is(:hover, :focus-visible) iframe { transform: translate(-50%, -50%) scale(1.15); }
+    .more-carousel-card:is(:hover, :focus-visible) .more-carousel-name-text { transform: none; transition: transform .65s cubic-bezier(.22,1,.36,1) .28s; }
   }
-
-  .case-strip-track {
-    width: max-content;
-    padding-left: 1.37vw;
-    cursor: grab;
-    will-change: transform;
+  /* Touch screens (phones, tablets): names always sit above each photo, with no hover motion. */
+  @media not ((hover: hover) and (pointer: fine)) {
+    .more-carousel-name { top: auto; bottom: calc(100% + 6px); }
+    .more-carousel-name-text { transform: none; transition: none; }
   }
-
-  .case-strip-track:active {
-    cursor: grabbing;
-  }
-
-  .case-strip-set {
-    flex: none;
-    gap: .81vw;
-    padding-right: .81vw;
-  }
-
-  .case-strip-card {
-    position: relative;
-    display: block;
-    flex: 0 0 auto;
-    width: var(--card-width);
-    height: var(--card-height);
-    color: inherit;
-  }
-
-  .case-strip-picture {
-    display: block;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #efece7;
-    transition: transform .55s cubic-bezier(.16, 1, .3, 1), border-radius .55s cubic-bezier(.16, 1, .3, 1);
-  }
-
-  .case-strip-picture img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform .55s cubic-bezier(.16, 1, .3, 1);
-  }
-
-  .case-strip-name {
-    position: absolute;
-    top: -1.55vw;
-    left: 0;
-    z-index: 2;
-    font-size: .8vw;
-    white-space: nowrap;
-    opacity: 0;
-    transform: translateY(.5vw);
-    transition: opacity .4s cubic-bezier(.16, 1, .3, 1), transform .4s cubic-bezier(.16, 1, .3, 1);
-  }
-
-  .case-strip-card:is(:hover, :focus-visible) .case-strip-picture {
-    border-radius: 10vw;
-    transform: translateY(1.8vw);
-  }
-
-  .case-strip-card:is(:hover, :focus-visible) .case-strip-picture img {
-    transform: scale(1.18);
-  }
-
-  .case-strip-card:is(:hover, :focus-visible) .case-strip-name {
-    opacity: 1;
-    transform: none;
+  @media (min-width: 761px) and (not ((hover: hover) and (pointer: fine))) {
+    .more-carousel-card { --name-size: clamp(12px, 1.25vw, 20px); }
   }
 
   .case-footer {
@@ -306,10 +185,8 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
       margin-top: 4.7375vw;
     }
 
-    .case-more[data-current-case='maxmaher'] .case-strip {
-      height: 29.2331vw;
+    .case-more[data-current-case='maxmaher'] .more-carousel {
       margin-top: 3.1375vw;
-      padding-bottom: 0;
     }
 
     .case-more[data-current-case='maxmaher'] + .case-footer {
@@ -331,6 +208,10 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
       line-height: .8;
       transform: translateY(var(--footer-wordmark-edge));
     }
+
+    /* The ink of "I" and "6" touches both edges of the screen. */
+    .case-footer-wordmark > :first-child { margin-left: -.032em !important; }
+    .case-footer-wordmark > :last-child { margin-right: .016em !important; }
   }
 
   .case-footer-wordmark > :first-child {
@@ -349,7 +230,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     z-index: 2;
     display: flex;
     align-items: flex-end;
-    padding: 0 clamp(14px, 1.42vw, 22px);
+    padding: 0; /* Edge to edge, like the home footer. */
     font-size: clamp(10px, 1.31vw, 21px);
     line-height: 1;
     letter-spacing: -.02em;
@@ -395,7 +276,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
 
   @media (max-width: 760px) {
     .case-more {
-      width: calc(100% - 34.28px);
+      width: calc(100% - 2 * min(9px, 2.307692vw));
     }
 
     .case-more-divider {
@@ -414,35 +295,13 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
       font-size: 16px;
     }
 
-    .case-strip {
-      margin-top: 20px;
-      padding-block: 20px 10px;
-    }
-
-    .case-strip-set {
-      gap: 8px;
-      padding-right: 8px;
-    }
-
-    .case-strip-track {
-      padding-left: 17.14px;
-    }
-
-    .case-strip-card {
-      width: 46vw;
-      height: auto;
-      aspect-ratio: var(--card-ratio);
-    }
-
-    .case-strip-name {
-      top: -16px;
-      font-size: 9px;
-    }
-
-    .case-strip-card:is(:hover, :focus-visible) .case-strip-picture {
-      border-radius: 80px;
-      transform: translateY(12px);
-    }
+    /* Home carousel on phones: 65.6vw cards (max 255.786px), 4px gaps and the same 7-card ratio pattern. */
+    .more-carousel { margin-top: 20px; padding-top: 22px; }
+    .more-carousel-card { --name-size: min(12px, 3.076923vw); flex: 0 0 min(255.786px, 65.586154vw); width: min(255.786px, 65.586154vw); height: auto; margin-right: 4px; }
+    .more-carousel-card:nth-child(7n + 1),
+    .more-carousel-card:nth-child(7n + 4) { aspect-ratio: 1; }
+    .more-carousel-card:nth-child(7n + 2) { aspect-ratio: 3 / 4; }
+    .more-carousel-card:nth-child(7n + 3) { aspect-ratio: 3 / 2; }
 
     .case-footer {
       margin-top: 18px;
@@ -473,8 +332,8 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='winona'] {
       position: absolute;
       top: 1164.0141vw;
-      left: 4.3959vw;
-      width: 90.2338vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       height: 114.7vw;
       margin: 0;
     }
@@ -497,37 +356,14 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
       line-height: 19px;
     }
 
-    .case-more[data-current-case='winona'] .case-strip {
+    .case-more[data-current-case='winona'] .more-carousel {
       position: absolute;
-      top: 136px;
-      left: -4.3959vw;
+      top: 88px; /* The tallest home-sized cards end above the footer. */
+      left: -2.307692vw;
       width: 100vw;
       height: 94vw;
       margin: 0;
       padding: 20px 0 0;
-    }
-
-    .case-more[data-current-case='winona'] .case-strip-track {
-      padding-left: 4.3959vw;
-    }
-
-    .case-more[data-current-case='winona'] .case-strip-set {
-      gap: 1.69vw;
-      padding-right: 1.69vw;
-    }
-
-    .case-more[data-current-case='winona'] .case-strip-card {
-      width: 65.5862vw;
-      height: 87.4485vw;
-      aspect-ratio: auto;
-    }
-
-    .case-more[data-current-case='winona'] .case-strip-card:nth-child(3n + 1) {
-      height: 65.5862vw;
-    }
-
-    .case-more[data-current-case='winona'] .case-strip-card:nth-child(3n) {
-      height: 43.322vw;
     }
 
     .case-more[data-current-case='winona'] + .case-footer {
@@ -555,8 +391,8 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='outliant'] {
       position: absolute;
       top: 2173.073vw;
-      left: 4.3009vw;
-      width: 90.2338vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       height: 114.7vw;
       margin: 0;
     }
@@ -581,21 +417,15 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
       line-height: 19px;
     }
 
-    .case-more[data-current-case='outliant'] .case-strip {
+    .case-more[data-current-case='outliant'] .more-carousel {
       position: absolute;
-      top: 136px;
-      left: -4.3009vw;
+      top: 88px; /* The tallest home-sized cards end above the footer. */
+      left: -2.307692vw;
       width: 100vw;
       height: 94vw;
       margin: 0;
       padding: 20px 0 0;
     }
-
-    .case-more[data-current-case='outliant'] .case-strip-track { padding-left: 4.3009vw; }
-    .case-more[data-current-case='outliant'] .case-strip-set { gap: 1.5256vw; padding-right: 1.5256vw; }
-    .case-more[data-current-case='outliant'] .case-strip-card { width: 65.5862vw; height: 87.4485vw; aspect-ratio: auto; }
-    .case-more[data-current-case='outliant'] .case-strip-card:nth-child(3n + 1) { height: 65.5862vw; }
-    .case-more[data-current-case='outliant'] .case-strip-card:nth-child(3n) { height: 43.7242vw; }
 
     .case-more[data-current-case='outliant'] + .case-footer {
       position: absolute;
@@ -620,8 +450,8 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='lumen'] {
       position: absolute;
       top: 3353.9583vw;
-      left: 4.3169vw;
-      width: 90.2338vw;
+      left: 2.307692vw;
+      width: 95.384616vw;
       height: 114.7vw;
       margin: 0;
     }
@@ -635,20 +465,15 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     .case-more[data-current-case='lumen'] .case-more-heading { margin-top: 31px; }
     .case-more[data-current-case='lumen'] .case-more-heading h2 { font-size: 24px; line-height: 29px; }
     .case-more[data-current-case='lumen'] .case-more-heading a { font-size: 16px; line-height: 19px; }
-    .case-more[data-current-case='lumen'] .case-strip {
+    .case-more[data-current-case='lumen'] .more-carousel {
       position: absolute;
-      top: 136px;
-      left: -4.3169vw;
+      top: 88px; /* The tallest home-sized cards end above the footer. */
+      left: -2.307692vw;
       width: 100vw;
       height: 94vw;
       margin: 0;
       padding: 20px 0 0;
     }
-    .case-more[data-current-case='lumen'] .case-strip-track { padding-left: 4.3169vw; }
-    .case-more[data-current-case='lumen'] .case-strip-set { gap: 1.5256vw; padding-right: 1.5256vw; }
-    .case-more[data-current-case='lumen'] .case-strip-card { width: 65.5862vw; height: 87.4485vw; aspect-ratio: auto; }
-    .case-more[data-current-case='lumen'] .case-strip-card:nth-child(3n + 1) { height: 65.5862vw; }
-    .case-more[data-current-case='lumen'] .case-strip-card:nth-child(3n) { height: 43.7242vw; }
 
     .case-more[data-current-case='lumen'] + .case-footer {
       position: absolute;
@@ -667,6 +492,20 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
       transform: none;
     }
     .case-more[data-current-case='lumen'] + .case-footer .case-footer-info { display: none; }
+
+    /* "Itsmicki©2026" with the same position and size as the home wordmark. */
+    .case-footer .case-footer-wordmark,
+    .case-more[data-current-case] + .case-footer .case-footer-wordmark {
+      width: max-content;
+      margin-left: -1.538462vw;
+      justify-content: flex-start;
+      font-size: 46.202051vw;
+    }
+
+    .case-footer-wordmark > :first-child,
+    .case-footer-wordmark > :last-child {
+      margin: 0;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

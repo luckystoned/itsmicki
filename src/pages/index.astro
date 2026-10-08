@@ -1,26 +1,9 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { projects } from '@/data/projects';
 import { imageMetadata } from '@/data/imageMetadata';
+import { carouselProjects, desktopLength, vimeoBackground } from '@/data/carousel';
 
-const carouselLayout: Record<string, { width: number; height: number; label: string; cover?: string; vimeoId?: string }> = {
-  winona: { width: 430.069, height: 427.462, label: '01_Winona_UX—UI Lead, Visual & Motion Designer', cover: '/02_Projects/01_Winona/01_Winona_Home.webp' },
-  genova: { width: 430.937, height: 570.818, label: '02_Genova_Art Direction+Visual Design' },
-  amazon: { width: 427.462, height: 282.368, label: '03_Amazon_UXUI Lead+Art Direction+Visual Design', cover: 'https://vumbnail.com/1215371786.jpg', vimeoId: '1215371786' },
-  maxmaher: { width: 430.069, height: 426.593, label: '04_MaxMaher_Art Direction+Visual Design' },
-  outliant: { width: 429.582, height: 508.909, label: '05_Outliant_Art Direction+Visual Design+UXUI Lead' },
-  lumen: { width: 430.069, height: 257.354, label: '06_Lumen_Art Direction+Visual Design' },
-  blend360: { width: 430.937, height: 570.818, label: '07_Blend360_UX—UI Lead, Visual & Motion Designer', cover: '/02_Projects/07_Blend360/01_Blend360_Home.webp' },
-};
-const carouselProjects = projects.flatMap((project) => {
-  const layout = carouselLayout[project.slug];
-  const carouselCover = layout?.cover ?? project.cover;
-  if (!layout || !carouselCover) return [];
-  return [{ ...project, carouselCover, carouselLayout: layout }];
-});
-const desktopLength = (value: number) => `min(${value}px, ${(value / 16).toFixed(6)}vw, ${(value / 10.33).toFixed(6)}svh)`;
 const loops = [0, 1, 2];
-const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&muted=1&controls=0&quality=1080p&dnt=1`;
 ---
 <BaseLayout
   hideFooter
@@ -212,8 +195,9 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
     .home-footer { position: absolute; z-index: auto; inset: 0; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; pointer-events: none; }
     .home-subfooter { position: absolute; z-index: 1; inset: 0; display: block; color: #2e2e2e; font-size: var(--footer-wordmark-size); font-weight: 500; line-height: .8; letter-spacing: -.04em; }
     .home-subfooter span { position: absolute; bottom: 0; transform: translateY(var(--footer-wordmark-edge)); }
-    .home-subfooter span:first-child { left: max(-22.69px, -1.418125vw, -2.196515svh); margin: 0; }
-    .home-subfooter span:last-child { right: max(-22px, -1.375vw, -2.129719svh); margin: 0; }
+    /* The ink of "I" and "6" touches both edges of the screen, like every other footer. */
+    .home-subfooter span:first-child { left: -.032em; margin: 0; }
+    .home-subfooter span:last-child { right: .016em; margin: 0; }
 
     .home-footer-meta { position: absolute; z-index: 3; inset: auto 0 min(86.46px, 5.40375vw, 8.369797svh); display: block; padding: 0; font-size: min(21px, 1.3125vw, 2.032914svh); font-weight: 400; line-height: 1; letter-spacing: -.02em; pointer-events: none; }
     .home-footer-meta a { pointer-events: auto; }
@@ -259,9 +243,13 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
     .footer-dev-label, .footer-dev-name, .footer-say-two, .footer-rights { display: none; }
     .home-footer-meta > .footer-say-one { top: min(8px, 2.051282cqw); left: 0; background: transparent; color: #2e2e2e; }
     .home-footer-meta > .footer-mail { top: min(8px, 2.051282cqw); right: 0; background: #2e2e2e; color: #fafafa; }
-    .home-footer-meta > .home-socials { top: min(24px, 6.153846cqw); left: 0; display: block; width: 100%; background: transparent; color: #2e2e2e; text-align: left; }
+    .home-footer-meta > .home-socials { top: calc(min(8px, 2.051282cqw) + min(16px, 4.102564cqw) * 1.1706); left: 0; display: block; width: 100%; background: transparent; color: #2e2e2e; text-align: left; }
     .socials-links { position: absolute; top: 0; right: 0; background: #2e2e2e; color: #fafafa; }
     .socials-links a { color: #fafafa; }
+    /* Same contact strip as /projects and the rest of the pages: weight 500 and underlined links. */
+    .home-footer-meta { font-weight: 500; }
+    .home-footer-meta > .footer-mail,
+    .socials-links a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .08em; }
 
     .home-subfooter { position: absolute; z-index: 1; bottom: var(--wordmark-bottom); left: -1.538462cqw; display: block; width: max-content; height: auto; padding: 0; color: #2e2e2e; font-size: 46.202051cqw; font-weight: 400; line-height: .8; letter-spacing: -.04em; white-space: nowrap; transform: none; }
     .home-subfooter span, .home-subfooter span:first-child, .home-subfooter span:last-child { position: static; margin: 0; }
