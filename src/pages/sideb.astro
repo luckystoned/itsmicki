@@ -20,7 +20,7 @@ const stripImages = [
   { ...asset(8), width: '27.974vw', inner: '87.21%', rotate: '6.33deg' },
 ].map((item) => ({
   ...item,
-  style: `--strip-width:${item.width};--strip-inner:${item.inner};--strip-rotate:${item.rotate}`,
+  style: `--strip-w:${item.width};--strip-inner:${item.inner};--strip-rotate:${item.rotate}`,
 }));
 
 const filmPairs = [
@@ -56,12 +56,6 @@ const fashion = {
   ]}
 >
   <div class="sideb-page">
-    <!-- White balance for the fashion video: softens the warm cast of the paper cards without pushing the blue backdrop to cyan. -->
-    <svg class="sideb-filters" aria-hidden="true" width="0" height="0" focusable="false">
-      <filter id="sideb-video-wb" color-interpolation-filters="sRGB">
-        <feColorMatrix type="matrix" values=".94 0 0 0 0  0 1.03 0 0 0  0 0 1.15 0 0  0 0 0 1 0" />
-      </filter>
-    </svg>
     <aside class="sideb-mobile-meta" aria-label="Contact and social links" data-scroll-bar>
       <span>SAY HI</span>
       <a class="sideb-mobile-mail" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
@@ -504,6 +498,8 @@ const fashion = {
     letter-spacing: -.025em;
   }
 
+  .sideb-related a { display: block; width: fit-content; }
+
   .sideb-related {
     line-height: .91;
   }
@@ -537,10 +533,10 @@ const fashion = {
 
   .sideb-strip-item {
     display: flex;
-    flex: 0 0 var(--strip-width);
+    flex: 0 0 var(--strip-width, var(--strip-w));
     align-items: center;
     justify-content: center;
-    width: var(--strip-width);
+    width: var(--strip-width, var(--strip-w));
     margin: 0;
   }
 
@@ -551,9 +547,6 @@ const fashion = {
     pointer-events: none;
     rotate: var(--strip-rotate, 0deg);
   }
-
-  .sideb-filters { position: absolute; width: 0; height: 0; overflow: hidden; }
-  .sideb-fashion-video { filter: url(#sideb-video-wb); }
 
   /* Film photos: an endless strip that drifts on its own and can be dragged or scrolled sideways. */
   .sideb-film-strip {
@@ -822,7 +815,6 @@ const fashion = {
       letter-spacing: -.03em;
     }
 
-    .sideb-related a { display: block; }
     .sideb-related a + a { margin-top: 1.125vw; }
 
     .sideb-strip {
@@ -1054,24 +1046,19 @@ const fashion = {
       top: min(357px, 91.538462vw);
       left: min(-75.5px, -19.358974vw);
       width: min(511px, 131.025641vw);
-      height: min(191px, 48.974359vw);
+      height: calc(39.3125vw * 1.625);
       margin: 0;
       overflow: visible;
     }
 
+    /* Same proportions as desktop (stickers and the gaps between them), 1.625× the desktop vw — 20% larger than before. */
+    .sideb-strip-item { --strip-width: calc(var(--strip-w) * 1.625); }
+
     .sideb-strip-track,
     .sideb-strip-set {
-      gap: min(15.841px, 4.061795vw);
+      gap: calc(.75vw * 1.625);
     }
 
-    .sideb-strip-item:nth-child(1) { --strip-width: min(152.651px, 39.141282vw) !important; }
-    .sideb-strip-item:nth-child(2) { --strip-width: min(197.691px, 50.690000vw) !important; }
-    .sideb-strip-item:nth-child(3) { --strip-width: min(138.184px, 35.431795vw) !important; }
-    .sideb-strip-item:nth-child(4) { --strip-width: min(122.961px, 31.528462vw) !important; }
-    .sideb-strip-item:nth-child(5) { --strip-width: min(181.544px, 46.549744vw) !important; }
-    .sideb-strip-item:nth-child(6) { --strip-width: min(135.569px, 34.761282vw) !important; }
-    .sideb-strip-item:nth-child(7) { --strip-width: min(133.037px, 34.112051vw) !important; }
-    .sideb-strip-item:nth-child(8) { --strip-width: min(167.168px, 42.863590vw) !important; }
 
     .sideb-section {
       position: absolute;
