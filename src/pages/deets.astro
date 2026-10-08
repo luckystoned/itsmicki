@@ -1014,16 +1014,15 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     .deets-page { padding-bottom: calc(min(48px, 12.307692cqw) + env(safe-area-inset-bottom)); }
   }
 
-  /* Same motion as /projects: the photo keeps its size and crop and the whole frame drifts ±16px (parallax). */
-  .deets-page .deets-image[data-parallax] { translate: 0 calc((var(--parallax-progress, .5) - .5) * 32px); }
-
+  /* Same motion as /projects: images slide inside their frame (parallax) and content rises in on load. */
   .deets-page .deets-image img {
     position: static;
     left: auto;
     bottom: auto;
     width: 100%;
-    height: 100%;
+    height: 140%;
     object-fit: cover;
+    translate: 0 calc(-23% + 23% * var(--parallax-progress, .5));
     opacity: 0;
     transition: opacity .9s cubic-bezier(.22, 1, .36, 1);
   }

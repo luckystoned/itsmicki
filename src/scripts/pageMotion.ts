@@ -1,7 +1,6 @@
 /**
- * Shared page motion for editorial pages (/projects, /deets, /side-b and the cases):
- * - parallax: each `[data-parallax]` frame gets `--parallax-progress` (0→1 while it crosses the viewport); the
- *   pages use it to drift the whole frame ±16px, so photos keep their original size and crop;
+ * Shared page motion for editorial pages (/projects, /deets):
+ * - parallax: images inside `[data-parallax]` frames slide through the frame while it crosses the viewport;
  * - load-in: `[data-appear]` elements rise and fade in as they enter the viewport;
  * - images fade in once they finish downloading.
  */

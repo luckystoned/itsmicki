@@ -26,10 +26,10 @@ const videoSrc = vimeoId
   : undefined;
 ---
 
-<article class:list={['project-card', { 'is-coming': project.comingSoon }]} style={style} data-appear data-parallax>
+<article class:list={['project-card', { 'is-coming': project.comingSoon }]} style={style} data-appear>
   {href ? (
     <a class="project-card-inner" data-project-preview="ready" href={href} aria-label={`View ${project.title} case study`}>
-      <span class="project-visual">
+      <span class="project-visual" data-parallax>
         <img
           src={cover}
           alt={`${project.title} project cover`}
@@ -45,7 +45,7 @@ const videoSrc = vimeoId
     </a>
   ) : (
     <div class="project-card-inner" data-project-preview="coming" aria-label={`${project.title}, coming soon`}>
-      <span class="project-visual">
+      <span class="project-visual" data-parallax>
         <img
           src={cover}
           alt={`${project.title} project cover`}
