@@ -57,6 +57,8 @@ p, h1, h2, figure, dl, dd { margin: 0; }
   .footer-display span:last-child { justify-self: end; margin-top: 8px; }
   .footer-meta { grid-template-columns: 1fr; gap: 18px; }
 }
+/* Desktop side margin is 18px everywhere, like the home (the 761–800px range included). */
+@media (min-width: 761px) { :root { --gutter: 18px; } }
 @media (max-width: 350px) {
   .site-header { align-items: flex-start; flex-direction: column; gap: 10px; }
   .site-header nav { justify-content: space-between; width: 100%; }
