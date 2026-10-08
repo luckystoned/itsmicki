@@ -62,7 +62,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
 ---
 
 <BaseLayout
-  title="Selected Projects — Itsmicki"
+  title="(Picked projects) — Itsmicki"
   description="Selected branding, product design, art direction and motion work by creative director Micaela Galimberti."
   active="projects"
   hideFooter
@@ -88,8 +88,8 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     </div>
 
     <section class="projects-hero" aria-labelledby="projects-title">
-      <h1 id="projects-title"><span class="projects-appear-text" data-appear>(Picked projects)</span></h1>
-      <p><span class="projects-appear-text" data-appear style="--delay-order:1">2020—today</span></p>
+      <h1 id="projects-title" class="projects-appear-text" data-appear>(Picked projects)</h1>
+      <p class="projects-appear-text" data-appear style="--delay-order:1">2020—today</p>
     </section>
 
     <section class="projects-grid" aria-label="Selected projects">
@@ -486,7 +486,6 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
   }
 
   :root.appear-ready .projects-page .projects-appear-text[data-appear] {
-    display: inline-block;
     transform: translateY(50%) skewY(6deg);
     transform-origin: 0 100%;
     transition-duration: 1s;
@@ -637,7 +636,8 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       display: flex !important;
       justify-content: space-between;
       align-items: flex-start;
-      gap: min(12px, 3.076923cqw);
+      /* Same spacing as the home: the four links spread evenly between 10px side margins. */
+      gap: calc((100vw - min(20px, 5.128205vw) - min(332px, 85.128205vw)) / 3);
       width: 100vw !important;
       height: auto !important;
       min-height: 0 !important;
@@ -655,8 +655,9 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     }
 
     body:has(.projects-page) .site-header nav {
-      flex: 0 0 auto;
-      gap: min(12px, 3.076923cqw);
+      flex: 1 1 auto;
+      justify-content: space-between;
+      gap: 0;
     }
 
     body:has(.projects-page) .site-header a {
