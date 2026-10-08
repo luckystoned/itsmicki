@@ -1328,6 +1328,24 @@ const vimeoUrl = (id: string) =>
       margin-left: 2.2vw;
     }
 
+    /* The UGC caption only shows on desktop. */
+    .case-media-caption {
+      display: none;
+    }
+
+    /* Winona's synopsis is one paragraph split into two columns on desktop: on phones it reads as one. */
+    .project-case-page[data-case='winona'] .case-text-columns {
+      display: block;
+    }
+
+    .project-case-page[data-case='winona'] .case-text-columns p {
+      display: inline;
+    }
+
+    .project-case-page[data-case='winona'] .case-text-columns p + p::before {
+      content: " ";
+    }
+
     .project-case-page[data-case='winona'] .case-drag:nth-of-type(2) {
       z-index: 13;
       top: 28.13vw !important;
