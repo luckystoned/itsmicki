@@ -1,0 +1,54 @@
+<div class="site-pointer" data-site-pointer aria-hidden="true" hidden><span class="site-pointer-shape"><img src="/cursors/pointer.svg" alt="" width="26" height="48" /></span></div>
+
+<script>
+  const pointer = document.querySelector<HTMLElement>('[data-site-pointer]');
+  const pointerShape = pointer?.querySelector<HTMLElement>('.site-pointer-shape');
+  const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+  const linkable = 'a[href], button, summary, label[for], [role="button"], [data-carousel], [data-project-preview]';
+  if (pointer && pointerShape) {
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let x = -100, y = -100, lastX = -100, tilt = 0, hovering = false, visible = false;
+    const morph = (frames: Keyframe[], duration: number) => pointerShape.animate(frames, { duration: calm ? 0 : duration, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'forwards' });
+    const setVisible = (value: boolean) => {
+      visible = value;
+      pointer.hidden = !value;
+      document.documentElement.classList.toggle('site-pointer-on', value);
+    };
+    const setHover = (value: boolean) => {
+      if (value === hovering) return;
+      hovering = value;
+      morph(value
+        ? [{ transform: 'scale(1)' }, { transform: 'scale(1.56, 1.45)', offset: .45 }, { transform: 'scale(1.47, 1.53)', offset: .75 }, { transform: 'scale(1.5)' }]
+        : [{ transform: 'scale(1.5)' }, { transform: 'scale(1)' }], value ? 380 : 220);
+    };
+    const refresh = (target: Element | null) => setHover(!!target?.closest(linkable));
+    const render = () => {
+      tilt += (Math.max(-14, Math.min(14, (x - lastX) * .9)) - tilt) * .16;
+      lastX += (x - lastX) * .35;
+      pointer.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${calm ? 0 : tilt}deg)`;
+      if (visible) requestAnimationFrame(render);
+    };
+    document.addEventListener('pointermove', (event) => {
+      if (event.pointerType === 'touch' || !finePointer.matches) { setVisible(false); return; }
+      x = event.clientX; y = event.clientY;
+      if (!visible) { lastX = x; setVisible(true); requestAnimationFrame(render); }
+      refresh(document.elementFromPoint(x, y));
+    });
+    // Content can slide under a still pointer (carousel, scroll); re-check what is underneath.
+    const recheck = () => { if (visible) refresh(document.elementFromPoint(x, y)); };
+    document.addEventListener('project-preview-refresh', recheck);
+    window.addEventListener('scroll', recheck, { passive: true });
+    document.addEventListener('pointerdown', () => { if (visible) morph([{ transform: `scale(${hovering ? 1.5 : 1})` }, { transform: `scale(${hovering ? 1.36 : .9})`, offset: .4 }, { transform: `scale(${hovering ? 1.5 : 1})` }], 300); });
+    document.addEventListener('pointerout', (event) => { if (!event.relatedTarget) setVisible(false); });
+    window.addEventListener('blur', () => setVisible(false));
+    finePointer.addEventListener('change', () => setVisible(false));
+  }
+</script>
+
+<style>
+  .site-pointer { position: fixed; top: 0; left: 0; z-index: 2147483647; width: 26px; height: 48px; pointer-events: none; will-change: transform; transform-origin: 1px 1px; }
+  .site-pointer[hidden] { display: none; }
+  .site-pointer-shape { display: block; transform-origin: 1px 1px; }
+  .site-pointer img { display: block; width: 26px; height: 48px; max-width: none; }
+  :global(html.site-pointer-on), :global(html.site-pointer-on *) { cursor: none !important; }
+</style>

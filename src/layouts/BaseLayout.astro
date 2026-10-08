@@ -1,6 +1,6 @@
 ---
 import Header from '@/components/Header.astro';
-import ProjectCursor from '@/components/ProjectCursor.astro';
+import SiteCursor from '@/components/SiteCursor.astro';
 import Footer from '@/components/Footer.astro';
 import { DEFAULT_DESCRIPTION, DEFAULT_SOCIAL_IMAGE, DEFAULT_TITLE, SITE_NAME, socialProfiles } from '@/data/seo';
 import '@/styles/global.css';
@@ -87,7 +87,7 @@ const globalStructuredData = {
   <body>
     <a class="skip-link" href="#content">Skip to content</a>
     {!customCursor && <div class="cursor" data-cursor aria-hidden="true"><span>view</span></div>}
-    <ProjectCursor />
+    <SiteCursor />
     <Header active={active} />
     <main id="content"><slot /></main>
     {!hideFooter && <Footer />}
