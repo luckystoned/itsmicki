@@ -243,9 +243,13 @@ const loops = [0, 1, 2];
     .footer-dev-label, .footer-dev-name, .footer-say-two, .footer-rights { display: none; }
     .home-footer-meta > .footer-say-one { top: min(8px, 2.051282cqw); left: 0; background: transparent; color: #2e2e2e; }
     .home-footer-meta > .footer-mail { top: min(8px, 2.051282cqw); right: 0; background: #2e2e2e; color: #fafafa; }
-    .home-footer-meta > .home-socials { top: min(24px, 6.153846cqw); left: 0; display: block; width: 100%; background: transparent; color: #2e2e2e; text-align: left; }
+    .home-footer-meta > .home-socials { top: calc(min(8px, 2.051282cqw) + min(16px, 4.102564cqw) * 1.1706); left: 0; display: block; width: 100%; background: transparent; color: #2e2e2e; text-align: left; }
     .socials-links { position: absolute; top: 0; right: 0; background: #2e2e2e; color: #fafafa; }
     .socials-links a { color: #fafafa; }
+    /* Same contact strip as /projects and the rest of the pages: weight 500 and underlined links. */
+    .home-footer-meta { font-weight: 500; }
+    .home-footer-meta > .footer-mail,
+    .socials-links a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .08em; }
 
     .home-subfooter { position: absolute; z-index: 1; bottom: var(--wordmark-bottom); left: -1.538462cqw; display: block; width: max-content; height: auto; padding: 0; color: #2e2e2e; font-size: 46.202051cqw; font-weight: 400; line-height: .8; letter-spacing: -.04em; white-space: nowrap; transform: none; }
     .home-subfooter span, .home-subfooter span:first-child, .home-subfooter span:last-child { position: static; margin: 0; }
