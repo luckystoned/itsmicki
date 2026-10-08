@@ -4,13 +4,13 @@ import { projects } from '@/data/projects';
 import { imageMetadata } from '@/data/imageMetadata';
 
 const carouselLayout: Record<string, { width: number; height: number; label: string; cover?: string; vimeoId?: string }> = {
-  winona: { width: 352.398, height: 350.263, label: '01_Winona_UX—UI Lead, Visual & Motion Designer', cover: '/02_Projects/01_Winona/01_Winona_Home.webp' },
-  genova: { width: 353.11, height: 467.729, label: '02_Genova_Art Direction+Visual Design' },
-  amazon: { width: 350.263, height: 231.373, label: '03_Amazon_UXUI Lead+Art Direction+Visual Design', cover: 'https://vumbnail.com/1215371786.jpg', vimeoId: '1215371786' },
-  maxmaher: { width: 352.398, height: 349.551, label: '04_MaxMaher_Art Direction+Visual Design' },
-  outliant: { width: 352, height: 417, label: '05_Outliant_Art Direction+Visual Design+UXUI Lead' },
-  lumen: { width: 352.398, height: 210.876, label: '06_Lumen_Art Direction+Visual Design' },
-  blend360: { width: 353.11, height: 467.729, label: '07_Blend360_UX—UI Lead, Visual & Motion Designer' },
+  winona: { width: 430.069, height: 427.462, label: '01_Winona_UX—UI Lead, Visual & Motion Designer', cover: '/02_Projects/01_Winona/01_Winona_Home.webp' },
+  genova: { width: 430.937, height: 570.818, label: '02_Genova_Art Direction+Visual Design' },
+  amazon: { width: 427.462, height: 282.368, label: '03_Amazon_UXUI Lead+Art Direction+Visual Design', cover: 'https://vumbnail.com/1215371786.jpg', vimeoId: '1215371786' },
+  maxmaher: { width: 430.069, height: 426.593, label: '04_MaxMaher_Art Direction+Visual Design' },
+  outliant: { width: 429.582, height: 508.909, label: '05_Outliant_Art Direction+Visual Design+UXUI Lead' },
+  lumen: { width: 430.069, height: 257.354, label: '06_Lumen_Art Direction+Visual Design' },
+  blend360: { width: 430.937, height: 570.818, label: '07_Blend360_UX—UI Lead, Visual & Motion Designer', cover: '/02_Projects/07_Blend360/01_Blend360_Home.webp' },
 };
 const carouselProjects = projects.flatMap((project) => {
   const layout = carouselLayout[project.slug];
@@ -31,8 +31,8 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
 >
   <div class="home-stage">
     <section class="home-intro" data-reveal>
-      <p>I'm micki, a creative director ①, designer ②, and mom of two insane cats ③. Born and raised in Buenos Aires, Argentina, surviving my late twenties<span class="desktop-period"> .</span><span class="mobile-plus"> <u>(+)</u>.</span></p>
-      <p>I've had the chance to explore all kinds of supports during the past 9 years—analog craft, digital to print, and my favorite, web/product design. Occasionally,  you can catch me illustrating, taking photos and editing them, or animating when inspiration strikes (+).</p>
+      <p>I'm micki, a creative director ①, designer ②, and mom of two insane cats ③. Born and raised in Buenos Aires, Argentina, surviving my late twenties<span class="desktop-period"> .</span><span class="mobile-plus"> <a class="intro-plus" href="/deets" aria-label="More about me">(+)</a>.</span></p>
+      <p>I've had the chance to explore all kinds of supports during the past 9 years—analog craft, digital to print, and my favorite, web/product design. Occasionally,  you can catch me illustrating, taking photos and editing them, or animating when inspiration strikes <a class="intro-plus" href="/deets" aria-label="More about me">(+)</a>.</p>
     </section>
 
     <section class="home-carousel" aria-label="Selected projects" data-carousel data-reveal>
@@ -42,7 +42,7 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
           const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${desktopLength(project.carouselLayout.width)}`;
           const content = (
             <>
-              <span class="carousel-name">{project.carouselLayout.label}</span>
+              <span class="carousel-name" aria-hidden="true"><span class="carousel-name-text">{project.carouselLayout.label}</span></span>
               <span class="carousel-picture">
                 <img src={project.carouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading={index < 3 && loop === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 && loop === 0 ? 'high' : undefined} decoding="async" />
                 {project.carouselLayout.vimeoId && <iframe src={vimeoBackground(project.carouselLayout.vimeoId)} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-carousel-video></iframe>}
@@ -71,14 +71,6 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
   </div>
 
   <script>
-    const homeCursor = 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAuCAYAAADdlrJ2AAAABmJLR0QA/wD/AP+gvaeTAAAEoklEQVRYhbWXTUgjZxjH/+/M5IONiE4dsyrVIu0qdXdAWLVsVSi60lSUdW3tFgq2l9KLx4IaD0UR9tJTWJa1YNnL1lZ6ULq3HpaVQmvqV6KUCqsEaqLRTcqYTESdeXrYTPAjiYnJ/iEwM88z7y//d97nfWaYLMsEABzHfbC8vPwMr0Hc6xj0rHi73f4tANy4caOUiArsdjuCwWAgn5CEE4/H8xFj7BFjrCufAAAQjIOSkhJYLBay2+3vElG1IAgHS0tL/nxAEk7Gx8cxMzPDbt682csYe6Fp2pN8AE5Bzl6TJKk0XxDh7IV79+6hs7MT6+vrNdFodEdV1YjH43kHgJ43SGFhIQoLC7G9vc2pqloKIGdH5yCGqqurcf/+fei6rj148OC53+/3E9Gox+NZzRaSshiLi4vR3t6Ojo4OPhAIvE9En+CSrlI6Oak7d+6AiPRAIPA5Eb1NRIurq6t/ZQrJaFsZHh6G0+nkjo+P++MF250pAMjQiSFJkriKigoSRfEagIwLNqsNcmxsDDMzM+zWrVsfxwt2KpP7LrULM8Z4ABBFUcwkP6vpMtTX1weHw4H19fWaWCwWiMViak1NzbXp6WktbxCjYIPBoBCLxa5elJ/oJ11dXSgvL88KZjKZUFlZiebm5uOVlZX3rFZrqyRJL4LB4N7JvJw6Y0lJCe7evYve3l7B5/N9SERfMcYqzuZdarqSqaenB5qmaVtbW58BqOZ5fml5edkN5LHHDw0NYWRkhAfwBWPsERElCjZvTgxJksSVl5dTUVHRW7quVwuCcJD3t5XR0VHMzs6ylpaWT+MF+3NOTubn50FESWM+n+8QgAnIcboGBgagaUnrDwUFBT8R0bggCAd5fyaGotGo3+v1bgBpnITDYSwsLAAA2trawBhLOSAR3fZ6vb+liqeEbGxsYHBwEMCruU8HMZvNaRfQOYiiKNjf30c4HI5YLBbFbDZb/H7/G4wx4wUwketyuUBEcLlczqOjo2+I6InX6/3hQsjU1BQmJiZw5cqVv91udyMRWevr62O6ruPhw4doaGhI5DY2NgIAJicnmwBYGGN/JnNyzmYkEvkXAFRVVQGAMXZAqdap8U8FwZI2bhw4nU4AiCqK8piIJgVBODBicUjqhxKXzWZLCktA9vb2AMAG4NhYepmqtrbWgDRGIpF2Ivrv5NtMop8A+I6IHgN4dvb7pLS0NMBx3FOz2dwwNzdXQESoqqpKxJuamtDZ2YnNzc2yxcXFLxljdTs7O5PnnHAc92uqzzmv1/s9ABQXF38dCoXsoiiitbX1XB7P8+Zk9wtEdBsANE1bSTsnAEKhUOiiHACwWq3WU5B0lZpKFyw2lJWVvXkKkuX4EQDhUCi0qyjKNZ7nYbPZEkGHw4Hr169jd3dXevny5R+KouyLoujIkvFK3d3dLlmWqb+/nw4PD8/93G43ybJMsixTXV1d+j0nlXw+XzCb/Jw6IxFl9PWVEyQcDm9nkneppkVET4loR1XVq2NjYyM8z5uMmK7r2tbW1hwR/QgAa2trxxfuR+kky3ILgOdJQr97PJ5m4ySn9qvr+p7JZPqF4joR+udk3v/GI/7Q191CKAAAAABJRU5ErkJggg==) 0 0, auto';
-    const homeCursorHover = 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAzCAYAAACE92h3AAAABmJLR0QA/wD/AP+gvaeTAAAEtklEQVRYhcWXX0hbdxTHv+fem6a1GtNhTdA2IpM1GKMsi4WBiIXiMtfB6thgIKPgYIzuZW/DQjtYCYwJe5hPg5XRFw3ajRYpy4MVHNsoAyH5mY3NIbqu1FTRafpnTe79nT3UO6Im8cYk2/cp955z8sk5v5Pf+f2ovb2dAYCZPxZCXESFpVQasFOa+aG9vf15AEcAQAixXikgmSXNlmEY9kQika4E8P8raVdXF7q7u8HMxvj4+A1N05YARGOx2NcVAXq9XvT39wOAOjw8/BIzg4jWAVQGmC2Hw4F0Og2Px9MipTQb6S8Au9a7WOVcw2g0iunpafT09LxGRGtEtObz+Q6XCssLNEVEajkg2VJdLtdHABAIBBAMBrcZNU3DsWPH0NnZaTx+/NirqmrA7XYfTCaTv+0XmHMNTbW1taGtrQ0A1CtXrry+1UgHAExWBJitmpoaaJqGxsbG5lIayfIf/+bNm5ienkYoFHrVbCS/3+8sBlYU0FSpjVSwaXJpq6zo7OzUHz161KKq6gv19fWH79+//6sVoOU1NNXa2orW1lYA0K5evfoGM0NRlBEA163El7R5ExEAoLm5+bjVmKIzzNatW7cAAKOjo30LCwsMAFJK99zcXDJfTFnGk6IoNqu+RTdNLmmahoaGBgSDwUwqlTpus9lOut1uRzKZ/GWX774IO+T1euH1egHANjY29hYzExF9gRyjrewTn7Y6yePxNOSylyXDbEWjUQDAxMRE79LSktlInrm5uTtABc80iqIcyPW+7BmaOnHiBM6dOwcpZWZ2dvYiEf0OQFQM6PP54PP5AMDW19c3SE/1VcnA1dVVzMzMFHLhzc3NJwAOAmUo6eLiIsLhcCEXklI+V/GmyaeCGa6urmJlZQXA0yZQlMK/j5kHAPy4831dXd09S8DJyUmMjIwAAGZmZlBVVVUQSET34vH4QiGfgkAiYgBUyOfo0aPmiZ0TicQrzNxCRMvxePyGZeCFCxeg67qxvr5+nZnHOjo6Gi5fvvyZlJK6urpw5syZf32bmpowNDQEADQwMPA2EdUB+B6AdeDU1BR0XVeJaF4IMS6EQDAY/DSdTttcLlfebGtqauryGncCU6kU7t69C13X/yAiCUBKKddMeyaTSQOwPPf2BEYiEUQiEQDw5LqQMrPl86fT6XxmT6BVGYaRBpBzYw4EAqitrYXdbq/f2Nh4U0rJUsrvEonEsumTfeW+xswRABBCXAMgs7+so6PjrJRSC4VC7xmGcQoALl26hEOHDu0Cx2IxDA4Omo8vx+Pxb3dlyMw/CyHG82UWi8W+AYDq6upnHz58eAoAhoaGcgILSWPmDwGAiH6wEvDgwYMn5vFwP9KEEJ/sO9qCXC7XthJUZB46nU6cPn0aAOBwON5ZXl7WiGgtHo9PFV0bv9/vB/CipmlKKBQK2+32I8FgEL29vTn9z58/b9y+fVtl5p+EECeLzlAIIQAIAFAUZTiTycBms+UFqqq67bZV0jzc2n2K0n8+gMsC3Nzc/DOfTdf1bVUotUs/YGb7/Px8IBwOv7vTmEql7i0uLn7JzHcURVkB9hiuVuX3+98nos/zmHNvbaWIiP5WFGUDeDrTdpgz2Q//AFjRxcLkkNdIAAAAAElFTkSuQmCC) 0 0, pointer';
-    document.body.style.cursor = homeCursor;
-    document.querySelector<HTMLElement>('.cursor')?.style.setProperty('display', 'none', 'important');
-    document.querySelectorAll<HTMLElement>('a, [data-carousel]').forEach((element) => {
-      element.addEventListener('mouseenter', () => { element.style.cursor = homeCursorHover; });
-      element.addEventListener('mouseleave', () => { element.style.cursor = homeCursor; });
-    });
     const carousel = document.querySelector<HTMLElement>('[data-carousel]');
     const track = document.querySelector<HTMLElement>('[data-carousel-track]');
     if (carousel && track) {
@@ -86,18 +78,25 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
       if (reduceMotion) track.querySelectorAll<HTMLIFrameElement>('[data-carousel-video]').forEach((video) => {
         video.addEventListener('load', () => video.contentWindow?.postMessage(JSON.stringify({ method: 'pause' }), 'https://player.vimeo.com'));
       });
-      let offset = 0, cycle = 0, dragging = false, hovered = false, lastX = 0, moved = 0, wheelUntil = 0;
+      // `target` is where the strip wants to be; `offset` eases toward it every frame for a soft, inertial feel.
+      let target = 0, offset = 0, cycle = 0, speed = 1, velocity = 0, dragging = false, hovered = false, lastX = 0, moved = 0, wheelUntil = 0;
       let previousTime = 0;
       let pointerId = -1;
       const measure = () => { const first = track.children[0] as HTMLElement; const repeat = track.children[track.children.length / 3] as HTMLElement; cycle = repeat.offsetLeft - first.offsetLeft; };
-      const wrap = () => { if (cycle > 0) offset = ((offset % cycle) - cycle) % cycle; };
+      const wrap = () => {
+        if (cycle <= 0) return;
+        while (offset > 0) { offset -= cycle; target -= cycle; }
+        while (offset <= -cycle) { offset += cycle; target += cycle; }
+      };
       const frame = (time: number) => {
         const elapsed = previousTime ? Math.min(time - previousTime, 32) / (1000 / 60) : 1;
         previousTime = time;
         const autoSpeed = matchMedia('(max-width: 760px)').matches ? .5 : .6;
         const designWidth = matchMedia('(max-width: 760px)').matches ? 390 : 1600;
         const scale = Math.min(innerWidth / designWidth, innerHeight / (designWidth === 390 ? 844 : 1033));
-        if (!reduceMotion && !dragging && time >= wheelUntil) offset -= autoSpeed * scale * (hovered ? .16 : 1) * elapsed;
+        speed += ((hovered ? .16 : 1) - speed) * (1 - Math.pow(.95, elapsed));
+        if (!reduceMotion && !dragging && time >= wheelUntil) target -= autoSpeed * scale * speed * elapsed;
+        offset = reduceMotion ? target : offset + (target - offset) * (1 - Math.pow(dragging ? .7 : .91, elapsed));
         wrap();
         track.style.transform = `translate3d(${offset}px, 0, 0)`;
         if (hovered) document.dispatchEvent(new Event('project-preview-refresh'));
@@ -107,18 +106,22 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
       carousel.addEventListener('mouseenter', () => { hovered = true; });
       carousel.addEventListener('mouseleave', () => { hovered = false; });
       carousel.addEventListener('dragstart', (event) => event.preventDefault());
-      carousel.addEventListener('pointerdown', (event) => { if (!event.isPrimary || event.button !== 0) return; dragging = true; pointerId = event.pointerId; moved = 0; lastX = event.clientX; });
-      carousel.addEventListener('pointermove', (event) => { if (!dragging || event.pointerId !== pointerId) return; const dx = event.clientX - lastX; lastX = event.clientX; moved += Math.abs(dx); if (moved > 6 && !carousel.hasPointerCapture(pointerId)) carousel.setPointerCapture(pointerId); offset += dx; wrap(); });
-      const release = (event: PointerEvent) => { if (event.pointerId === pointerId) dragging = false; };
+      carousel.addEventListener('pointerdown', (event) => { if (!event.isPrimary || event.button !== 0) return; dragging = true; pointerId = event.pointerId; moved = 0; velocity = 0; lastX = event.clientX; });
+      carousel.addEventListener('pointermove', (event) => { if (!dragging || event.pointerId !== pointerId) return; const dx = event.clientX - lastX; lastX = event.clientX; moved += Math.abs(dx); if (moved > 10 && !carousel.hasPointerCapture(pointerId)) carousel.setPointerCapture(pointerId); target += dx; velocity = velocity * .6 + dx * .4; });
+      const release = (event: PointerEvent) => {
+        if (event.pointerId !== pointerId || !dragging) return;
+        dragging = false;
+        if (moved > 10 && !reduceMotion) { target += velocity * 14; wheelUntil = performance.now() + 500; }
+      };
       window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); carousel.addEventListener('lostpointercapture', release);
-      carousel.addEventListener('click', (event) => { if (moved > 6) event.preventDefault(); }, true);
+      carousel.addEventListener('click', (event) => { if (moved > 10) event.preventDefault(); }, true);
       carousel.addEventListener('wheel', (event) => {
         const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
         event.preventDefault();
-        wheelUntil = performance.now() + 200;
+        wheelUntil = performance.now() + 300;
         if (dragging) return;
         const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? carousel.clientWidth : 1;
-        offset -= delta * unit; wrap();
+        target -= delta * unit;
       }, { passive: false });
     }
   </script>
@@ -136,14 +139,23 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
   .home-carousel { position: relative; z-index: 2; height: clamp(315px, 29.25vw, 468px); overflow: visible; padding-left: 0; touch-action: pan-y; user-select: none; }
   .carousel-track { isolation: isolate; display: flex; align-items: flex-start; width: max-content; overflow: visible; will-change: transform; }
   .carousel-card { position: relative; z-index: 0; flex: 0 0 clamp(210px, 22vw, 352px); aspect-ratio: var(--card-aspect); margin-right: clamp(9px, .8vw, 13px); overflow: visible; }
-  .carousel-name { position: absolute; z-index: 3; top: -7px; left: 0; max-width: 140%; opacity: 0; transform: translateY(6px); color: #2e2e2e; font-size: clamp(17px, 1.5vw, 24px); line-height: 1.24; letter-spacing: -.01em; white-space: nowrap; pointer-events: none; transition: opacity .4s cubic-bezier(.16,1,.3,1), transform .4s cubic-bezier(.16,1,.3,1); }
-  .carousel-picture { position: absolute; z-index: 1; inset: 0; display: block; overflow: hidden; border-radius: 0; transition: border-radius .5s cubic-bezier(.16,1,.3,1), transform .5s cubic-bezier(.16,1,.3,1); }
-  .carousel-picture img { pointer-events: none; transition: transform .5s cubic-bezier(.16,1,.3,1); }
-  .carousel-picture iframe { position: absolute; top: 50%; left: 50%; width: auto; min-width: 100%; height: 100%; aspect-ratio: 426 / 240; border: 0; pointer-events: none; transform: translate(-50%, -50%); transition: transform .5s cubic-bezier(.16,1,.3,1); }
-  .carousel-card:is(:hover, :focus-visible, :focus-within) .carousel-name { opacity: 1; transform: none; }
-  .carousel-card:is(:hover, :focus-visible, :focus-within) { z-index: 1000; }
-  .carousel-card:hover .carousel-picture, .carousel-card:focus-visible .carousel-picture { border-radius: 220px; transform: translateY(clamp(32px, 2.93vw, 47px)); }
-  .carousel-card:hover img, .carousel-card:focus-visible img { transform: scale(1.394); }
+  .carousel-card { --name-size: clamp(14px, 1.25vw, 20px); }
+  .carousel-name { position: absolute; z-index: 3; top: 0; left: 0; display: block; max-width: 100%; overflow: hidden; color: #2e2e2e; font-size: var(--name-size); line-height: 1.24; letter-spacing: -.01em; white-space: nowrap; pointer-events: none; }
+  .carousel-name-text { display: block; transform: translateY(105%); transition: transform .16s cubic-bezier(.55,0,.75,0); }
+  .carousel-picture { position: absolute; z-index: 1; inset: 0; display: block; overflow: hidden; transition: transform .6s cubic-bezier(.65,0,.35,1) .14s; }
+  .carousel-picture img { pointer-events: none; transition: transform .8s cubic-bezier(.16,1,.3,1); }
+  .carousel-picture iframe { position: absolute; top: 50%; left: 50%; width: auto; min-width: 100%; height: 100%; aspect-ratio: 426 / 240; border: 0; pointer-events: none; transform: translate(-50%, -50%); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+  @media (hover: hover) and (pointer: fine) {
+    .carousel-card:is(:hover, :focus-visible) { z-index: 1000; }
+    .carousel-card:is(:hover, :focus-visible) .carousel-picture { transform: translateY(calc(var(--name-size) * 1.24 + 8px)); transition: transform .6s cubic-bezier(.65,0,.35,1); }
+    .carousel-card:is(:hover, :focus-visible) img { transform: scale(1.15); }
+    .carousel-card:is(:hover, :focus-visible) iframe { transform: translate(-50%, -50%) scale(1.15); }
+    .carousel-card:is(:hover, :focus-visible) .carousel-name-text { transform: none; transition: transform .65s cubic-bezier(.22,1,.36,1) .28s; }
+  }
+  @media not ((hover: hover) and (pointer: fine)) { .carousel-name { display: none; } }
+  .intro-plus { color: inherit; text-decoration: none; text-decoration-thickness: 1px; text-underline-offset: .08em; }
+  .intro-plus:is(:hover, :focus-visible) { text-decoration-line: underline; }
+  @media (hover: none) { .intro-plus { text-decoration-line: underline; } }
   .home-footer { position: relative; z-index: 1; height: clamp(315px, 36vw, 576px); margin-top: max(-160px, -10vw); padding-top: 0; padding-bottom: 0; overflow: hidden; }
   .home-footer-meta { position: absolute; z-index: 3; right: var(--gutter); bottom: 14.4%; left: var(--gutter); display: grid; grid-template-columns: 1.05fr .55fr 1.25fr 1fr 2.1fr; align-items: end; gap: 18px; padding: 0; font-size: clamp(11px, 1.3vw, 21px); line-height: 1; text-transform: uppercase; }
   .home-footer-meta > * { justify-self: start; width: fit-content; background: #2e2e2e; color: #fafafa; padding-top: 1px; white-space: nowrap; }
@@ -161,7 +173,6 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
     .home-intro { grid-template-columns: 1fr; gap: 24px; min-height: 0; padding-top: 34px; padding-bottom: 68px; font-size: clamp(20px, 5.65vw, 25px); line-height: 1.08; overflow-wrap: anywhere; }
     .home-carousel { height: min(105vw, 410px); }
     .carousel-card { flex-basis: min(64vw, 270px); margin-right: 8px; }
-    .carousel-name { font-size: 15px; }
     .home-footer { height: 330px; margin-top: -72px; }
     .home-footer-meta { right: var(--gutter); bottom: 36px; left: var(--gutter); grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 11px; line-height: 1.15; }
     .home-socials { grid-column: 1 / -1; text-align: left; }
@@ -170,28 +181,27 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
   }
   :global(html:has(.home-stage)), :global(body:has(.home-stage)) { --bg: #fafafa; --fg: #2e2e2e; background: #fafafa; color: #2e2e2e; -webkit-font-smoothing: antialiased; }
   @media (min-width: 761px) {
+    :global(html:has(.home-stage)) { --gutter: 18px; }
     :global(body:has(.home-stage)) { height: 100svh; overflow: hidden; }
     :global(body:has(.home-stage) > main) { position: fixed; inset: 0; width: 100vw; height: 100svh; max-height: none; overflow: hidden; background: #fafafa; transform: none; }
     .home-stage { position: relative; width: 100%; height: 100%; overflow: hidden; background: #fafafa; container-type: inline-size; }
     .home-stage [data-reveal] { transform: none; transition: opacity .9s cubic-bezier(.16, 1, .3, 1); }
 
     :global(body:has(.home-stage) .site-header) { position: fixed; inset: 0; display: block; width: 100vw; height: 100svh; max-height: none; min-height: 0; padding: 0; background: transparent; backdrop-filter: none; transform: none; pointer-events: none; }
-    :global(body:has(.home-stage) .site-header .wordmark) { position: absolute; top: min(23.21px, 1.450625vw, 2.246854svh); left: min(25.2px, 1.575vw, 2.439497svh); font-size: clamp(14px, 1.74vw, 27.117px); font-weight: 400; line-height: normal; letter-spacing: -.02em; text-decoration: underline; pointer-events: auto; }
-    :global(body:has(.home-stage) .site-header nav) { position: absolute; top: min(23.21px, 1.450625vw, 2.246854svh); right: min(25.2px, 1.575vw, 2.439497svh); display: flex; gap: min(10px, .625vw, .968054svh); font-size: clamp(14px, 1.74vw, 27.117px); font-weight: 400; line-height: normal; letter-spacing: -.02em; pointer-events: auto; }
+    :global(body:has(.home-stage) .site-header .wordmark) { position: absolute; top: min(23.21px, 1.450625vw, 2.246854svh); left: 18px; font-size: clamp(14px, 1.74vw, 27.117px); font-weight: 400; line-height: normal; letter-spacing: -.02em; text-decoration: underline; pointer-events: auto; }
+    :global(body:has(.home-stage) .site-header nav) { position: absolute; top: min(23.21px, 1.450625vw, 2.246854svh); right: 18px; display: flex; gap: min(10px, .625vw, .968054svh); font-size: clamp(14px, 1.74vw, 27.117px); font-weight: 400; line-height: normal; letter-spacing: -.02em; pointer-events: auto; }
     :global(body:has(.home-stage) .site-header a::after) { display: none; }
     :global(body:has(.home-stage) .site-header a:hover) { text-decoration: underline; }
 
     .home-intro { position: absolute; inset: 0; display: block; min-height: 0; padding: 0; color: #2e2e2e; font-size: min(24px, 1.5vw, 2.32333svh); font-weight: 400; line-height: 1.24; letter-spacing: -.01em; }
     .home-intro p { position: absolute; top: min(78.63px, 4.914375vw, 7.61181svh); }
-    .home-intro p:first-child { left: min(25.2px, 1.575vw, 2.439497svh); width: min(441.914px, 27.619625vw, 42.779671svh); }
+    .home-intro p:first-child { left: 18px; width: min(441.914px, 27.619625vw, 42.779671svh); }
     .home-intro p:nth-child(2) { left: min(500.45px, 31.278125vw, 48.446273svh); width: min(704.492px, 44.03075vw, 68.198645svh); white-space: pre-wrap; }
 
-    .home-carousel { position: absolute; z-index: 2; top: min(278.13px, 17.383125vw, 26.924492svh); left: max(-33.35px, -2.084375vw, -3.228461svh); width: calc(100vw + min(33.35px, 2.084375vw, 3.228461svh)); height: min(468px, 29.25vw, 45.304937svh); overflow: visible; }
+    .home-carousel { position: absolute; z-index: 2; top: min(219.31px, 13.706875vw, 21.230397svh); left: 0; width: 100vw; height: min(570.818px, 35.676125vw, 55.258277svh); overflow: visible; }
     .carousel-card { z-index: 0; flex-basis: var(--card-width); margin-right: 6px; overflow: visible; }
-    .carousel-name { z-index: 2; top: max(-6.9px, -.43125vw, -.667957svh); width: max-content; max-width: none; overflow: visible; color: #2e2e2e; font-size: min(24px, 1.5vw, 2.32333svh); font-weight: 400; line-height: 1.24; letter-spacing: -.01em; }
-    .carousel-card:is(:hover, :focus-visible, :focus-within) { z-index: 1000; }
-    .carousel-card:hover .carousel-picture, .carousel-card:focus-visible .carousel-picture { border-radius: min(220px, 13.75vw, 21.297193svh); transform: translateY(min(46.81px, 2.925625vw, 4.531462svh)); }
-    .carousel-card:hover img, .carousel-card:focus-visible img { transform: none; }
+    .carousel-card { --name-size: min(20px, 1.25vw, 1.936108svh); }
+    .carousel-name { z-index: 2; color: #2e2e2e; font-weight: 400; line-height: 1.24; letter-spacing: -.01em; }
 
     .home-footer { position: absolute; z-index: auto; inset: 0; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; pointer-events: none; }
     .home-subfooter { position: absolute; z-index: 1; inset: 0; display: block; color: #2e2e2e; font-size: var(--footer-wordmark-size); font-weight: 500; line-height: .8; letter-spacing: -.04em; }
@@ -216,14 +226,14 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
     .home-stage { --wordmark-bottom: max(min(76px, 19.487179cqw), calc(env(safe-area-inset-bottom) + 42px)); --carousel-bottom: calc(var(--wordmark-bottom) + 32.051282cqw); --carousel-min-top: min(204px, 52.307692cqw); position: relative; width: 100%; height: 100%; overflow: hidden; background: #fafafa; container-type: inline-size; }
     .home-stage [data-reveal] { transform: none; transition: opacity .9s cubic-bezier(.16, 1, .3, 1); }
 
-    :global(body:has(.home-stage) .site-header) { position: fixed !important; z-index: 2000 !important; inset: auto 0 0 !important; display: flex !important; justify-content: space-between; align-items: flex-start; gap: min(12px, 3.076923cqw); width: 100vw !important; height: auto !important; max-height: none; min-height: 0 !important; padding: min(8px, 2.051282cqw) min(10px, 2.564103cqw) !important; background: #fafafa !important; backdrop-filter: none; color: #2e2e2e; font-size: min(26.498px, 6.794359cqw); font-weight: 400; line-height: normal; letter-spacing: -.02em; transform: none; container-type: inline-size; pointer-events: auto !important; }
+    :global(body:has(.home-stage) .site-header) { position: fixed !important; z-index: 2000 !important; inset: auto 0 0 !important; display: flex !important; justify-content: space-between; align-items: flex-start; gap: calc((100vw - 36px - min(332px, 85.128205vw)) / 3); width: 100vw !important; height: auto !important; max-height: none; min-height: 0 !important; padding: min(8px, 2.051282cqw) 18px !important; background: #fafafa !important; backdrop-filter: none; color: #2e2e2e; font-size: min(26.498px, 6.794359cqw); font-weight: 400; line-height: normal; letter-spacing: -.02em; transform: none; container-type: inline-size; pointer-events: auto !important; }
     :global(body:has(.home-stage) .site-header .wordmark) { position: static; flex: 0 0 auto; text-decoration: underline; pointer-events: auto; }
-    :global(body:has(.home-stage) .site-header nav) { display: flex; flex: 0 0 auto; gap: 3.076923cqw; min-width: 0; pointer-events: auto; }
+    :global(body:has(.home-stage) .site-header nav) { display: flex; flex: 1 1 auto; justify-content: space-between; gap: 0; min-width: 0; pointer-events: auto; }
     :global(body:has(.home-stage) .site-header a) { white-space: nowrap; }
     :global(body:has(.home-stage) .site-header a::after) { display: none; }
 
     .home-intro { position: absolute; inset: 0; display: block; min-height: 0; padding: 0; color: #2e2e2e; font-size: min(26px, 6.666667cqw); font-weight: 400; line-height: 1; letter-spacing: -.015em; }
-    .home-intro p:first-child { position: absolute; top: min(64px, 16.394872cqw); left: min(9px, 2.307692cqw); width: calc(100% - min(18px, 4.615385cqw)); transform: none; overflow-wrap: normal; }
+    .home-intro p:first-child { position: absolute; top: min(64px, 16.394872cqw); left: 18px; width: calc(100% - 36px); transform: none; overflow-wrap: normal; }
     .home-intro p:nth-child(2), .desktop-period { display: none; }
     .mobile-plus { display: inline; }
 
@@ -234,12 +244,7 @@ const vimeoBackground = (id: string) => `https://player.vimeo.com/video/${id}?ba
     .carousel-card:nth-child(7n + 4) { aspect-ratio: 1; }
     .carousel-card:nth-child(7n + 2) { aspect-ratio: 3 / 4; }
     .carousel-card:nth-child(7n + 3) { aspect-ratio: 3 / 2; }
-    .carousel-name { top: max(-20.44px, -5.241026cqw); width: max-content; max-width: none; overflow: visible; color: #2e2e2e; font-size: min(12px, 3.076923cqw); font-weight: 400; line-height: normal; letter-spacing: -.01em; transform: none; }
-    .carousel-card:active { z-index: 100; }
-    .carousel-card:active .carousel-name { opacity: 1; transform: none; }
-    .carousel-card:active .carousel-picture { border-radius: min(120px, 30.769231cqw); transform: translateY(min(24px, 6.153846cqw)); }
-    .carousel-card:active img { transform: scale(1.394); }
-    .carousel-card:active iframe { transform: translate(-50%, -50%) scale(1.394); }
+    .carousel-card { --name-size: min(12px, 3.076923cqw); }
 
     .home-footer { position: absolute; z-index: 1; inset: 0; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; pointer-events: none; }
     .home-footer-meta { position: absolute; z-index: 3; inset: 0; display: block; padding: 0; color: #2e2e2e; font-size: min(16px, 4.102564cqw); font-weight: 400; line-height: normal; letter-spacing: -.02em; pointer-events: none; }
