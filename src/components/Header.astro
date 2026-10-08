@@ -11,22 +11,33 @@ const { active = '' } = Astro.props;
 </header>
 
 <script>
-  // While the page scrolls the bar eases off its edge (top or bottom) and glides back once scrolling stops.
-  // The offset is eased every frame, so a change of direction mid-way stays fluid instead of restarting.
+  // While the page scrolls, the navigation (and, on phones, the pinned contact strip) eases off its edge;
+  // it glides back once scrolling stops. One shared progress is eased every frame, so a change of
+  // direction mid-way stays fluid instead of restarting.
   const header = document.querySelector<HTMLElement>('[data-header]');
+  const strips = [...document.querySelectorAll<HTMLElement>('[data-scroll-bar]')];
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let hidden = false, offset = 0, lastY = window.scrollY, lastTime = 0, settleTimer = 0, running = false;
+  let hidden = false, progress = 0, lastY = window.scrollY, lastTime = 0, settleTimer = 0, running = false;
 
+  const bars = () => [header, ...strips].filter((bar): bar is HTMLElement => !!bar && getComputedStyle(bar).position === 'fixed');
+  const edgeOf = (bar: HTMLElement) => {
+    if (!bar.dataset.edge) {
+      const rect = bar.getBoundingClientRect();
+      bar.dataset.edge = rect.top + rect.height / 2 > window.innerHeight / 2 ? 'bottom' : 'top';
+    }
+    return bar.dataset.edge === 'bottom' ? 1 : -1;
+  };
   const frame = (time: number) => {
-    if (!header) return;
     const dt = lastTime ? Math.min(64, time - lastTime) / 1000 : 1 / 60;
     lastTime = time;
-    const edge = header.dataset.edge === 'bottom' ? 1 : -1;
-    const target = hidden ? edge * (header.offsetHeight + 2) : 0;
-    offset = calm ? target : offset + (target - offset) * (1 - Math.exp(-(hidden ? 16 : 11) * dt));
-    if (Math.abs(target - offset) < .3) offset = target;
-    header.style.setProperty('transform', offset ? `translate3d(0, ${offset.toFixed(2)}px, 0)` : 'none', 'important');
-    running = offset !== target;
+    const target = hidden ? 1 : 0;
+    progress = calm ? target : progress + (target - progress) * (1 - Math.exp(-(hidden ? 16 : 11) * dt));
+    if (Math.abs(target - progress) < .004) progress = target;
+    bars().forEach((bar) => {
+      const offset = edgeOf(bar) * progress * (bar.offsetHeight + 2);
+      bar.style.setProperty('transform', progress ? `translate3d(0, ${offset.toFixed(2)}px, 0)` : 'none', 'important');
+    });
+    running = progress !== target;
     if (running) requestAnimationFrame(frame); else lastTime = 0;
   };
   const setHidden = (value: boolean) => {
@@ -36,10 +47,6 @@ const { active = '' } = Astro.props;
 
   window.addEventListener('scroll', () => {
     if (!header || document.querySelector('.home-stage')) return;
-    if (!hidden && !offset) {
-      const rect = header.getBoundingClientRect();
-      header.dataset.edge = rect.top + rect.height / 2 > window.innerHeight / 2 ? 'bottom' : 'top';
-    }
     const y = window.scrollY;
     const moved = Math.abs(y - lastY);
     lastY = y;
@@ -48,4 +55,6 @@ const { active = '' } = Astro.props;
     if (moved > 1) setHidden(true);
     settleTimer = window.setTimeout(() => setHidden(false), 140);
   }, { passive: true });
+  // Edges are re-measured after a resize (e.g. rotating a phone switches the nav between top and bottom).
+  window.addEventListener('resize', () => [header, ...strips].forEach((bar) => { if (bar) delete bar.dataset.edge; }));
 </script>

@@ -71,7 +71,6 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/03_Deets/02_Deets.webp': { width: 3112, height: 1482 },
   '/03_Deets/03_Deets.webp': { width: 832, height: 1040 },
   '/03_Deets/04_Deets.webp': { width: 902, height: 1352 },
-  '/03_Deets/05_Deets.webp': { width: 2530, height: 1144 },
   '/04_SideB/01_SideB.webp': { width: 968, height: 1159 },
   '/04_SideB/02_SideB.webp': { width: 1189, height: 993 },
   '/04_SideB/03_SideB.webp': { width: 809, height: 1245 },

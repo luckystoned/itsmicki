@@ -94,6 +94,18 @@ p, h1, h2, figure, dl, dd { margin: 0; }
 
 /* Scroll-away navigation: Header.astro eases the bar off its edge while scrolling and back once scrolling stops. */
 body:not(:has(.home-stage)) .site-header[data-header] { will-change: transform; }
+/* On phones the contact/social strip pins to the top and moves with the navigation. */
+@media (max-width: 760px) {
+  [data-scroll-bar] {
+    position: fixed !important;
+    z-index: 1999 !important;
+    top: 0 !important;
+    padding-top: max(min(8px, 2.051282vw), env(safe-area-inset-top)) !important;
+    padding-bottom: min(6px, 1.538462vw) !important;
+    background: #fafafa;
+    will-change: transform;
+  }
+}
 
 /* Text links retain their underline offset and gain weight on interaction. */
 a[href] {
