@@ -106,41 +106,50 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       { src: '/02_Projects/01_Winona/02_Winona_Drag.webp', left: '56vw', top: '8.26vw', width: '24.6656vw', rotation: '0deg' },
     ],
     blocks: [
+      // Structure from Figma 863:1006. Images are exported from Figma at 2x; videos are the ones already in production.
       single(video('1215371662', 'Winona website motion reel', '1556 / 870', '16 / 9')),
-      single(image('/02_Projects/01_Winona/02_Winona.webp', 'Winona campaign artwork displayed across a large outdoor wall.', '1556 / 870')),
+      single(image('/02_Projects/01_Winona/10_Winona.webp', 'Winona campaign artwork displayed across a large outdoor wall.', '1556 / 870')),
+      single(image('/02_Projects/01_Winona/11_Winona.webp', 'Redefining Menopause headline with a Winona patient portrait.', '1556 / 870')),
+      single(image('/02_Projects/01_Winona/12_Winona.webp', 'Winona Talks cards about night sweats over a portrait lying on the grass.', '1556 / 870')),
       pair(
-        video('1215371665', 'Winona digital experience in motion', '54.6737 / 63.01', '2160 / 2490'), '54.6737vw', '63.01vw',
-        video('1215371664', 'Winona product interaction in motion', '40.4862 / 40.2406', '1 / 1'), '40.4862vw', '40.2406vw',
+        video('1215371665', 'Winona brand guidelines in motion', '878 / 1010', '2160 / 2490'), '54.875vw', '63.125vw',
+        image('/02_Projects/01_Winona/13_Winona.webp', 'Progesterone New Body Cream campaign artwork.', '650 / 672'), '40.625vw', '42vw',
       ),
       text('(synopsis)', [
         `After collaborating closely with the marketing team to gain a deeper understanding of the brand, its pain points, and strengths, we embarked on the rebranding project alongside Julia Franceschini, who led the brand's art direction. We held several meetings with Winona's Director of Design and Director of Marketing, where we worked together to define the new brand strategy,`,
         `vision, mission, and how to translate these into visual elements. This collaborative approach ensured that I had the necessary knowledge and understanding to reflect these elements in the new website. I led the art direction for the website, assisting the UX/UI designers in implementing the chosen concept across the extensive scalability of the site's numerous pages.`,
       ]),
+      single(image('/02_Projects/01_Winona/14_Winona.webp', 'Winona Hair Serum campaign portrait.', '1556 / 870')),
       pair(
-        video('1215371663', 'Winona UGC ambassador campaign', '40.5 / 29.7806', '16 / 9', 'UGC Campaign_Ambassors'), '40.5vw', '29.7806vw',
+        image('/02_Projects/01_Winona/15_Winona.webp', 'Winona Redefining Menopause tote bag on a chair.', '651 / 830'), '40.6875vw', '51.875vw',
+        video('1215371675', 'Winona campaign art direction in motion', '880 / 832', '2284 / 2160'), '55vw', '52vw',
+      ),
+      single(video('1215371679', 'Winona website experience reel', '1556 / 870', '16 / 9')),
+      pair(
+        video('1215371663', 'Winona UGC ambassador campaign', '651 / 520', '16 / 9', 'UGC Campaign_Ambassors'), '40.6875vw', '32.5vw',
         carousel([
           { src: '/02_Projects/01_Winona/03_Winona.webp', alt: 'Winona Essential Defense bottle on satin.' },
           { src: '/02_Projects/01_Winona/04_Winona.webp', alt: 'Winona Vaginal Estrogen Cream on a soft chair.' },
           { src: '/02_Projects/01_Winona/05_Winona.webp', alt: 'Winona Hair Serum campaign composition.' },
-        ], 'Winona product campaign carousel', '54.6737 / 51.9794'), '54.6737vw', '51.9794vw',
+        ], 'Winona product campaign carousel', '881 / 835'), '55.0625vw', '52.1875vw',
       ),
-      pair(
-        image('/02_Projects/01_Winona/06_Winona.webp', 'Winona Redefining Menopause tote bag on a chair.', '40.4769 / 51.9794'), '40.4769vw', '51.9794vw',
-        video('1215371675', 'Winona campaign art direction in motion', '54.6737 / 51.9794', '2284 / 2160'), '54.6737vw', '51.9794vw',
-      ),
-      single(video('1215371679', 'Winona website experience reel', '1556 / 870', '16 / 9')),
       text('(conclusion)', [], {
         variant: 'wide',
         wide: `The successful rebranding of Winona's website was a direct result of our close collaboration with their team. By working together, we created a cohesive and engaging online presence that accurately reflects Winona's mission and values, enhancing the user experience and solidifying their digital footprint.`,
       }),
+      pair(
+        image('/02_Projects/01_Winona/16_Winona.webp', 'Blurred Winona Essential Defense bottle.', '728 / 956'), '45.5vw', '59.75vw',
+        image('/02_Projects/01_Winona/17_Winona.webp', 'Portrait with cleansing foam on the face.', '822 / 956'), '51.375vw', '59.75vw',
+      ),
       single(video('1215371680', 'Winona final brand motion reel', '1556 / 870', '16 / 9')),
       pair(
-        video('1215371690', 'Winona mobile interface in motion', '40.74 / 51.9794', '2160 / 2756'), '40.74vw', '51.9794vw',
-        carousel([
-          { src: '/02_Projects/01_Winona/07_Winona.webp', alt: 'Winona progesterone cream experience on a phone.' },
-          { src: '/02_Projects/01_Winona/08_Winona.webp', alt: 'Winona progesterone body cream campaign.' },
-          { src: '/02_Projects/01_Winona/09_Winona.webp', alt: 'Winona website displayed on a tablet in a woven chair.' },
-        ], 'Winona digital campaign carousel', '54.6737 / 51.9794'), '54.6737vw', '51.9794vw',
+        video('1215371690', 'Winona mobile interface in motion', '655 / 835', '2160 / 2756'), '40.9375vw', '52.1875vw',
+        image('/02_Projects/01_Winona/18_Winona.webp', 'Winona progesterone body cream page on a phone resting on a table.', '878 / 835'), '54.875vw', '52.1875vw',
+      ),
+      single(image('/02_Projects/01_Winona/19_Winona.webp', 'Bioidentical treatments that really work, with Winona product cards.', '1556 / 870')),
+      pair(
+        image('/02_Projects/01_Winona/20_Winona.webp', 'Winona website displayed on a tablet in a woven chair.', '730 / 958'), '45.625vw', '59.875vw',
+        image('/02_Projects/01_Winona/21_Winona.webp', 'Blurred hand holding Winona estrogen cream.', '820 / 958'), '51.25vw', '59.875vw',
       ),
     ],
     credits: ['Art Direction / <a href="https://www.behance.net/juliafranc2cc2" target="_blank" rel="noreferrer">Julia Franceschini</a>'],
