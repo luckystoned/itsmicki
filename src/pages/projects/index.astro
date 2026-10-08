@@ -697,28 +697,30 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     }
 
     .projects-hero {
-      height: min(260px, 66.666667cqw);
+      height: 68.5cqw;
     }
 
+    /* Hero scales with the screen width: one line, both texts sharing a baseline at 49.6% of the width. */
     .projects-hero h1 {
-      top: min(96px, 24.615385cqw);
-      left: min(9px, 2.307692cqw);
-      width: min(234.146px, 60.037538cqw);
-      font-size: min(97.016px, 24.875897cqw);
+      top: 24.16cqw;
+      left: 2.307692cqw;
+      width: auto;
+      font-size: 26.54cqw;
       line-height: normal;
       transform: none;
-      white-space: normal;
+      white-space: nowrap;
     }
 
     .projects-hero p {
-      top: min(149px, 38.205128cqw);
+      top: 38.77cqw;
       right: auto;
       /* Sits 4px after the end of "(Picked projects)". */
-      left: calc(min(9px, 2.307692cqw) + min(229.9px, 58.948718cqw) + 4px);
-      width: min(100.918px, 25.87641cqw);
-      font-size: min(41.814px, 10.721538cqw);
+      left: calc(2.307692cqw + 62.91cqw + 4px);
+      width: auto;
+      font-size: 11.32cqw;
       line-height: normal;
       transform: none;
+      white-space: nowrap;
     }
 
     .projects-grid {
