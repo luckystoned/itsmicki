@@ -113,6 +113,14 @@ const vimeoUrl = (id: string) =>
                       <p data-case-text-reveal style={`--reveal-delay:${index * 70}ms`}>{paragraph}</p>
                     ))}
                   </div>
+                  {block.mobile && (
+                    <div class="case-text-mobile">
+                      {block.mobile.lead && <p class="case-text-mobile-lead" data-case-text-reveal>{block.mobile.lead}</p>}
+                      {block.mobile.columns.map((paragraph, index) => (
+                        <p data-case-text-reveal style={`--reveal-delay:${index * 70}ms`}>{paragraph}</p>
+                      ))}
+                    </div>
+                  )}
                   {caseStudy.slug === 'lumen' && block.title === '(design process)' && (
                     <div class="case-lumen-mobile-copy case-lumen-mobile-design">
                       <p>I created the brand from the ground up, defining the visual direction and a system capable of moving between the analog and the digital.</p>
@@ -692,6 +700,10 @@ const vimeoUrl = (id: string) =>
   }
 
   .case-lumen-mobile-copy {
+    display: none;
+  }
+
+  .case-text-mobile {
     display: none;
   }
 
@@ -1775,13 +1787,7 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='lumen'] {
       position: relative;
       width: 100%;
-      height: 3516.1538vw;
-      min-height: 0;
-      overflow: hidden;
     }
-
-    .project-case-page[data-case='lumen'] .project-case-canvas,
-    .project-case-page[data-case='lumen'] .case-flow { position: static; width: 100%; margin: 0; }
 
     .project-case-page[data-case='lumen'] .editorial-case-hero {
       position: absolute;
@@ -1836,66 +1842,43 @@ const vimeoUrl = (id: string) =>
       width: 40.977vw !important;
     }
 
-    .project-case-page[data-case='lumen'] .case-intro { display: contents; width: auto; margin: 0; }
-    .project-case-page[data-case='lumen'] .case-intro > div { position: absolute; width: 95.384616vw; margin: 0; }
-    .project-case-page[data-case='lumen'] .case-intro > div:first-child {
-      top: 60.4407vw; left: 2.307692vw; width: 95.384616vw; height: 45.8974vw;
+    /* Content in flow with the Figma spacing: 40px between sections, 32px between groups inside a
+       section, 16px between a label and its copy or between paragraphs, 6px between photos. */
+    .project-case-page[data-case='lumen'] .project-case-canvas {
+      display: flex;
+      flex-direction: column;
+      padding-top: 60.4407vw;
     }
-    .project-case-page[data-case='lumen'] .case-intro > div:nth-child(2) {
-      top: 116.5946vw; left: 2.307692vw; height: 98.7179vw;
-    }
+    .project-case-page[data-case='lumen'] .case-intro,
+    .project-case-page[data-case='lumen'] .case-intro > div:nth-child(2),
+    .project-case-page[data-case='lumen'] .case-flow { display: contents; }
+    .project-case-page[data-case='lumen'] .case-intro > div:first-child { width: 100%; margin: 0; }
     .project-case-page[data-case='lumen'] .case-label { margin: 0 0 12px; font-size: 24px; line-height: 29px; }
     .project-case-page[data-case='lumen'] .case-intro-large { margin: 0; font-size: 13.5246vw; line-height: .868; }
-    .project-case-page[data-case='lumen'] .case-nutshell { font-size: 32px; line-height: 34px; }
-    .project-case-page[data-case='lumen'] .case-intro-columns {
-      position: absolute; top: 148.1731vw; left: 0; display: flex; gap: 16px; width: 100%; margin: 0;
-    }
+    .project-case-page[data-case='lumen'] .case-intro > div:nth-child(2) > .case-label { margin: 40px 0 0; }
+    .project-case-page[data-case='lumen'] .case-nutshell { margin-top: 16px; font-size: 32px; line-height: 34px; }
+    /* The opening video comes right after "In a nutshell"; the intro columns follow it. */
+    .project-case-page[data-case='lumen'] .case-intro-columns,
+    .project-case-page[data-case='lumen'] .case-flow > :not(:first-child),
+    .project-case-page[data-case='lumen'] .case-credits { order: 1; }
+    .project-case-page[data-case='lumen'] .case-flow > :first-child { margin-top: 40px !important; }
+    .project-case-page[data-case='lumen'] .case-intro-columns { display: flex; flex-direction: column; gap: 16px; width: 100%; margin: 40px 0 0; }
     .project-case-page[data-case='lumen'] .case-intro-columns p { margin: 0; font-size: 24px; line-height: 34px; }
 
-    .project-case-page[data-case='lumen'] .case-flow > * {
-      position: absolute;
-      left: 2.307692vw;
-      width: 95.384616vw;
-      margin: 0 !important;
-    }
-
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(1) { top: 225.569vw; left: 2.307692vw; width: 95.384616vw; height: 34.3269vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(2) { top: 352.2035vw; height: 181.2821vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(3) { top: 541.6907vw; height: 51.6027vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(4) { top: 594.8318vw; height: 62.4387vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(5) { top: 667.527vw; height: 227.4359vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6) { top: 903.168vw; width: 95.384616vw; height: 216.0261vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(7) { top: 1129.4505vw; height: 120.2564vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(8) { top: 1259.9633vw; left: 2.307692vw; width: 95.384616vw; height: 53.5372vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(9) { top: 1323.7569vw; height: 244.1026vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(10) { top: 1576.0646vw; height: 52.0272vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(11) { top: 1629.6303vw; height: 206.3367vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(12) { top: 1846.2233vw; height: 190vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(13) { top: 2046.4797vw; height: 209.1672vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(14) { top: 2265.9033vw; height: 272.3077vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(15) { top: 2548.4674vw; left: 2.307692vw; width: 95.384616vw; height: 51.9466vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(16) { top: 2601.9525vw; left: 2.307692vw; width: 95.384616vw; height: 51.9466vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(17) { top: 2664.1562vw; height: 367.1795vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(18) { top: 3051.8485vw; left: 2.307692vw; width: 95.384616vw; height: 206.8511vw; }
-
-    .project-case-page[data-case='lumen'] .case-media-surface,
-    .project-case-page[data-case='lumen'] .case-media-cell .case-media-surface { width: 100%; height: 100%; aspect-ratio: auto; }
-    .project-case-page[data-case='lumen'] .case-media-pair { display: block; }
-    .project-case-page[data-case='lumen'] .case-media-pair .case-media-cell { position: absolute; left: 0; width: 100%; margin: 0; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6) .case-media-cell:first-child { top: 0; height: 107.3337vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6) .case-media-cell:last-child { top: 108.8722vw; height: 107.1539vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(11) .case-media-cell:first-child { top: 0; height: 93.7956vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(11) .case-media-cell:last-child { top: 95.3344vw; height: 111.0026vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(13) .case-media-cell:first-child { top: 0; height: 116.1vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(13) .case-media-cell:last-child { top: 117.6385vw; height: 91.5287vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(18) .case-media-cell:first-child { top: 0; height: 74.463vw; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(18) .case-media-cell:last-child { top: 76.0015vw; height: 130.8496vw; }
+    .project-case-page[data-case='lumen'] .case-flow > * { width: 100%; margin: 40px 0 0 !important; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(2),
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(3),
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6),
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(10) { margin-top: 32px !important; }
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(4),
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(11),
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(16) { margin-top: 6px !important; }
 
     .project-case-page[data-case='lumen'] .case-text { display: block; }
     .project-case-page[data-case='lumen'] .case-text h2 { margin: 0; font-size: 24px; line-height: 29px; text-transform: lowercase; }
-    .project-case-page[data-case='lumen'] .case-text-content { position: absolute; top: 45px; left: 0; width: 100%; margin: 0; }
-    .project-case-page[data-case='lumen'] .case-text-columns { display: flex; flex-direction: column; gap: 16px; margin: 0; }
-    .project-case-page[data-case='lumen'] .case-text-columns p { width: 100%; margin: 0; font-size: 24px; line-height: 34px; }
+    .project-case-page[data-case='lumen'] .case-text-content { margin: 16px 0 0; }
+    .project-case-page[data-case='lumen'] .case-text-content > .case-text-columns { display: flex; flex-direction: column; gap: 16px; margin: 0; }
+    .project-case-page[data-case='lumen'] .case-text-content > .case-text-columns p { width: 100%; margin: 0; font-size: 24px; line-height: 34px; }
     .project-case-page[data-case='lumen'] .case-text-content > .case-text-lead { width: 100%; margin: 0 0 32px; font-size: 13.5246vw; line-height: .868; }
     .case-lumen-mobile-copy { display: none; }
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(5) .case-text-wide-copy { display: none; }
@@ -1909,16 +1892,18 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='lumen'] .case-lumen-mobile-design { gap: 16px; margin: 0; }
     .project-case-page[data-case='lumen'] .case-lumen-mobile-design p:first-child { margin-bottom: 16px; }
 
+    /* Sections whose copy is split differently on phones (Figma): large first sentence, then paragraphs 40px below. */
+    .project-case-page[data-case='lumen'] .case-text:has(.case-text-mobile) .case-text-content > :not(.case-text-mobile) { display: none; }
+    .project-case-page[data-case='lumen'] .case-text-mobile { display: flex; flex-direction: column; gap: 16px; }
+    .project-case-page[data-case='lumen'] .case-text-mobile p { margin: 0; font-size: 24px; line-height: 34px; }
+    .project-case-page[data-case='lumen'] .case-text-mobile .case-text-mobile-lead { margin-bottom: 24px; font-size: 13.5246vw; line-height: .868; }
+
     .project-case-page[data-case='lumen'] .case-credits {
-      position: absolute;
-      top: 3268.955vw;
-      left: 2.307692vw;
       display: block;
-      width: 95.384616vw;
-      height: 76.5385vw;
-      margin: 0;
-      padding: 32.5px 0 0;
-      border-top: .5px solid #2e2e2e;
+      width: 100%;
+      margin: 40px 0 0;
+      padding: 0;
+      border: 0;
     }
     .project-case-page[data-case='lumen'] .case-credits h2 { margin: 0 0 10px; font-size: 24px; line-height: 29px; }
     .project-case-page[data-case='lumen'] .case-credit-list { display: flex; flex-direction: column; gap: 10px; font-size: 24px; line-height: 34px; }
