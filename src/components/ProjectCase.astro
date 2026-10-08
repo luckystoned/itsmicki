@@ -1194,6 +1194,38 @@ const vimeoUrl = (id: string) =>
 
   }
 
+
+  /* Lumen desktop copy as in Figma 392:10864: justified, 56.53px leads on 56px lines and 35.48px copy on
+     34.27px lines, in the same columns (x 315/947 for the context and concept, x 598/1099 for the rest). */
+  @media (min-width: 761px) {
+    .project-case-page[data-case='lumen'] :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+      text-align: justify;
+    }
+
+    .project-case-page[data-case='lumen'] :is(.case-nutshell, .case-text-wide-copy, .case-text-content > .case-text-lead) {
+      font-size: 3.5331vw;
+      line-height: .991;
+      letter-spacing: -.03em;
+    }
+
+    .project-case-page[data-case='lumen'] .case-nutshell { max-width: 62.4375vw; }
+    .project-case-page[data-case='lumen'] .case-intro-columns { gap: 1.5vw; justify-content: flex-start; }
+    .project-case-page[data-case='lumen'] .case-intro-columns p { flex: none; width: 30.5vw; line-height: .966; }
+
+    .project-case-page[data-case='lumen'] .case-text { column-gap: 0; }
+    .project-case-page[data-case='lumen'] .case-text-wide-copy { margin-left: calc(21.125vw - var(--gutter) - 13vw); }
+    .project-case-page[data-case='lumen'] .case-intro { grid-template-columns: calc(36.1875vw - var(--gutter)) 1fr; }
+    .project-case-page[data-case='lumen'] .case-text-content { margin-left: calc(19.6875vw - var(--gutter) - 13vw); }
+    .project-case-page[data-case='lumen'] .case-text-content > .case-text-columns { gap: 1.5vw; justify-content: flex-start; }
+    .project-case-page[data-case='lumen'] .case-text-content > .case-text-columns p { width: 38vw; }
+
+    .project-case-page[data-case='lumen'] .case-text-lead .case-text-content,
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(12) .case-text-content { margin-left: calc(37.375vw - var(--gutter) - 13vw); }
+    .project-case-page[data-case='lumen'] .case-text-lead .case-text-content > .case-text-lead { width: 61.125vw; margin-bottom: 2.5vw; }
+    .project-case-page[data-case='lumen'] .case-text-lead .case-text-content > .case-text-columns p,
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(12) .case-text-content > .case-text-columns p { width: 29.8125vw; }
+  }
+
   @media (max-width: 760px) {
     /* Navigation pinned to the bottom on every case, with the same size and spacing as /projects. */
     body:has(.project-case-page) .site-header[data-header] {
