@@ -4,6 +4,8 @@ export type CaseMedia = {
   src?: string;
   vimeoId?: string;
   sourceRatio?: string;
+  /** Turns a video by 90° clockwise inside its frame (a vertical clip shown in a horizontal frame). */
+  rotate?: 90;
   slides?: Array<{
     src: string;
     alt: string;
@@ -298,7 +300,7 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       { src: '/02_Projects/06_Lumen/02_Lumen_Drag.webp', left: '59vw', top: '6vw', width: '23vw', rotation: '-10deg' },
     ],
     blocks: [
-      single(video('1215371918', 'Lumen audiovisual event highlight reel', '1556 / 570', '9 / 16')),
+      single({ ...video('1215371918', 'Lumen audiovisual event highlight reel', '1556 / 570', '9 / 16'), rotate: 90 }),
       text('(the context)', [
         `The cultural circuit is often geographically concentrated. Artists who work outside the city center face fewer opportunities to exhibit, connect with new audiences, and become part of the conversations that shape contemporary culture. Distance and unfamiliarity can become invisible barriers: what happens outside the established circuit is too easily perceived as secondary, even when the work is rigorous, innovative, and relevant.`,
         `Lumen emerged from the need to question that imbalance. Its purpose was not to imitate a central cultural model in another location but to create a meaningful experience from the territory itself—one capable of introducing audiences to artists, practices, and places they may not otherwise encounter.`,
@@ -369,9 +371,9 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       ),
     ],
     credits: [
-      'Project Founders & Leads / Luckystoned & 1nd1a',
-      'Spatial Art Direction, Scenography & Production / Guillermina Arbos & Camila Sesler',
-      'Photography & Film / Glenda Lazart',
+      'Project Founders & Leads / <a href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">Luckystoned</a> & <a href="https://www.instagram.com/1_n_d1_4_/" target="_blank" rel="noreferrer">1nd1a</a>',
+      'Spatial Art Direction, Scenography & Production / <a href="https://www.instagram.com/guillermiiiina/" target="_blank" rel="noreferrer">Guillermina Arbos</a> & <a href="https://www.instagram.com/camiiselser/" target="_blank" rel="noreferrer">Camila Sesler</a>',
+      'Photography & Film / <a href="https://www.instagram.com/glendalazart/" target="_blank" rel="noreferrer">Glenda Lazart</a>',
     ],
   },
 };

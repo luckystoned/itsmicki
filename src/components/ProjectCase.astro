@@ -133,7 +133,7 @@ const vimeoUrl = (id: string) =>
           return (
             <section class="case-media-block case-media-single" style={mediaStyle(item)}>
               <div class="case-media-surface" data-case-media-reveal>
-                <div class="case-media-content">
+                <div class:list={['case-media-content', { 'is-rotated': item.rotate === 90 }]}>
                   {item.type === 'image' && item.src && dimensions ? (
                     <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
                   ) : item.type === 'carousel' && item.slides?.length ? (
@@ -897,6 +897,13 @@ const vimeoUrl = (id: string) =>
     height: calc(max(100cqh, 100cqw / var(--source-ratio, 1.7778)) + 2px);
     max-width: none;
     transform: translate(-50%, -50%);
+  }
+
+  /* A vertical clip turned 90° to fill a horizontal frame: width and height swap places in the cover sizing. */
+  .case-media-content.is-rotated iframe {
+    width: calc(max(100cqh, 100cqw * var(--source-ratio, 1.7778)) + 2px);
+    height: calc(max(100cqw, 100cqh / var(--source-ratio, 1.7778)) + 2px);
+    transform: translate(-50%, -50%) rotate(90deg);
   }
 
   .case-carousel,
