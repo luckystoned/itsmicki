@@ -320,7 +320,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   .deets-page {
     position: relative;
     width: 100%;
-    height: 337.655vw;
+    height: 333.455vw;
     overflow: clip;
     background: var(--deets-paper);
     color: var(--deets-ink);
@@ -335,8 +335,10 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     display: none;
   }
 
+  /* Everything moves up 4.2vw so the heading sits at the height of the Side B title, keeping all spacing. */
   .deets-canvas {
     position: relative;
+    top: -4.2vw;
     width: 100%;
     height: 100%;
   }
@@ -491,7 +493,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
 
   .deets-footer {
     position: absolute;
-    top: 302.69vw;
+    top: 298.49vw;
     right: 0;
     left: 0;
     height: 34.965302vw;
@@ -923,9 +925,9 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     .deets-story-lead.deets-desktop-copy { display: none; }
 
     .deets-title {
-      top: calc(31.6cqw - 82.656154cqw);
+      top: calc(27.7cqw - 79.93cqw);
       left: calc(2.307692cqw - min(15.871px, 4.069487cqw));
-      font-size: 24.53cqw;
+      font-size: 25.3cqw;
       line-height: .755;
     }
 
@@ -936,7 +938,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
       display: flex;
       flex-direction: column;
       height: auto;
-      margin: 82.656154cqw 0 0 min(15.871px, 4.069487cqw);
+      margin: 79.93cqw 0 0 min(15.871px, 4.069487cqw);
     }
 
     .deets-canvas > .deets-node:not(.deets-title),
