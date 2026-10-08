@@ -133,7 +133,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
 
 <style>
   .case-more {
-    width: 97.2668vw;
+    width: calc(100% - 2 * var(--gutter)); /* Same side margins as the home. */
     margin: 0 auto;
   }
 
@@ -331,6 +331,10 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
       line-height: .8;
       transform: translateY(var(--footer-wordmark-edge));
     }
+
+    /* Same bleed past the edges as the home wordmark. */
+    .case-footer-wordmark > :first-child { margin-left: max(-22.69px, -1.418125vw, -2.196515svh) !important; }
+    .case-footer-wordmark > :last-child { margin-right: max(-22px, -1.375vw, -2.129719svh) !important; }
   }
 
   .case-footer-wordmark > :first-child {
@@ -349,7 +353,7 @@ const publishedCaseSlugs = new Set(Object.keys(projectCases));
     z-index: 2;
     display: flex;
     align-items: flex-end;
-    padding: 0 clamp(14px, 1.42vw, 22px);
+    padding: 0; /* Edge to edge, like the home footer. */
     font-size: clamp(10px, 1.31vw, 21px);
     line-height: 1;
     letter-spacing: -.02em;

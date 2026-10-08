@@ -5,7 +5,7 @@
   --fg: #11110f;
   --muted: #77746d;
   --line: rgba(17, 17, 15, .28);
-  --gutter: clamp(18px, 1.55vw, 32px);
+  --gutter: 18px; /* Same side margin as the home on desktop. */
   --sans: "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --display: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
   color-scheme: light;

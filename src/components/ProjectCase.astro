@@ -639,7 +639,7 @@ const vimeoUrl = (id: string) =>
     position: relative;
     top: auto;
     z-index: 20;
-    padding: 24px clamp(14px, 1.42vw, 22px) 0;
+    padding: 24px var(--gutter) 0;
     color: var(--case-ink);
     background: transparent;
     backdrop-filter: none;
@@ -696,14 +696,16 @@ const vimeoUrl = (id: string) =>
     display: none;
   }
 
+  /* Same side margins as the home. */
   .project-case-canvas {
-    width: 97.2668vw;
+    width: calc(100% - 2 * var(--gutter));
     margin: 0 auto;
   }
 
+  /* The title's first line sits where the /projects, /deets and /side-b titles start. */
   .editorial-case-hero {
     position: relative;
-    margin-top: 2.85vw;
+    margin-top: 5.933vw;
   }
 
   .case-title-line {
@@ -1046,7 +1048,7 @@ const vimeoUrl = (id: string) =>
 
   @media (min-width: 761px) {
     .project-case-page[data-case='maxmaher'] .editorial-case-hero {
-      margin-top: 4.75vw;
+      margin-top: 2.424vw;
     }
 
     .project-case-page[data-case='maxmaher'] .case-title-line {

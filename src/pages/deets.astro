@@ -292,7 +292,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     z-index: 20;
     inset: 0 0 auto;
     align-items: flex-start;
-    padding: 1.450806vw 1.346985vw 0;
+    padding: 1.450806vw var(--gutter) 0;
     background: transparent;
     color: var(--deets-ink);
     backdrop-filter: none;
@@ -337,6 +337,8 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
 
   /* Everything moves up 4.2vw so the heading sits at the height of the Side B title, keeping all spacing. */
   .deets-canvas {
+    /* Right column: 62.118vw wide and ending at the home side margin, same as the Side B intro. */
+    --deets-col: calc(100vw - var(--gutter) - 62.118164vw);
     position: relative;
     top: -4.2vw;
     width: 100%;
@@ -351,8 +353,8 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   /* Same size and first-line baseline as "(Picked projects)" on /projects. */
   .deets-title {
     top: 10.1355vw;
-    left: 1.4vw;
-    width: 97.193848vw;
+    left: var(--gutter);
+    width: calc(100vw - 2 * var(--gutter));
     font-family: 'OT Neue Montreal Deets Extra', Impact, sans-serif;
     font-size: 20.2vw;
     font-weight: 500;
@@ -406,14 +408,14 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
 
   .deets-break-mobile { display: none; }
 
-  .deets-resume-label { top: 49.958492vw; left: 1.706116vw; width: 12.5vw; }
-  .deets-download { top: 52.876705vw; left: 1.706116vw; width: 24vw; }
-  .deets-nutshell-label { top: 49.958492vw; left: 36.422668vw; width: 27.619629vw; }
-  .deets-bio { top: 52.876705vw; left: 36.422668vw; width: 62.118164vw; }
-  .deets-image-one { top: 70.939209vw; left: 36.422668vw; width: 62.150391vw; height: 46.301147vw; }
+  .deets-resume-label { top: 49.958492vw; left: var(--gutter); width: 12.5vw; }
+  .deets-download { top: 52.876705vw; left: var(--gutter); width: 24vw; }
+  .deets-nutshell-label { top: 49.958492vw; left: var(--deets-col); width: 27.619629vw; }
+  .deets-bio { top: 52.876705vw; left: var(--deets-col); width: 62.118164vw; }
+  .deets-image-one { top: 70.939209vw; left: var(--deets-col); width: 62.118164vw; height: 46.301147vw; }
   .deets-skills-label {
     top: 120.841187vw;
-    left: 1.532288vw;
+    left: var(--gutter);
     width: 34.5vw;
     font-size: 4.033125vw;
     font-weight: 500;
@@ -421,17 +423,17 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     letter-spacing: -.03em;
     white-space: nowrap;
   }
-  .deets-skills-copy { top: 120.802856vw; left: 36.449768vw; width: 62.125vw; }
-  .deets-image-two { top: 138.865356vw; left: 1.336731vw; width: 97.226074vw; height: 46.301147vw; }
-  .deets-story-label { top: 189.716919vw; left: 1.47876vw; width: 17.5vw; font-size: 4.033125vw; line-height: .86781; letter-spacing: -.03em; }
+  .deets-skills-copy { top: 120.802856vw; left: var(--deets-col); width: 62.118164vw; }
+  .deets-image-two { top: 138.865356vw; left: var(--gutter); width: calc(100vw - 2 * var(--gutter)); height: 46.301147vw; }
+  .deets-story-label { top: 189.716919vw; left: var(--gutter); width: 17.5vw; font-size: 4.033125vw; line-height: .86781; letter-spacing: -.03em; }
   /* Desktop structure (Figma 392:9900): the story and closing copy flow in the right column, aligned with the large photo. */
   .deets-story-column {
     position: absolute;
-    left: 36.457vw;
+    left: var(--deets-col);
     display: flex;
     flex-direction: column;
     gap: 2vw;
-    width: 62.0625vw;
+    width: 62.118164vw;
   }
   .deets-story-column:not(.deets-closing) { top: 189.716919vw; }
   .deets-closing { top: 281.3125vw; }
@@ -443,8 +445,8 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   .deets-story-row-late {
     position: absolute;
     top: 265.74707vw;
-    left: 36.4375vw;
-    width: 62.125vw;
+    left: var(--deets-col);
+    width: 62.118164vw;
     gap: 2vw;
   }
   .deets-story-column > .deets-node,
@@ -457,7 +459,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   .deets-story-label-track {
     position: absolute;
     top: 189.716919vw;
-    left: 1.47876vw;
+    left: var(--gutter);
     width: 17.5vw;
     height: 116.98vw;
   }
@@ -472,8 +474,8 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     transition: opacity .18s ease-out !important;
   }
   .deets-story-images { display: contents; }
-  .deets-image-three { top: 220.80957vw; left: 36.4375vw; width: 26vw; height: 32.5vw; }
-  .deets-image-four { top: 220.80957vw; left: 70.4375vw; width: 28.1875vw; height: 42.25vw; }
+  .deets-image-three { top: 220.80957vw; left: var(--deets-col); width: 26vw; height: 32.5vw; }
+  .deets-image-four { top: 220.80957vw; left: calc(100vw - var(--gutter) - 28.1875vw); width: 28.1875vw; height: 42.25vw; }
   .deets-statement {
     font-size: 3.533125vw;
     line-height: .99062;
@@ -507,8 +509,9 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   .deets-footer-wordmark {
     position: absolute;
     top: 0;
-    right: -1.468445vw;
-    left: -1.468445vw;
+    /* Same bleed past the edges as the home wordmark. */
+    right: max(-22px, -1.375vw, -2.129719svh);
+    left: max(-22.69px, -1.418125vw, -2.196515svh);
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -556,12 +559,12 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     white-space: nowrap;
   }
 
-  .deets-footer-info > :nth-child(1) { left: -.184265vw; }
+  .deets-footer-info > :nth-child(1) { left: 0; }
   .deets-footer-info > :nth-child(2) { left: 3.942549vw; }
   .deets-footer-info > :nth-child(3) { left: 21.529272vw; }
   .deets-footer-info > :nth-child(4) { left: 28.429871vw; }
   .deets-footer-info > :nth-child(5) { left: 44.106018vw; }
-  .deets-footer-info > :nth-child(6) { right: .050232vw; }
+  .deets-footer-info > :nth-child(6) { right: 0; }
 
   .deets-footer-info a:is(:hover, :focus-visible) {
     color: var(--deets-paper);

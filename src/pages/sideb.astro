@@ -387,7 +387,7 @@ const fashion = {
   body:has(.sideb-page) {
     --sideb-ink: #2e2e2e;
     --sideb-paper: #fafafa;
-    --sideb-pad: clamp(14px, 1.42vw, 22px);
+    --sideb-pad: var(--gutter);
     --sideb-ease: cubic-bezier(.19, 1, .22, 1);
     background: var(--sideb-paper);
     color: var(--sideb-ink);
@@ -460,7 +460,7 @@ const fashion = {
   /* Same size, left edge and first baseline as the titles on /projects and /deets. */
   .sideb-title {
     margin: 5.9375vw 0 0;
-    padding-inline: 1.4vw var(--sideb-pad);
+    padding-inline: var(--gutter);
     font-family: 'OT Neue Montreal SideB Extra', Impact, sans-serif;
     font-size: 20.2vw;
     font-weight: 500;
@@ -722,8 +722,9 @@ const fashion = {
     }
   }
 
-  .sideb-footer-wordmark span:first-child { margin-left: -1.5vw; }
-  .sideb-footer-wordmark span:last-child { margin-right: -1.4vw; }
+  /* Same bleed past the edges as the home wordmark. */
+  .sideb-footer-wordmark span:first-child { margin-left: max(-22.69px, -1.418125vw, -2.196515svh); }
+  .sideb-footer-wordmark span:last-child { margin-right: max(-22px, -1.375vw, -2.129719svh); }
 
   .sideb-footer-info {
     position: absolute;
@@ -734,7 +735,7 @@ const fashion = {
     display: flex;
     align-items: flex-end;
     gap: 0;
-    padding: 0 var(--sideb-pad);
+    padding: 0; /* Edge to edge, like the home footer. */
     font-size: clamp(10px, 1.31vw, 21px);
     line-height: 1;
     letter-spacing: -.02em;
@@ -749,7 +750,7 @@ const fashion = {
     white-space: nowrap;
   }
 
-  .sideb-footer-info > :nth-child(1) { margin-left: -.2%; }
+  .sideb-footer-info > :nth-child(1) { margin-left: 0; }
   .sideb-footer-info > :nth-child(2) { margin-left: 5.1%; }
   .sideb-footer-info > :nth-child(3) { margin-left: 5.2%; }
   .sideb-footer-info > :nth-child(4) { margin-left: 5.1%; }
@@ -793,8 +794,8 @@ const fashion = {
     .sideb-intro-grid {
       display: flex;
       justify-content: space-between;
-      width: 96.841vw;
-      margin-left: 1.3975vw;
+      width: calc(100% - 2 * var(--gutter));
+      margin-left: var(--gutter);
       padding: 0;
     }
 
@@ -826,9 +827,9 @@ const fashion = {
     .sideb-strip-set { gap: .75vw; }
 
     .sideb-section {
-      grid-template-columns: 17.558vw 79.3125vw;
+      grid-template-columns: 17.558vw 1fr;
       gap: 0;
-      padding-left: 1.3975vw;
+      padding-inline: var(--gutter); /* Same side margins as the home. */
     }
 
     .sideb-section-title { margin-left: 0; }
@@ -839,7 +840,7 @@ const fashion = {
     }
 
     .sideb-fashion-reveal {
-      width: 79.0625vw;
+      width: 100%;
       margin: 0;
     }
 
@@ -862,8 +863,8 @@ const fashion = {
 
     /* Spotify belongs to the music block: 48px under its copy instead of the 129px block gap. */
     .sideb-spotify {
-      width: 97.226vw;
-      margin: -5.0625vw 0 0 1.3975vw;
+      width: calc(100% - 2 * var(--gutter));
+      margin: -5.0625vw 0 0 var(--gutter);
     }
 
     .sideb-spotify-frame { aspect-ratio: 1555.617 / 740.818; }

@@ -280,7 +280,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     position: relative;
     z-index: 20;
     top: auto;
-    padding: 24px clamp(14px, 1.42vw, 22px) 0;
+    padding: 24px var(--gutter) 0;
     background: transparent;
     color: var(--projects-ink);
     backdrop-filter: none;
@@ -354,7 +354,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       display: flex;
       align-items: baseline;
       padding-top: 4.47vw;
-      padding-left: 1.4vw;
+      padding-left: var(--gutter);
     }
 
     .projects-hero h1,
@@ -371,7 +371,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     flex-direction: column;
     align-items: flex-end;
     gap: 5.94vw;
-    width: 97.23vw;
+    width: calc(100% - 2 * var(--gutter)); /* Same side margins as the home. */
     margin: 0 auto;
   }
 
@@ -524,12 +524,13 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     }
   }
 
+  /* Same bleed past the edges as the home wordmark. */
   .projects-footer-wordmark span:first-child {
-    margin-left: -1.5vw;
+    margin-left: max(-22.69px, -1.418125vw, -2.196515svh);
   }
 
   .projects-footer-wordmark span:last-child {
-    margin-right: -1.4vw;
+    margin-right: max(-22px, -1.375vw, -2.129719svh);
   }
 
   .projects-footer-info {
@@ -541,7 +542,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     display: flex;
     align-items: flex-end;
     gap: 0;
-    padding: 0 clamp(14px, 1.42vw, 22px);
+    padding: 0; /* Edge to edge, like the home footer. */
     font-size: clamp(10px, 1.31vw, 21px);
     line-height: 1;
     letter-spacing: -.02em;
@@ -556,7 +557,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     white-space: nowrap;
   }
 
-  .projects-footer-info > :nth-child(1) { margin-left: -.2%; }
+  .projects-footer-info > :nth-child(1) { margin-left: 0; }
   .projects-footer-info > :nth-child(2) { margin-left: 5.1%; }
   .projects-footer-info > :nth-child(3) { margin-left: 5.2%; }
   .projects-footer-info > :nth-child(4) { margin-left: 5.1%; }
