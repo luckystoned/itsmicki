@@ -11,25 +11,41 @@ const { active = '' } = Astro.props;
 </header>
 
 <script>
+  // While the page scrolls the bar eases off its edge (top or bottom) and glides back once scrolling stops.
+  // The offset is eased every frame, so a change of direction mid-way stays fluid instead of restarting.
   const header = document.querySelector<HTMLElement>('[data-header]');
-  const mobile = matchMedia('(max-width: 800px)');
-  let previousY = window.scrollY;
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let hidden = false, offset = 0, lastY = window.scrollY, lastTime = 0, settleTimer = 0, running = false;
 
-  const updateHeader = () => {
-    if (!header || !mobile.matches || document.querySelector('.home-stage')) {
-      header?.classList.remove('is-scroll-hidden');
-      previousY = window.scrollY;
-      return;
-    }
-
-    const currentY = Math.max(0, window.scrollY);
-    const delta = currentY - previousY;
-    if (currentY <= 8 || delta < -4) header.classList.remove('is-scroll-hidden');
-    else if (delta > 4) header.classList.add('is-scroll-hidden');
-    previousY = currentY;
+  const frame = (time: number) => {
+    if (!header) return;
+    const dt = lastTime ? Math.min(64, time - lastTime) / 1000 : 1 / 60;
+    lastTime = time;
+    const edge = header.dataset.edge === 'bottom' ? 1 : -1;
+    const target = hidden ? edge * (header.offsetHeight + 2) : 0;
+    offset = calm ? target : offset + (target - offset) * (1 - Math.exp(-(hidden ? 16 : 11) * dt));
+    if (Math.abs(target - offset) < .3) offset = target;
+    header.style.setProperty('transform', offset ? `translate3d(0, ${offset.toFixed(2)}px, 0)` : 'none', 'important');
+    running = offset !== target;
+    if (running) requestAnimationFrame(frame); else lastTime = 0;
+  };
+  const setHidden = (value: boolean) => {
+    hidden = value;
+    if (!running) { running = true; requestAnimationFrame(frame); }
   };
 
-  window.addEventListener('scroll', updateHeader, { passive: true });
-  mobile.addEventListener('change', updateHeader);
-  updateHeader();
+  window.addEventListener('scroll', () => {
+    if (!header || document.querySelector('.home-stage')) return;
+    if (!hidden && !offset) {
+      const rect = header.getBoundingClientRect();
+      header.dataset.edge = rect.top + rect.height / 2 > window.innerHeight / 2 ? 'bottom' : 'top';
+    }
+    const y = window.scrollY;
+    const moved = Math.abs(y - lastY);
+    lastY = y;
+    window.clearTimeout(settleTimer);
+    if (y <= 8) { setHidden(false); return; }
+    if (moved > 1) setHidden(true);
+    settleTimer = window.setTimeout(() => setHidden(false), 140);
+  }, { passive: true });
 </script>
