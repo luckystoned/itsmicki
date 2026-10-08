@@ -280,7 +280,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     position: relative;
     z-index: 20;
     top: auto;
-    padding: 24px clamp(14px, 1.42vw, 22px) 0;
+    padding: 24px var(--gutter) 0;
     background: transparent;
     color: var(--projects-ink);
     backdrop-filter: none;
@@ -354,7 +354,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       display: flex;
       align-items: baseline;
       padding-top: 4.47vw;
-      padding-left: 1.4vw;
+      padding-left: var(--gutter);
     }
 
     .projects-hero h1,
@@ -371,7 +371,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     flex-direction: column;
     align-items: flex-end;
     gap: 5.94vw;
-    width: 97.23vw;
+    width: calc(100% - 2 * var(--gutter)); /* Same side margins as the home. */
     margin: 0 auto;
   }
 
@@ -381,12 +381,16 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     align-items: flex-start;
   }
 
-  .projects-row-primary {
-    justify-content: space-between;
+  /* Both duos: 6px between the photos and the pair spanning margin to margin. */
+  .projects-row {
+    gap: 6px;
   }
 
-  .projects-row-secondary {
-    gap: 6px;
+  @media (min-width: 761px) {
+    .projects-row > .project-card {
+      flex: 1 1 var(--project-width);
+      min-width: 0;
+    }
   }
 
   .project-card {
@@ -419,9 +423,9 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     height: 100%;
     object-fit: cover;
     object-position: 50% 50%;
-    /* Parallax: the image is 40% taller than its frame and slides through it as the frame crosses the viewport. */
-    height: 140%;
-    translate: 0 calc(-23% + 23% * var(--parallax-progress, .5));
+    /* Parallax: the image is 25% taller than its frame and slides through it as the frame crosses the viewport. */
+    height: 125%;
+    translate: 0 calc(-20% + 20% * var(--parallax-progress, .5));
     transition: transform .6s var(--projects-ease);
   }
 
@@ -435,9 +439,9 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     aspect-ratio: 426 / 240;
     border: 0;
     pointer-events: none;
-    height: 140%;
+    height: 125%;
     transform: translate(-50%, -50%);
-    translate: 0 calc((var(--parallax-progress, .5) - .5) * 28%);
+    translate: 0 calc((var(--parallax-progress, .5) - .5) * 20%);
   }
 
   /* Load-in: type and images rise and fade in as they enter the viewport. */
@@ -524,12 +528,13 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     }
   }
 
+  /* The ink of "I" and "6" touches both edges of the screen. */
   .projects-footer-wordmark span:first-child {
-    margin-left: -1.5vw;
+    margin-left: -.032em;
   }
 
   .projects-footer-wordmark span:last-child {
-    margin-right: -1.4vw;
+    margin-right: .016em;
   }
 
   .projects-footer-info {
@@ -541,7 +546,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     display: flex;
     align-items: flex-end;
     gap: 0;
-    padding: 0 clamp(14px, 1.42vw, 22px);
+    padding: 0; /* Edge to edge, like the home footer. */
     font-size: clamp(10px, 1.31vw, 21px);
     line-height: 1;
     letter-spacing: -.02em;
@@ -556,7 +561,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     white-space: nowrap;
   }
 
-  .projects-footer-info > :nth-child(1) { margin-left: -.2%; }
+  .projects-footer-info > :nth-child(1) { margin-left: 0; }
   .projects-footer-info > :nth-child(2) { margin-left: 5.1%; }
   .projects-footer-info > :nth-child(3) { margin-left: 5.2%; }
   .projects-footer-info > :nth-child(4) { margin-left: 5.1%; }
@@ -753,19 +758,20 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
     .projects-footer-wordmark {
       position: absolute;
       top: min(2px, .512821cqw);
-      right: min(-8px, -2.051282cqw);
-      left: min(-8.369px, -2.145897cqw);
-      justify-content: space-between;
-      font-size: min(176.756px, 45.322051cqw);
+      right: auto;
+      left: -1.538462cqw; /* Same position and size as the home wordmark. */
+      justify-content: flex-start;
+      font-size: 46.202051cqw;
       line-height: normal;
+      width: max-content;
     }
 
     .projects-footer-wordmark span:first-child {
-      margin-left: -2.051282vw;
+      margin-left: 0;
     }
 
     .projects-footer-wordmark span:last-child {
-      margin-right: -2.051282vw;
+      margin-right: 0;
     }
 
     .projects-footer-info {
