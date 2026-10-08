@@ -1134,23 +1134,35 @@ const vimeoUrl = (id: string) =>
   }
 
   @media (max-width: 760px) {
-    /* Navigation pinned to the bottom on every case, as on /projects. */
+    /* Navigation pinned to the bottom on every case, with the same size and spacing as /projects. */
     body:has(.project-case-page) .site-header[data-header] {
       position: fixed !important;
-      inset: auto 0 0 !important;
       z-index: 2000 !important;
+      inset: auto 0 0 !important;
       display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      box-sizing: border-box !important;
-      width: 100% !important;
-      height: 48px !important;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: calc((100vw - min(20px, 5.128205vw) - min(332px, 85.128205vw)) / 3);
+      width: 100vw !important;
+      height: auto !important;
       min-height: 0 !important;
-      padding: 8px 10px !important;
-      color: #2e2e2e !important;
+      padding: min(8px, 2.051282vw) min(10px, 2.564103vw) !important;
       background: #fafafa !important;
-      font-size: 26.498px !important;
-      line-height: 1 !important;
+      color: #2e2e2e !important;
+      font-size: min(26.498px, 6.794359vw) !important;
+      line-height: normal !important;
+      letter-spacing: -.02em;
+      pointer-events: auto !important;
+    }
+
+    body:has(.project-case-page) .site-header nav {
+      flex: 1 1 auto;
+      justify-content: space-between;
+      gap: 0;
+    }
+
+    body:has(.project-case-page) .site-header a {
+      white-space: nowrap;
     }
 
     /* Same contact bar as /projects, /deets and /side-b. */

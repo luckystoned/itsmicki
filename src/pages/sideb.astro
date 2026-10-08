@@ -906,7 +906,8 @@ const fashion = {
       display: flex !important;
       justify-content: space-between;
       align-items: flex-start;
-      gap: min(12px, 3.076923vw);
+      /* Same spacing as /projects and the home: the four links spread evenly between 10px side margins. */
+      gap: calc((100vw - min(20px, 5.128205vw) - min(332px, 85.128205vw)) / 3);
       width: 100vw !important;
       height: auto !important;
       min-height: 0 !important;
@@ -926,7 +927,9 @@ const fashion = {
     }
 
     body:has(.sideb-page) .site-header nav {
-      gap: min(12px, 3.076923vw);
+      flex: 1 1 auto;
+      justify-content: space-between;
+      gap: 0;
     }
 
     body:has(.sideb-page) .site-header a {
