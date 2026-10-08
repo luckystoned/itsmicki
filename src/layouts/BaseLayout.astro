@@ -104,6 +104,15 @@ const globalStructuredData = {
           node.addEventListener('mouseleave', () => cursor.classList.remove('is-active'));
         });
       }
+      // Keep images and videos from being saved or copied via the context menu or drag.
+      const protectedMedia = 'img, video, iframe[src*="player.vimeo.com"]';
+      const isOverMedia = (x: number, y: number) => [...document.querySelectorAll<HTMLElement>(protectedMedia)].some((media) => {
+        if (media.closest('[data-site-pointer]')) return false;
+        const rect = media.getBoundingClientRect();
+        return rect.width > 0 && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+      });
+      document.addEventListener('contextmenu', (event) => { if (isOverMedia(event.clientX, event.clientY)) event.preventDefault(); });
+      document.addEventListener('dragstart', (event) => { if (event.target instanceof Element && event.target.closest('img, video')) event.preventDefault(); });
       const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
         if (entry.isIntersecting) entry.target.classList.add('is-visible');
       }), { threshold: .08 });
