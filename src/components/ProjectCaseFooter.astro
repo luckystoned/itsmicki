@@ -329,6 +329,12 @@ const loops = [0, 1, 2];
       white-space: normal;
     }
 
+    /* 1px underline on "See All", like every other link on phones. */
+    .case-more-link-label::after,
+    .case-more-link-plus::after {
+      height: 1px;
+    }
+
     /* Same mobile footer as /projects: only the wordmark. */
     .case-footer-info {
       display: none;

@@ -1229,6 +1229,11 @@ const vimeoUrl = (id: string) =>
   }
 
   @media (max-width: 760px) {
+    /* Room at the end so the bottom navigation never covers the wordmark, as on /projects. */
+    .project-case-page {
+      padding-bottom: calc(min(48px, 12.307692vw) + env(safe-area-inset-bottom));
+    }
+
     /* Navigation pinned to the bottom on every case, with the same size and spacing as /projects. */
     body:has(.project-case-page) .site-header[data-header] {
       position: fixed !important;
@@ -1547,7 +1552,7 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='outliant'] {
       position: relative;
       width: 100%;
-      height: 2335.3846vw;
+      height: calc(2335.3846vw + min(48px, 12.307692vw) + env(safe-area-inset-bottom)); /* Plus the room kept for the bottom navigation. */
       min-height: 0;
       overflow: hidden;
     }
