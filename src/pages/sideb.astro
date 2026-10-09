@@ -23,16 +23,21 @@ const stripImages = [
   style: `--strip-w:${item.width};--strip-inner:${item.inner};--strip-rotate:${item.rotate}`,
 }));
 
-const filmPairs = [
+const filmPhotos = [
   'A subway passenger reflected in a black-and-white train window beside a close-up of green leaves.',
   'A profile portrait in red sunglasses beside people reclining together outdoors.',
   'A black-and-white cat behind a shop window beside a portrait with a cat paw across the face.',
   'A black-and-white street vendor beneath an umbrella beside a person waving a colorful fan.',
   'A pizza maker tossing dough beside a black-and-white ice-cream truck portrait.',
   'A woman sitting beside a pool beside a black cat peeking above a dark window ledge.',
-].map((alt, index) => {
-  const src = `/04_SideB/Film_${String(index + 1).padStart(2, '0')}_SideB.webp`;
-  return { src, alt, ...imageMetadata[src] };
+].flatMap((pairAlt, index) => {
+  // Each pair is two separate photos, so every photo in the strip gets the same gap.
+  const split = pairAlt.lastIndexOf(' beside ');
+  const alts = [`${pairAlt.slice(0, split)}.`, `${pairAlt.charAt(split + 8).toUpperCase()}${pairAlt.slice(split + 9)}`];
+  return ['a', 'b'].map((side, sideIndex) => {
+    const src = `/04_SideB/Film_${String(index + 1).padStart(2, '0')}${side}_SideB.webp`;
+    return { src, alt: alts[sideIndex], ...imageMetadata[src] };
+  });
 });
 
 const fashion = {
@@ -43,7 +48,7 @@ const fashion = {
 ---
 
 <BaseLayout
-  title="(Side B) — Itsmicki"
+  title="(Side B) — Micaela Galimberti | Itsmicki"
   description="The personal side of Micaela Galimberti: fashion, music, film photography and the visual references that shape her work."
   active="sideb"
   hideFooter
@@ -170,7 +175,7 @@ const fashion = {
               <div class="sideb-film-strip-track" data-marquee-track>
                 {[false, true].map((duplicate) => (
                   <div class="sideb-film-strip-set" data-marquee-set={duplicate ? undefined : ''} aria-hidden={duplicate ? 'true' : undefined}>
-                    {filmPairs.map((item) => (
+                    {filmPhotos.map((item) => (
                       <figure class="sideb-film-strip-item">
                         <img src={item.src} alt={duplicate ? '' : item.alt} width={item.width} height={item.height} loading="lazy" decoding="async" draggable="false" />
                       </figure>
@@ -562,7 +567,7 @@ const fashion = {
     display: flex;
     width: max-content;
     height: 100%;
-    gap: 1.4734vw;
+    gap: 8px; /* 4px on phones. */
   }
 
   .sideb-film-strip-track { will-change: transform; }
@@ -824,7 +829,7 @@ const fashion = {
     }
 
     .sideb-strip-track,
-    .sideb-strip-set { gap: .75vw; }
+    .sideb-strip-set { gap: 8px; } /* 4px on phones, like the film strip. */
 
     .sideb-section {
       grid-template-columns: 17.558vw 1fr;
@@ -1063,7 +1068,7 @@ const fashion = {
 
     .sideb-strip-track,
     .sideb-strip-set {
-      gap: calc(.75vw * 1.625);
+      gap: 4px;
     }
 
 
@@ -1327,7 +1332,7 @@ const fashion = {
     }
 
     .sideb-film-strip-track,
-    .sideb-film-strip-set { gap: min(8px, 2.051282vw); }
+    .sideb-film-strip-set { gap: 4px; }
 
     .sideb-footer {
       position: relative;
@@ -1371,6 +1376,18 @@ const fashion = {
 
     .sideb-page [data-parallax] {
       transform: none !important;
+    }
+  }
+
+  /* Justified copy, with the same criterion as the case pages: body copy everywhere, large copy on tablet and
+     desktop; on phones the largest sentences stay left-aligned. Titles, labels and the link list keep theirs. */
+  .sideb-body-pair p,
+  .sideb-big:not(.sideb-related) {
+    text-align: justify;
+  }
+  @media (max-width: 760px) {
+    .sideb-section-column .sideb-big {
+      text-align: left;
     }
   }
 </style>

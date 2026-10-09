@@ -10,7 +10,7 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
 ---
 
 <BaseLayout
-  title="(Deets) — Itsmicki"
+  title="(Deets) — Micaela Galimberti | Itsmicki"
   description="Meet Micaela Galimberti, a Buenos Aires creative director and multidisciplinary designer working across branding, product, motion and digital experiences."
   active="deets"
   hideFooter
@@ -1065,6 +1065,22 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     [data-footer-reveal] {
       opacity: 1 !important;
       transform: none !important;
+    }
+  }
+
+  /* Justified copy, with the same criterion as the case pages: body copy everywhere, large copy on tablet and
+     desktop; on phones the largest sentences stay left-aligned. Titles and labels keep theirs. */
+  .deets-body,
+  .deets-bio,
+  .deets-skills-copy,
+  .deets-statement,
+  .deets-story-lead {
+    text-align: justify;
+  }
+  @media (max-width: 760px) {
+    .deets-statement,
+    .deets-story-lead {
+      text-align: left;
     }
   }
 </style>

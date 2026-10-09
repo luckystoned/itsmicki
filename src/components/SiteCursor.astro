@@ -1,4 +1,4 @@
-<div class="site-pointer" data-site-pointer aria-hidden="true" hidden><span class="site-pointer-shape"><img src="/cursors/pointer.svg" alt="" width="26" height="48" /></span></div>
+<div class="site-pointer" data-site-pointer aria-hidden="true" hidden><span class="site-pointer-shape"><img class="site-pointer-arrow" src="/cursors/pointer.svg" alt="" width="26" height="48" /><img class="site-pointer-hand" src="/cursors/drag-hand.svg" alt="" width="34" height="34" /></span></div>
 
 <script>
   const pointer = document.querySelector<HTMLElement>('[data-site-pointer]');
@@ -21,7 +21,11 @@
         ? [{ transform: 'scale(1)' }, { transform: 'scale(1.56, 1.45)', offset: .45 }, { transform: 'scale(1.47, 1.53)', offset: .75 }, { transform: 'scale(1.5)' }]
         : [{ transform: 'scale(1.5)' }, { transform: 'scale(1)' }], value ? 380 : 220);
     };
-    const refresh = (target: Element | null) => setHover(!!target?.closest(linkable));
+    // Over a draggable sticker (or while holding one) the arrow becomes the pixel hand.
+    const refresh = (target: Element | null) => {
+      pointer.classList.toggle('is-grab', !!target?.closest('[data-case-drag]') || !!document.querySelector('[data-case-drag].is-dragging'));
+      setHover(!!target?.closest(linkable));
+    };
     const render = () => {
       tilt += (Math.max(-14, Math.min(14, (x - lastX) * .9)) - tilt) * .16;
       lastX += (x - lastX) * .35;
@@ -38,6 +42,7 @@
     const recheck = () => { if (visible) refresh(document.elementFromPoint(x, y)); };
     document.addEventListener('project-preview-refresh', recheck);
     window.addEventListener('scroll', recheck, { passive: true });
+    document.addEventListener('pointerup', () => requestAnimationFrame(recheck));
     document.addEventListener('pointerdown', () => { if (visible) morph([{ transform: `scale(${hovering ? 1.5 : 1})` }, { transform: `scale(${hovering ? 1.36 : .9})`, offset: .4 }, { transform: `scale(${hovering ? 1.5 : 1})` }], 300); });
     document.addEventListener('pointerout', (event) => { if (!event.relatedTarget) setVisible(false); });
     window.addEventListener('blur', () => setVisible(false));
@@ -50,5 +55,8 @@
   .site-pointer[hidden] { display: none; }
   .site-pointer-shape { display: block; transform-origin: 1px 1px; }
   .site-pointer img { display: block; width: 26px; height: 48px; max-width: none; }
+  .site-pointer .site-pointer-hand { display: none; position: absolute; top: -17px; left: -17px; width: 34px; height: 34px; }
+  .site-pointer.is-grab .site-pointer-arrow { visibility: hidden; }
+  .site-pointer.is-grab .site-pointer-hand { display: block; }
   :global(html.site-pointer-on), :global(html.site-pointer-on *) { cursor: none !important; }
 </style>

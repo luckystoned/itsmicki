@@ -33,6 +33,8 @@ export type CaseBlock =
       lead?: string;
       columns?: string[];
       wide?: string;
+      /** Copy split differently on phones (Figma mobile): a large first sentence and the paragraphs below. */
+      mobile?: { lead?: string; columns: string[] };
     };
 
 export type ProjectCase = {
@@ -93,7 +95,7 @@ const pair = (
 const text = (
   title: string,
   columns: string[],
-  options: { variant?: 'columns' | 'wide' | 'lead'; lead?: string; wide?: string } = {},
+  options: { variant?: 'columns' | 'wide' | 'lead'; lead?: string; wide?: string; mobile?: { lead?: string; columns: string[] } } = {},
 ): CaseBlock => ({ type: 'text', title, columns, ...options });
 
 export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
@@ -229,8 +231,8 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
     role: 'Art Director, Brand<br>Strategist & UX/UI<br>Design Lead',
     nutshell: `<a href="https://www.outliant.com/" target="_blank" rel="noreferrer">Outliant</a> is a fully remote digital agency that brings together strategy, design, technology, and growth. As the company evolved, a fundamental problem became increasingly visible: it had never clearly defined who it was, how it should position itself, or which part of the market it wanted to own.`,
     drags: [
-      { src: '/02_Projects/05_Outliant/01_OTL_Drag.webp', left: '59vw', top: '8vw', width: '21vw', rotation: '10deg' },
-      { src: '/02_Projects/05_Outliant/02_OTL_Drag.webp', left: '75vw', top: '14vw', width: '24vw', rotation: '-8deg' },
+      { src: '/02_Projects/05_Outliant/01_OTL_Drag.webp', left: '62.415vw', top: '3.98vw', width: '19.188vw', rotation: '10deg' },
+      { src: '/02_Projects/05_Outliant/02_OTL_Drag.webp', left: '71.547vw', top: '11.508vw', width: '25.55vw', rotation: '-8deg' },
     ],
     blocks: [
       single(video('1215371885', 'Outliant hero brand reel', '1556 / 665', '2530 / 1080')),
@@ -282,7 +284,10 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         `That strategic foundation was carried through every layer of the experience: a refined identity that preserved existing recognition, a complete website built around the new positioning, the company’s first design system, and a motion language that made the digital experience feel cohesive. Despite a tight deadline and limited budget, the project established a practical, scalable framework that Outliant could continue using across products, communications, and future growth.`,
       ]),
     ],
-    credits: ['Stakeholder & CTO / Skylar Roebuck', 'Stakeholder & PM / Michelle Baun'],
+    credits: [
+      'Stakeholder & CTO / <a href="https://www.linkedin.com/in/skylarroebuck" target="_blank" rel="noreferrer">Skylar Roebuck</a>',
+      'Stakeholder & PM / <a href="mailto:michelle@8limbsinc.net">Michelle Baun</a>',
+    ],
   },
 
   lumen: {
@@ -354,6 +359,13 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         `introduce the artists, communicate an unfamiliar location, and reduce the distance between the audience and a cultural circuit they may not yet know.`,
       ], {
         variant: 'lead',
+        mobile: {
+          lead: `I translated the identity into printed graphics, event materials, merchandise, and digital communication for social media.`,
+          columns: [
+            `Each application had a different practical role—from generating recognition before the event to shaping the atmosphere inside the venue—but all of them belonged to the same visual world.`,
+            `The printed and merchandise pieces extended Lumen beyond the screen and gave the project a physical memory. Social media, meanwhile, worked as the first point of access: a way to introduce the artists, communicate an unfamiliar location, and reduce the distance between the audience and a cultural circuit they may not yet know.`,
+          ],
+        },
         lead: `I translated the identity into printed graphics, event materials, merchandise, and digital communication for social media. Each application had a different practical role—from generating recognition before the event to shaping the atmosphere inside the venue—but all of them belonged to the same visual world.`,
       }),
       single(image('/02_Projects/06_Lumen/16_Lumen.webp', 'Lumen social media screens displayed across mobile devices.', '1556 / 870')),
@@ -363,6 +375,14 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         `Lumen demonstrated that cultural relevance is not defined by a postcode. Quality, experimentation, and community already exist beyond the established circuit; the work is to create the conditions for them to be seen.`,
       ], {
         variant: 'lead',
+        mobile: {
+          lead: `Lumen became more than a visual identity for an audiovisual event. It created a framework for making overlooked artists and territories visible without reducing them to the label of “emerging” or defining them by their distance from the center.`,
+          columns: [
+            `The project connected cultural positioning, technology, and design in one system: the message was present in the communication, but also in the location, the lineup, the installations, and the way the audience participated.`,
+            `The strongest result was the coherence between purpose and experience. A brand about visibility used light as both concept and material. A project about decentralization created value from its own territory. And an event about technology treated it as a shared creative language, capable of bringing artists, spaces, and audiences into contact.`,
+            `Lumen demonstrated that cultural relevance is not defined by a postcode. Quality, experimentation, and community already exist beyond the established circuit; the work is to create the conditions for them to be seen.`,
+          ],
+        },
         lead: `Lumen became more than a visual identity for an audiovisual event. It created a framework for making overlooked artists and territories visible without reducing them to the label of “emerging” or defining them by their distance from the center. The project connected cultural positioning, technology, and design in one system: the message was present in the communication, but also in the location, the lineup, the installations, and the way the audience participated.`,
       }),
       pair(

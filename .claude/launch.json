@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "itsmicki-dev", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev", "--port", "4322"], "port": 4322 }
+  ]
+}
