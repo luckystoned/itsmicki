@@ -52,7 +52,7 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/02_Projects/05_Outliant/10__OTL.webp': { width: 1304, height: 1664 },
   '/02_Projects/06_Lumen/01_Lumen.webp': { width: 3109, height: 1737 },
   '/02_Projects/06_Lumen/01_Lumen_Drag.webp': { width: 450, height: 328 },
-  '/02_Projects/06_Lumen/01_Lumen_Portada.webp': { width: 1296, height: 1288 },
+  '/02_Projects/06_Lumen/01_Lumen_Cover.webp': { width: 1920, height: 1080 },
   '/02_Projects/06_Lumen/02_Lumen.webp': { width: 3111, height: 2071 },
   '/02_Projects/06_Lumen/02_Lumen_Drag.webp': { width: 399, height: 526 },
   '/02_Projects/06_Lumen/03_Lumen.webp': { width: 1296, height: 1522 },
