@@ -1887,6 +1887,10 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='lumen'] :is(.case-nutshell, .case-intro-columns p, .case-text-content p, .case-lumen-mobile-copy p, .case-text-wide-copy) {
       text-align: justify;
     }
+    /* The large first sentences stay left-aligned: justified at this size they open big gaps. */
+    .project-case-page[data-case='lumen'] :is(.case-lumen-mobile-challenge p:first-child, .case-lumen-mobile-design p:first-child, .case-text-mobile-lead, .case-text-content > .case-text-lead) {
+      text-align: left;
+    }
     .project-case-page[data-case='lumen'] .case-intro,
     .project-case-page[data-case='lumen'] .case-intro > div:nth-child(2),
     .project-case-page[data-case='lumen'] .case-flow { display: contents; }
