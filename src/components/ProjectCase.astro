@@ -482,8 +482,8 @@ const vimeoUrl = (id: string) =>
   }
 
   const dragNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-case-drag]'));
-  // Stickers follow the finger or mouse with the same easing and tilt as the site cursor, lift a little while
-  // held, and keep a bit of momentum when released.
+  // Stickers hang from the finger or mouse on a loose spring: they trail, overshoot a little, swing with the
+  // movement like a pendulum, lift while held and keep some momentum when released.
   dragNodes.forEach((node) => {
     let dragging = false;
     let pointerId = -1;
@@ -495,9 +495,12 @@ const vimeoUrl = (id: string) =>
     let targetY = 0;
     let x = 0;
     let y = 0;
+    let speedX = 0;
+    let speedY = 0;
     let velocityX = 0;
     let velocityY = 0;
     let tilt = 0;
+    let spin = 0;
     let lift = 1;
     let running = false;
     let previousTime = 0;
@@ -516,18 +519,23 @@ const vimeoUrl = (id: string) =>
         // Momentum after release, fading out.
         targetX += velocityX * elapsed;
         targetY += velocityY * elapsed;
-        velocityX *= Math.pow(.9, elapsed);
-        velocityY *= Math.pow(.9, elapsed);
+        velocityX *= Math.pow(.92, elapsed);
+        velocityY *= Math.pow(.92, elapsed);
       }
-      const follow = 1 - Math.pow(1 - .22, elapsed);
-      const dx = (targetX - x) * follow;
-      x += dx;
-      y += (targetY - y) * follow;
-      tilt += (Math.max(-14, Math.min(14, dx * .9)) - tilt) * (1 - Math.pow(1 - .16, elapsed));
-      lift += ((dragging ? 1.04 : 1) - lift) * (1 - Math.pow(1 - .2, elapsed));
+      // Underdamped spring: a small overshoot gives the sticker its bounce.
+      const damping = Math.pow(.74, elapsed);
+      speedX = (speedX + (targetX - x) * .14 * elapsed) * damping;
+      speedY = (speedY + (targetY - y) * .14 * elapsed) * damping;
+      x += speedX * elapsed;
+      y += speedY * elapsed;
+      // The tilt follows the horizontal speed on its own looser spring, so it swings and settles.
+      const swing = Math.max(-24, Math.min(24, speedX * 1.5 + speedY * .25));
+      spin = (spin + (swing - tilt) * .16 * elapsed) * Math.pow(.8, elapsed);
+      tilt += spin * elapsed;
+      lift += ((dragging ? 1.07 : 1) - lift) * (1 - Math.pow(1 - .2, elapsed));
       paint();
-      const settled = !dragging && Math.abs(targetX - x) < .1 && Math.abs(targetY - y) < .1 && Math.abs(velocityX) < .05 && Math.abs(velocityY) < .05 && Math.abs(tilt) < .05 && Math.abs(lift - 1) < .001;
-      if (settled) { running = false; previousTime = 0; tilt = 0; lift = 1; paint(); return; }
+      const settled = !dragging && Math.abs(targetX - x) < .1 && Math.abs(targetY - y) < .1 && Math.abs(speedX) < .05 && Math.abs(speedY) < .05 && Math.abs(velocityX) < .05 && Math.abs(velocityY) < .05 && Math.abs(tilt) < .05 && Math.abs(spin) < .05 && Math.abs(lift - 1) < .001;
+      if (settled) { running = false; previousTime = 0; tilt = 0; spin = 0; lift = 1; x = targetX; y = targetY; paint(); return; }
       requestAnimationFrame(frame);
     };
 
