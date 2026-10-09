@@ -48,7 +48,7 @@ const fashion = {
 ---
 
 <BaseLayout
-  title="(Side B) — Micaela Galimberti | Itsmicki"
+  title="(Side B) — Itsmicki"
   description="The personal side of Micaela Galimberti: fashion, music, film photography and the visual references that shape her work."
   active="sideb"
   hideFooter
@@ -670,9 +670,10 @@ const fashion = {
     transform: translateY(0);
   }
 
+  /* Tall enough for the playlist header and five songs; the rest scroll inside the player. */
   .sideb-spotify-frame {
     width: 100%;
-    aspect-ratio: 1555.62 / 740;
+    height: 466px;
   }
 
   .sideb-spotify iframe {
@@ -872,7 +873,6 @@ const fashion = {
       margin: -5.0625vw 0 0 var(--gutter);
     }
 
-    .sideb-spotify-frame { aspect-ratio: 1555.617 / 740.818; }
     .sideb-spotify > a { display: none; }
   }
 
