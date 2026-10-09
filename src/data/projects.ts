@@ -59,7 +59,7 @@ export const projects: Project[] = [
   {
     slug: 'blend360', number: '07', title: 'Blend360', year: '2024',
     role: 'UX—UI Lead, Visual & Motion Designer', accent: '#d8c5ff', comingSoon: true,
-    cover: '/02_Projects/07_Blend360/01_Blend360_Portada.webp',
+    cover: '/02_Projects/07_Blend360/01_Blend360_Cover.webp',
     summary: 'A digital and motion design case study currently being prepared for publication.',
     synopsis: 'Full case study coming soon.',
   },
