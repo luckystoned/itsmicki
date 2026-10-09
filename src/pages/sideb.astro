@@ -562,7 +562,7 @@ const fashion = {
     display: flex;
     width: max-content;
     height: 100%;
-    gap: 1.4734vw;
+    gap: 8px; /* 4px on phones. */
   }
 
   .sideb-film-strip-track { will-change: transform; }
@@ -1327,7 +1327,7 @@ const fashion = {
     }
 
     .sideb-film-strip-track,
-    .sideb-film-strip-set { gap: min(8px, 2.051282vw); }
+    .sideb-film-strip-set { gap: 4px; }
 
     .sideb-footer {
       position: relative;
@@ -1371,6 +1371,18 @@ const fashion = {
 
     .sideb-page [data-parallax] {
       transform: none !important;
+    }
+  }
+
+  /* Justified copy, with the same criterion as the case pages: body copy everywhere, large copy on tablet and
+     desktop; on phones the largest sentences stay left-aligned. Titles, labels and the link list keep theirs. */
+  .sideb-body-pair p,
+  .sideb-big:not(.sideb-related) {
+    text-align: justify;
+  }
+  @media (max-width: 760px) {
+    .sideb-section-column .sideb-big {
+      text-align: left;
     }
   }
 </style>

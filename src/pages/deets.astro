@@ -1067,4 +1067,20 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
       transform: none !important;
     }
   }
+
+  /* Justified copy, with the same criterion as the case pages: body copy everywhere, large copy on tablet and
+     desktop; on phones the largest sentences stay left-aligned. Titles and labels keep theirs. */
+  .deets-body,
+  .deets-bio,
+  .deets-skills-copy,
+  .deets-statement,
+  .deets-story-lead {
+    text-align: justify;
+  }
+  @media (max-width: 760px) {
+    .deets-statement,
+    .deets-story-lead {
+      text-align: left;
+    }
+  }
 </style>
