@@ -185,7 +185,8 @@ const loops = [0, 1, 2];
     :global(body:has(.home-stage) .site-header a:hover) { text-decoration: underline; }
 
     .home-intro { position: absolute; inset: 0; display: block; min-height: 0; padding: 0; color: #2e2e2e; font-size: min(24px, 1.5vw, 2.32333svh); font-weight: 400; line-height: 1.24; letter-spacing: -.01em; }
-    .home-intro p { position: absolute; top: min(78.63px, 4.914375vw, 7.61181svh); }
+    /* Never above the bottom of the fixed navigation bar (its height follows the nav type size), even on short laptop screens at 100% zoom. */
+    .home-intro p { position: absolute; top: max(min(78.63px, 4.914375vw, 7.61181svh), calc(clamp(14px, 1.74vw, 27.117px) * 1.25 + 44px)); }
     .home-intro p:first-child { left: 18px; width: min(441.914px, 27.619625vw, 42.779671svh); }
     .home-intro p:nth-child(2) { left: min(500.45px, 31.278125vw, 48.446273svh); width: min(704.492px, 44.03075vw, 68.198645svh); white-space: pre-wrap; }
 
