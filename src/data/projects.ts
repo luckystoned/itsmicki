@@ -45,7 +45,7 @@ export const projects: Project[] = [
   {
     slug: 'outliant', number: '05', title: 'Outliant', year: '2024',
     role: 'Art Director, Brand Strategist & UX/UI Design Lead', accent: '#ddff55',
-    cover: '/02_Projects/05_Outliant/01_Outliant_Portada.webp',
+    cover: '/02_Projects/05_Outliant/01_Outliant_Cover.webp',
     summary: 'Outliant is a remote digital agency bringing together strategy, design, technology and growth.',
     synopsis: 'As the company evolved, a central challenge emerged: defining a clear identity, positioning and territory. The work turned that strategic foundation into a scalable visual and digital system.',
   },
@@ -59,7 +59,7 @@ export const projects: Project[] = [
   {
     slug: 'blend360', number: '07', title: 'Blend360', year: '2024',
     role: 'UX—UI Lead, Visual & Motion Designer', accent: '#d8c5ff', comingSoon: true,
-    cover: '/02_Projects/07_Blend360/01_Blend360_Portada.webp',
+    cover: '/02_Projects/07_Blend360/01_Blend360_Cover.webp',
     summary: 'A digital and motion design case study currently being prepared for publication.',
     synopsis: 'Full case study coming soon.',
   },
