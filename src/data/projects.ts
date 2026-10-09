@@ -63,6 +63,13 @@ export const projects: Project[] = [
     summary: 'A digital and motion design case study currently being prepared for publication.',
     synopsis: 'Full case study coming soon.',
   },
+  {
+    slug: 'textures-body', number: '08', title: 'Textures & Body', year: '',
+    role: 'Art Direction+AI Image Generation', accent: '#e9d6b4', comingSoon: true,
+    cover: '/02_Projects/08_TexturesBody/01_TexturesBody_Cover.webp',
+    summary: 'An AI image generation project currently being prepared for publication.',
+    synopsis: 'Full case study coming soon.',
+  },
 ];
 
 export const publishedProjects = projects.filter((project) => !project.comingSoon);

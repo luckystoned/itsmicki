@@ -44,6 +44,11 @@ const definitions = [
     width: '100%', height: 'auto', ratio: '97.23 / 64.22',
     cover: '/02_Projects/07_Blend360/01_Blend360_Cover_Wide.webp',
   },
+  {
+    slug: 'textures-body',
+    label: '08_Textures & Body_Art Direction+AI Image Generation',
+    width: 'calc(100% * 1046 / 1556)', height: 'auto', ratio: '1046 / 767',
+  },
 ] as const;
 
 const cards = definitions.map((definition) => {
@@ -59,7 +64,7 @@ const cards = definitions.map((definition) => {
   };
 });
 
-const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
+const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody] = cards;
 ---
 
 <BaseLayout
@@ -108,6 +113,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       </div>
 
       <ProjectGridItem project={blend360.project} label={blend360.label} style={blend360.style} cover={blend360.cover} vimeoId={blend360.vimeoId} />
+      <ProjectGridItem project={texturesBody.project} label={texturesBody.label} style={texturesBody.style} cover={texturesBody.cover} vimeoId={texturesBody.vimeoId} />
     </section>
 
     <footer class="projects-footer" id="projects-footer">

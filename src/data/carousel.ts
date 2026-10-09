@@ -9,6 +9,7 @@ const carouselLayout: Record<string, { width: number; height: number; label: str
   outliant: { width: 429.582, height: 508.909, label: '05_Outliant_Art Direction+Visual Design+UXUI Lead' },
   lumen: { width: 430.069, height: 257.354, label: '06_Lumen_Art Direction+Visual Design', vimeoId: '1234293739' },
   blend360: { width: 430.937, height: 570.818, label: '07_Blend360_UX—UI Lead, Visual & Motion Designer', cover: '/02_Projects/07_Blend360/01_Blend360_Cover.webp' },
+  'textures-body': { width: 430.069, height: 315.29, label: '08_Textures & Body_Art Direction+AI Image Generation' },
 };
 
 export const carouselProjects = projects.flatMap((project) => {
