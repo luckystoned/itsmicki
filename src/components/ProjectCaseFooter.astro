@@ -296,7 +296,8 @@ const loops = [0, 1, 2];
     }
 
     /* Home carousel on phones: 65.6vw cards (max 255.786px), 4px gaps and the same 7-card ratio pattern. */
-    .more-carousel { margin-top: 20px; padding-top: 22px; }
+    /* As on the home: a clear gap under "Pss, let's continue", and the tallest cards resting 11px over the wordmark. */
+    .more-carousel { z-index: 3; margin-top: 82px; padding-top: 22px; }
     .more-carousel-card { --name-size: min(12px, 3.076923vw); flex: 0 0 min(255.786px, 65.586154vw); width: min(255.786px, 65.586154vw); height: auto; margin-right: 4px; }
     .more-carousel-card:nth-child(7n + 1),
     .more-carousel-card:nth-child(7n + 4) { aspect-ratio: 1; }
@@ -304,9 +305,9 @@ const loops = [0, 1, 2];
     .more-carousel-card:nth-child(7n + 3) { aspect-ratio: 3 / 2; }
 
     .case-footer {
-      margin-top: 18px;
+      margin-top: -21px;
       padding-bottom: 20px;
-      z-index: 2;
+      z-index: 1;
       background: #fafafa;
     }
 
@@ -371,7 +372,7 @@ const loops = [0, 1, 2];
 
     .case-more[data-current-case='outliant'] .more-carousel {
       position: absolute;
-      top: 88px; /* The tallest home-sized cards end above the footer. */
+      top: 144px; /* Same gap under the heading and overlap with the wordmark as the other cases. */
       left: -2.307692vw;
       width: 100vw;
       height: 94vw;
@@ -381,7 +382,8 @@ const loops = [0, 1, 2];
 
     .case-more[data-current-case='outliant'] + .case-footer {
       position: absolute;
-      top: 2291.0086vw;
+      /* Case block top + carousel offset + tallest card (3:4) - 11px overlap - wordmark ink offset. */
+      top: calc(2173.073vw + 153px + min(341.05px, 87.4483vw) - 11.2vw);
       left: 0;
       width: 100vw;
       height: 44.376vw;

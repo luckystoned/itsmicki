@@ -1552,7 +1552,8 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='outliant'] {
       position: relative;
       width: 100%;
-      height: calc(2335.3846vw + min(48px, 12.307692vw) + env(safe-area-inset-bottom)); /* Plus the room kept for the bottom navigation. */
+      /* Ends with the footer (placed from the card size in ProjectCaseFooter) plus the room kept for the bottom navigation. */
+      height: calc(2173.073vw + 153px + min(341.05px, 87.4483vw) - 11.2vw + 44.376vw + min(48px, 12.307692vw) + env(safe-area-inset-bottom));
       min-height: 0;
       overflow: hidden;
     }
