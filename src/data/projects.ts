@@ -24,7 +24,7 @@ export const projects: Project[] = [
   {
     slug: 'genova', number: '02', title: 'Genova', year: '2025',
     role: 'Art Direction + Visual Design', accent: '#b7d5ff', comingSoon: true,
-    cover: '/02_Projects/02_Genova/01_Genova_Portada.webp',
+    cover: '/02_Projects/02_Genova/01_Genova_Cover.webp',
     summary: 'A visual identity and art direction project currently being prepared for publication.',
     synopsis: 'Full case study coming soon.',
   },
