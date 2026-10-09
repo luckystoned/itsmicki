@@ -26,7 +26,7 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/02_Projects/01_Winona/19_Winona.webp': { width: 3110, height: 1738 },
   '/02_Projects/01_Winona/20_Winona.webp': { width: 1452, height: 1909 },
   '/02_Projects/01_Winona/21_Winona.webp': { width: 1636, height: 1914 },
-  '/02_Projects/02_Genova/01_Genova_Cover.webp': { width: 1060, height: 1404 },
+  '/02_Projects/02_Genova/01_Genova_Cover.webp': { width: 1493, height: 2000 },
   '/02_Projects/03_Amazon/01_Amazon_Portada.jpg': { width: 660, height: 454 },
   '/02_Projects/04_MaxMaher/01_MaxMaher.webp': { width: 2400, height: 1342 },
   '/02_Projects/04_MaxMaher/01_MaxMaher_Drag.webp': { width: 851, height: 1123 },
