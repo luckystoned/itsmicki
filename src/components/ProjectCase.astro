@@ -634,7 +634,10 @@ const vimeoUrl = (id: string) =>
       if (hovered) document.dispatchEvent(new Event('project-preview-refresh'));
       requestAnimationFrame(frame);
     };
-    measure(); addEventListener('resize', measure); requestAnimationFrame(frame);
+    // Re-measure whenever the cards change size, so one loop always equals one full set of projects.
+    measure(); addEventListener('resize', measure); addEventListener('load', measure);
+    new ResizeObserver(measure).observe(carouselTrack);
+    requestAnimationFrame(frame);
     carousel.addEventListener('mouseenter', () => { hovered = true; });
     carousel.addEventListener('mouseleave', () => { hovered = false; });
     carousel.addEventListener('dragstart', (event) => event.preventDefault());

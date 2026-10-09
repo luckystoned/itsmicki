@@ -87,7 +87,11 @@ const loops = [0, 1, 2];
         if (hovered) document.dispatchEvent(new Event('project-preview-refresh'));
         requestAnimationFrame(frame);
       };
-      measure(); addEventListener('resize', measure); requestAnimationFrame(frame);
+      // Re-measure whenever the cards change size (phones resize them with the visible screen height, fonts and the
+      // browser bars), so one loop always equals one full set of projects and the strip never restarts early.
+      measure(); addEventListener('resize', measure); addEventListener('load', measure);
+      new ResizeObserver(measure).observe(track);
+      requestAnimationFrame(frame);
       carousel.addEventListener('mouseenter', () => { hovered = true; });
       carousel.addEventListener('mouseleave', () => { hovered = false; });
       carousel.addEventListener('dragstart', (event) => event.preventDefault());
@@ -233,10 +237,10 @@ const loops = [0, 1, 2];
     .home-carousel { --mobile-card-width: max(120px, min(255.786px, 65.586154cqw, (100svh - var(--carousel-bottom) - var(--carousel-min-top)) * .75)); position: absolute; z-index: 4; top: auto; bottom: var(--carousel-bottom); left: 0; width: 100%; height: calc(var(--mobile-card-width) * 4 / 3); padding: 0; overflow: visible; touch-action: pan-y; }
     .carousel-track { padding-left: 0; }
     .carousel-card { flex: 0 0 var(--mobile-card-width); width: var(--mobile-card-width); height: auto; margin-right: 4px; aspect-ratio: var(--card-aspect); overflow: visible; }
-    .carousel-card:nth-child(7n + 1),
-    .carousel-card:nth-child(7n + 4) { aspect-ratio: 1; }
-    .carousel-card:nth-child(7n + 2) { aspect-ratio: 3 / 4; }
-    .carousel-card:nth-child(7n + 3) { aspect-ratio: 3 / 2; }
+    .carousel-card:nth-child(8n + 1),
+    .carousel-card:nth-child(8n + 4) { aspect-ratio: 1; }
+    .carousel-card:nth-child(8n + 2) { aspect-ratio: 3 / 4; }
+    .carousel-card:nth-child(8n + 3) { aspect-ratio: 3 / 2; }
     .carousel-card { --name-size: min(12px, 3.076923cqw); }
 
     .home-footer { position: absolute; z-index: 1; inset: 0; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; pointer-events: none; }
