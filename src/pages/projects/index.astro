@@ -48,6 +48,7 @@ const definitions = [
     slug: 'textures-body',
     label: '08_Textures & Body_Art Direction+AI Image Generation',
     width: 'calc(100% * 1046 / 1556)', height: 'auto', ratio: '1046 / 767',
+    vimeoId: '1234326440', videoRatio: '328 / 240',
   },
 ] as const;
 
@@ -60,6 +61,7 @@ const cards = definitions.map((definition) => {
     eager: 'eager' in definition ? definition.eager : false,
     cover: 'cover' in definition ? definition.cover : undefined,
     vimeoId: 'vimeoId' in definition ? definition.vimeoId : undefined,
+    videoRatio: 'videoRatio' in definition ? definition.videoRatio : undefined,
     style: `--project-width:${definition.width};--project-height:${definition.height};--project-ratio:${definition.ratio}`,
   };
 });
@@ -113,7 +115,7 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody
       </div>
 
       <ProjectGridItem project={blend360.project} label={blend360.label} style={blend360.style} cover={blend360.cover} vimeoId={blend360.vimeoId} />
-      <ProjectGridItem project={texturesBody.project} label={texturesBody.label} style={texturesBody.style} cover={texturesBody.cover} vimeoId={texturesBody.vimeoId} />
+      <ProjectGridItem project={texturesBody.project} label={texturesBody.label} style={texturesBody.style} cover={texturesBody.cover} vimeoId={texturesBody.vimeoId} videoRatio={texturesBody.videoRatio} />
     </section>
 
     <footer class="projects-footer" id="projects-footer">
