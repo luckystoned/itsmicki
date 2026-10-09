@@ -1187,11 +1187,6 @@ const vimeoUrl = (id: string) =>
       letter-spacing: -.03em;
     }
 
-    .project-case-page[data-case='outliant'] .case-credits {
-      border-top-width: .5px;
-      border-top-color: #2e2e2e;
-    }
-
   }
 
 
@@ -1229,9 +1224,9 @@ const vimeoUrl = (id: string) =>
   }
 
 
-  /* Winona on tablet and desktop: body and large copy justified, as on Lumen. */
+  /* Winona and Outliant on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
-    .project-case-page[data-case='winona'] :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
       text-align: justify;
     }
   }
@@ -1395,8 +1390,13 @@ const vimeoUrl = (id: string) =>
     }
 
     /* Body copy justified on phones, as on Lumen; role and headings keep their alignment. */
-    .project-case-page[data-case='winona'] :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
       text-align: justify;
+    }
+
+    /* The large first sentence stays left-aligned, as on Lumen. */
+    .project-case-page[data-case='outliant'] .case-outliant-mobile-visual p:first-child {
+      text-align: left;
     }
 
     /* Credits as on Lumen: no rule above, 40px under the last block and 10px between names. */
@@ -1576,7 +1576,7 @@ const vimeoUrl = (id: string) =>
       position: relative;
       width: 100%;
       /* Ends with the footer (placed from the card size in ProjectCaseFooter) plus the room kept for the bottom navigation. */
-      height: calc(2173.073vw + 153px + min(341.05px, 87.4483vw) - 11.2vw + 44.376vw + min(48px, 12.307692vw) + env(safe-area-inset-bottom));
+      height: calc(2134.9633vw + 127.3px + 138px + min(341.05px, 87.4483vw) - 11.2vw + 44.376vw + min(48px, 12.307692vw) + env(safe-area-inset-bottom));
       min-height: 0;
       overflow: hidden;
     }
@@ -1825,8 +1825,8 @@ const vimeoUrl = (id: string) =>
       width: 95.384616vw;
       height: 26.2014vw;
       margin: 0;
-      padding: 32px 0 0;
-      border-top: .5px solid #000;
+      padding: 0; /* Credits as on Lumen and Winona: no rule above. */
+      border: 0;
     }
 
     .project-case-page[data-case='outliant'] .case-credits h2 {
