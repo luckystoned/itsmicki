@@ -28,7 +28,7 @@ const loops = [0, 1, 2];
               <span class="carousel-name" aria-hidden="true"><span class="carousel-name-text">{project.carouselLayout.label}</span></span>
               <span class="carousel-picture">
                 <img src={project.carouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading={index < 3 && loop === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 && loop === 0 ? 'high' : undefined} decoding="async" />
-                {project.carouselLayout.vimeoId && <iframe src={vimeoBackground(project.carouselLayout.vimeoId)} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-carousel-video></iframe>}
+                {project.carouselLayout.vimeoId && <iframe src={vimeoBackground(project.carouselLayout.vimeoId)} style={project.carouselLayout.videoRatio ? `aspect-ratio:${project.carouselLayout.videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-carousel-video></iframe>}
               </span>
             </>
           );
@@ -121,6 +121,8 @@ const loops = [0, 1, 2];
   .home-intro, .home-carousel, .home-footer { font-family: 'OT Neue Montreal Home', 'Arial Narrow', sans-serif; font-weight: 500; }
   .home-intro { grid-template-columns: 29% 46%; justify-content: space-between; min-height: clamp(250px, 17.4vw, 278px); padding-top: clamp(36px, 4.35vw, 70px); font-size: clamp(13px, 1.42vw, 24px); line-height: 1.24; letter-spacing: -.01em; }
   .home-intro sup { font-size: .55em; }
+  /* Intro copy justified, like the body text on the rest of the site. */
+  .home-intro p { text-align: justify; }
   .home-carousel { position: relative; z-index: 2; height: clamp(315px, 29.25vw, 468px); overflow: visible; padding-left: 0; touch-action: pan-y; user-select: none; }
   .carousel-track { isolation: isolate; display: flex; align-items: flex-start; width: max-content; overflow: visible; will-change: transform; }
   .carousel-card { position: relative; z-index: 0; flex: 0 0 clamp(210px, 22vw, 352px); aspect-ratio: var(--card-aspect); margin-right: clamp(9px, .8vw, 13px); overflow: visible; }

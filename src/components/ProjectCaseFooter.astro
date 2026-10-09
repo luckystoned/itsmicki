@@ -26,7 +26,7 @@ const loops = [0, 1, 2];
             <span class="more-carousel-name" aria-hidden="true"><span class="more-carousel-name-text">{project.carouselLayout.label}</span></span>
             <span class="more-carousel-picture">
               <img src={project.caseCarouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading="lazy" decoding="async" draggable="false" />
-              {project.carouselLayout.vimeoId && <iframe src={vimeoBackground(project.carouselLayout.vimeoId)} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-carousel-video></iframe>}
+              {project.carouselLayout.vimeoId && <iframe src={vimeoBackground(project.carouselLayout.vimeoId)} style={project.carouselLayout.videoRatio ? `aspect-ratio:${project.carouselLayout.videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-carousel-video></iframe>}
             </span>
           </>
         );
