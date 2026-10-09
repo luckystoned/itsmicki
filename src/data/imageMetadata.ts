@@ -61,7 +61,6 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/02_Projects/06_Lumen/06_Lumen.webp': { width: 1766, height: 2086 },
   '/02_Projects/06_Lumen/07_Lumen.webp': { width: 3109, height: 1793 },
   '/02_Projects/06_Lumen/08_Lumen.webp': { width: 3108, height: 1737 },
-  '/02_Projects/06_Lumen/09_Lumen.webp': { width: 1642, height: 1664 },
   '/02_Projects/06_Lumen/10_Lumen.webp': { width: 1411, height: 1664 },
   '/02_Projects/06_Lumen/11_Lumen.webp': { width: 1411, height: 1664 },
   '/02_Projects/06_Lumen/12_Lumen.webp': { width: 1411, height: 1664 },

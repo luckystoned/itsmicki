@@ -338,7 +338,7 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       }),
       single(image('/02_Projects/06_Lumen/08_Lumen.webp', 'Lumen visual identity layered over a DJ performance.', '1556 / 870')),
       pair(
-        image('/02_Projects/06_Lumen/09_Lumen.webp', 'Lumen keychain and printed tag.', '51.36 / 51.98'), '51.36vw', '51.98vw',
+        video('1234293739', 'Lumen keychain and printed tag turning slowly.', '51.36 / 51.98', '3840 / 2160'), '51.36vw', '51.98vw',
         carousel([
           { src: '/02_Projects/06_Lumen/10_Lumen.webp', alt: 'Black-and-white portrait of a person wearing sunglasses at a Lumen event.' },
           { src: '/02_Projects/06_Lumen/11_Lumen.webp', alt: 'DJ wearing a Lumen cap and headphones at the mixing desk.' },
