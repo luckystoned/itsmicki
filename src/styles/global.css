@@ -155,3 +155,6 @@ img, video {
 }
 /* Vimeo embeds play as backgrounds; blocking pointer events hides the player's own menu. */
 iframe[src*="player.vimeo.com"] { pointer-events: none; }
+
+/* Lumen cover video: +6% brightness so its light grey background matches the page white (#fafafa). */
+iframe[src*="player.vimeo.com/video/1234293739"] { filter: brightness(1.06); }
