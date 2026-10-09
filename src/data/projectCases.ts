@@ -405,7 +405,7 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
     nutshell: `An exploration of ingredient textures and human skin through AI-generated imagery and video. Using tools such as Magnific, HyperAgent, Higgsfield, and Midjourney, I developed tactile visuals focused on realistic surfaces and fine micro-detail.`,
     drags: [],
     blocks: [
-      single(image('/02_Projects/08_TexturesBody/01_TexturesBody.webp', 'Amber, green and clear oil drops in a diagonal chain, lit from behind.', '1556 / 870')),
+      single(video('1234326440', 'Amber, green and clear oil drops moving slowly in a diagonal chain.', '1556 / 870', '328 / 240')),
       text('(art direction)', [], {
         variant: 'wide',
         wide: `The process began by exploring the relationship between ingredients and human skin. I treated both as tactile surfaces, looking for ways to highlight their natural qualities through close-up compositions, controlled lighting, and a strong sense of materiality.`,
@@ -421,8 +421,8 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         `Once the still imagery established the look and feel of the project, I extended the exploration into video. The focus was on bringing the textures to life while preserving their realism and tactile quality, so the movement felt like a natural continuation of the images.`,
       ]),
       pair(
-        image('/02_Projects/08_TexturesBody/03_TexturesBody.webp', 'Translucent pink and green petal-like folds seen up close.', '773 / 955'), '48.3125vw', '59.6875vw',
-        image('/02_Projects/08_TexturesBody/04_TexturesBody.webp', 'Clear gel with suspended shapes and air bubbles.', '773 / 955'), '48.3125vw', '59.6875vw',
+        video('1234325405', 'Translucent coral petal-like folds moving gently.', '773 / 955', '240 / 300'), '48.3125vw', '59.6875vw',
+        video('1234325402', 'Clear gel shifting slowly around suspended shapes.', '773 / 955', '240 / 300'), '48.3125vw', '59.6875vw',
       ),
     ],
     credits: [],
