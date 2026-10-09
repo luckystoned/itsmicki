@@ -1,6 +1,6 @@
 export const SITE_NAME = 'Itsmicki';
 export const SITE_URL = 'https://www.itsmicki.com';
-export const DEFAULT_TITLE = 'Micaela Galimberti (Itsmicki) — Creative Director & Designer';
+export const DEFAULT_TITLE = 'Itsmicki — Side A';
 export const DEFAULT_DESCRIPTION = 'Portfolio of Micaela Galimberti — also known as Mica Galimberti, Itsmicki or mickivainilla — a creative director and multidisciplinary designer based in Buenos Aires.';
 export const DEFAULT_SOCIAL_IMAGE = '/og.jpg';
 
