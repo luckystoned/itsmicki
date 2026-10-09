@@ -176,33 +176,6 @@ const loops = [0, 1, 2];
   }
 
   @media (min-width: 761px) {
-    .case-more[data-current-case='maxmaher'] .case-more-divider {
-      height: .5px;
-      margin-top: 1.125vw;
-    }
-
-    .case-more[data-current-case='maxmaher'] .case-more-heading {
-      margin-top: 4.7375vw;
-    }
-
-    .case-more[data-current-case='maxmaher'] .more-carousel {
-      margin-top: 3.1375vw;
-    }
-
-    .case-more[data-current-case='maxmaher'] + .case-footer {
-      height: 36vw;
-      margin-top: 0;
-    }
-
-    .case-more[data-current-case='maxmaher'] + .case-footer .case-footer-wordmark {
-      transform: translateY(calc(var(--footer-wordmark-edge) - 11px));
-    }
-
-    .case-more[data-current-case='outliant'] .case-more-divider {
-      height: .5px;
-      background: #2e2e2e;
-    }
-
     .case-footer-wordmark {
       font-size: var(--footer-wordmark-size);
       line-height: .8;
@@ -296,7 +269,8 @@ const loops = [0, 1, 2];
     }
 
     /* Home carousel on phones: 65.6vw cards (max 255.786px), 4px gaps and the same 7-card ratio pattern. */
-    .more-carousel { margin-top: 20px; padding-top: 22px; }
+    /* As on the home: a clear gap under "Pss, let's continue", and the tallest cards resting 11px over the wordmark. */
+    .more-carousel { z-index: 3; margin-top: 82px; padding-top: 22px; }
     .more-carousel-card { --name-size: min(12px, 3.076923vw); flex: 0 0 min(255.786px, 65.586154vw); width: min(255.786px, 65.586154vw); height: auto; margin-right: 4px; }
     .more-carousel-card:nth-child(7n + 1),
     .more-carousel-card:nth-child(7n + 4) { aspect-ratio: 1; }
@@ -304,9 +278,9 @@ const loops = [0, 1, 2];
     .more-carousel-card:nth-child(7n + 3) { aspect-ratio: 3 / 2; }
 
     .case-footer {
-      margin-top: 18px;
+      margin-top: -21px;
       padding-bottom: 20px;
-      z-index: 2;
+      z-index: 1;
       background: #fafafa;
     }
 
@@ -329,115 +303,16 @@ const loops = [0, 1, 2];
       white-space: normal;
     }
 
+    /* 1px underline on "See All", like every other link on phones. */
+    .case-more-link-label::after,
+    .case-more-link-plus::after {
+      height: 1px;
+    }
+
     /* Same mobile footer as /projects: only the wordmark. */
     .case-footer-info {
       display: none;
     }
-
-    .case-more[data-current-case='outliant'] {
-      position: absolute;
-      top: 2173.073vw;
-      left: 2.307692vw;
-      width: 95.384616vw;
-      height: 114.7vw;
-      margin: 0;
-    }
-
-    .case-more[data-current-case='outliant'] .case-more-divider {
-      height: .5px;
-      margin: 0;
-      background: #2e2e2e;
-    }
-
-    .case-more[data-current-case='outliant'] .case-more-heading {
-      margin-top: 31px;
-    }
-
-    .case-more[data-current-case='outliant'] .case-more-heading h2 {
-      font-size: 24px;
-      line-height: 29px;
-    }
-
-    .case-more[data-current-case='outliant'] .case-more-heading a {
-      font-size: 16px;
-      line-height: 19px;
-    }
-
-    .case-more[data-current-case='outliant'] .more-carousel {
-      position: absolute;
-      top: 88px; /* The tallest home-sized cards end above the footer. */
-      left: -2.307692vw;
-      width: 100vw;
-      height: 94vw;
-      margin: 0;
-      padding: 20px 0 0;
-    }
-
-    .case-more[data-current-case='outliant'] + .case-footer {
-      position: absolute;
-      top: 2291.0086vw;
-      left: 0;
-      width: 100vw;
-      height: 44.376vw;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #fafafa;
-    }
-
-    .case-more[data-current-case='outliant'] + .case-footer .case-footer-wordmark {
-      font-size: 46.2021vw;
-      line-height: 1.2;
-      transform: none;
-    }
-
-    .case-more[data-current-case='outliant'] + .case-footer .case-footer-info { display: none; }
-
-    .case-more[data-current-case='lumen'] {
-      position: absolute;
-      top: 3353.9583vw;
-      left: 2.307692vw;
-      width: 95.384616vw;
-      height: 114.7vw;
-      margin: 0;
-    }
-
-    .case-more[data-current-case='lumen'] .case-more-divider {
-      height: .5px;
-      margin: 0;
-      background: #2e2e2e;
-    }
-
-    .case-more[data-current-case='lumen'] .case-more-heading { margin-top: 31px; }
-    .case-more[data-current-case='lumen'] .case-more-heading h2 { font-size: 24px; line-height: 29px; }
-    .case-more[data-current-case='lumen'] .case-more-heading a { font-size: 16px; line-height: 19px; }
-    .case-more[data-current-case='lumen'] .more-carousel {
-      position: absolute;
-      top: 88px; /* The tallest home-sized cards end above the footer. */
-      left: -2.307692vw;
-      width: 100vw;
-      height: 94vw;
-      margin: 0;
-      padding: 20px 0 0;
-    }
-
-    .case-more[data-current-case='lumen'] + .case-footer {
-      position: absolute;
-      top: 3471.8941vw;
-      left: 0;
-      width: 100vw;
-      height: 44.2597vw;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #fafafa;
-    }
-    .case-more[data-current-case='lumen'] + .case-footer .case-footer-wordmark {
-      font-size: 46.2021vw;
-      line-height: 1.2;
-      transform: none;
-    }
-    .case-more[data-current-case='lumen'] + .case-footer .case-footer-info { display: none; }
 
     /* "Itsmicki©2026" with the same position and size as the home wordmark. */
     .case-footer .case-footer-wordmark,
