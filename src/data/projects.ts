@@ -45,7 +45,7 @@ export const projects: Project[] = [
   {
     slug: 'outliant', number: '05', title: 'Outliant', year: '2024',
     role: 'Art Director, Brand Strategist & UX/UI Design Lead', accent: '#ddff55',
-    cover: '/02_Projects/05_Outliant/01_Outliant_Portada.webp',
+    cover: '/02_Projects/05_Outliant/01_Outliant_Cover.webp',
     summary: 'Outliant is a remote digital agency bringing together strategy, design, technology and growth.',
     synopsis: 'As the company evolved, a central challenge emerged: defining a clear identity, positioning and territory. The work turned that strategic foundation into a scalable visual and digital system.',
   },
