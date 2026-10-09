@@ -2,7 +2,7 @@
 import Header from '@/components/Header.astro';
 import SiteCursor from '@/components/SiteCursor.astro';
 import Footer from '@/components/Footer.astro';
-import { DEFAULT_DESCRIPTION, DEFAULT_SOCIAL_IMAGE, DEFAULT_TITLE, SITE_NAME, socialProfiles } from '@/data/seo';
+import { DEFAULT_DESCRIPTION, DEFAULT_SOCIAL_IMAGE, DEFAULT_TITLE, PERSON_ALTERNATE_NAMES, SITE_NAME, socialProfiles } from '@/data/seo';
 import '@/styles/global.css';
 
 const {
@@ -11,7 +11,7 @@ const {
   active = '',
   theme = 'light',
   image = DEFAULT_SOCIAL_IMAGE,
-  imageAlt = 'Itsmicki — Creative Director and Designer in Buenos Aires',
+  imageAlt = 'Micaela Galimberti (Itsmicki) — Creative Director and Designer in Buenos Aires',
   ogType = 'website',
   structuredData,
   hideFooter = false,
@@ -31,6 +31,7 @@ const globalStructuredData = {
       '@id': `${Astro.site}#website`,
       url: Astro.site,
       name: SITE_NAME,
+      alternateName: ['Micaela Galimberti', 'Mica Galimberti'],
       description: DEFAULT_DESCRIPTION,
       inLanguage: 'en',
     },
@@ -38,7 +39,7 @@ const globalStructuredData = {
       '@type': 'Person',
       '@id': `${Astro.site}#person`,
       name: 'Micaela Galimberti',
-      alternateName: 'Micki',
+      alternateName: PERSON_ALTERNATE_NAMES,
       url: Astro.site,
       jobTitle: 'Creative Director and Multidisciplinary Designer',
       email: 'mailto:hey@itsmicki.com',

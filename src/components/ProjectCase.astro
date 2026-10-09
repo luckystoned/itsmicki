@@ -482,6 +482,8 @@ const vimeoUrl = (id: string) =>
   }
 
   const dragNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-case-drag]'));
+  // Stickers follow the finger or mouse with the same easing and tilt as the site cursor, lift a little while
+  // held, and keep a bit of momentum when released.
   dragNodes.forEach((node) => {
     let dragging = false;
     let pointerId = -1;
@@ -489,8 +491,47 @@ const vimeoUrl = (id: string) =>
     let startY = 0;
     let originX = 0;
     let originY = 0;
-    let translateX = 0;
-    let translateY = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let x = 0;
+    let y = 0;
+    let velocityX = 0;
+    let velocityY = 0;
+    let tilt = 0;
+    let lift = 1;
+    let running = false;
+    let previousTime = 0;
+
+    const paint = () => {
+      node.style.setProperty('--drag-x', `${x.toFixed(2)}px`);
+      node.style.setProperty('--drag-y', `${y.toFixed(2)}px`);
+      node.style.setProperty('--drag-tilt', `${tilt.toFixed(2)}deg`);
+      node.style.setProperty('--drag-scale', lift.toFixed(3));
+    };
+
+    const frame = (time: number) => {
+      const elapsed = previousTime ? Math.min(time - previousTime, 32) / (1000 / 60) : 1;
+      previousTime = time;
+      if (!dragging) {
+        // Momentum after release, fading out.
+        targetX += velocityX * elapsed;
+        targetY += velocityY * elapsed;
+        velocityX *= Math.pow(.9, elapsed);
+        velocityY *= Math.pow(.9, elapsed);
+      }
+      const follow = 1 - Math.pow(1 - .22, elapsed);
+      const dx = (targetX - x) * follow;
+      x += dx;
+      y += (targetY - y) * follow;
+      tilt += (Math.max(-14, Math.min(14, dx * .9)) - tilt) * (1 - Math.pow(1 - .16, elapsed));
+      lift += ((dragging ? 1.04 : 1) - lift) * (1 - Math.pow(1 - .2, elapsed));
+      paint();
+      const settled = !dragging && Math.abs(targetX - x) < .1 && Math.abs(targetY - y) < .1 && Math.abs(velocityX) < .05 && Math.abs(velocityY) < .05 && Math.abs(tilt) < .05 && Math.abs(lift - 1) < .001;
+      if (settled) { running = false; previousTime = 0; tilt = 0; lift = 1; paint(); return; }
+      requestAnimationFrame(frame);
+    };
+
+    const run = () => { if (!running) { running = true; requestAnimationFrame(frame); } };
 
     node.addEventListener('pointerdown', (event) => {
       event.preventDefault();
@@ -498,18 +539,24 @@ const vimeoUrl = (id: string) =>
       pointerId = event.pointerId;
       startX = event.clientX;
       startY = event.clientY;
-      originX = translateX;
-      originY = translateY;
+      originX = targetX;
+      originY = targetY;
+      velocityX = 0;
+      velocityY = 0;
       node.setPointerCapture(pointerId);
       node.classList.add('is-dragging');
+      if (!reduceCaseMotion) run();
     });
 
     node.addEventListener('pointermove', (event) => {
       if (!dragging || event.pointerId !== pointerId) return;
-      translateX = originX + event.clientX - startX;
-      translateY = originY + event.clientY - startY;
-      node.style.setProperty('--drag-x', `${translateX}px`);
-      node.style.setProperty('--drag-y', `${translateY}px`);
+      const nextX = originX + event.clientX - startX;
+      const nextY = originY + event.clientY - startY;
+      velocityX = velocityX * .6 + (nextX - targetX) * .4;
+      velocityY = velocityY * .6 + (nextY - targetY) * .4;
+      targetX = nextX;
+      targetY = nextY;
+      if (reduceCaseMotion) { x = targetX; y = targetY; paint(); }
     });
 
     const endDrag = (event: PointerEvent) => {
@@ -517,6 +564,7 @@ const vimeoUrl = (id: string) =>
       dragging = false;
       node.classList.remove('is-dragging');
       if (node.hasPointerCapture(pointerId)) node.releasePointerCapture(pointerId);
+      if (reduceCaseMotion) { velocityX = 0; velocityY = 0; } else run();
     };
 
     node.addEventListener('pointerup', endDrag);
@@ -742,7 +790,7 @@ const vimeoUrl = (id: string) =>
     z-index: 8;
     user-select: none;
     touch-action: none;
-    transform: translate3d(var(--drag-x), calc(var(--drag-y) - var(--drag-lift)), 0) rotate(var(--drag-rotation));
+    transform: translate3d(var(--drag-x), calc(var(--drag-y) - var(--drag-lift)), 0) rotate(calc(var(--drag-rotation) + var(--drag-tilt, 0deg))) scale(var(--drag-scale, 1));
     cursor: grab !important;
     will-change: transform;
   }

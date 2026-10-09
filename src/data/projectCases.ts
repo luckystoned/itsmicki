@@ -284,7 +284,10 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         `That strategic foundation was carried through every layer of the experience: a refined identity that preserved existing recognition, a complete website built around the new positioning, the company’s first design system, and a motion language that made the digital experience feel cohesive. Despite a tight deadline and limited budget, the project established a practical, scalable framework that Outliant could continue using across products, communications, and future growth.`,
       ]),
     ],
-    credits: ['Stakeholder & CTO / Skylar Roebuck', 'Stakeholder & PM / Michelle Baun'],
+    credits: [
+      'Stakeholder & CTO / <a href="https://www.linkedin.com/in/skylarroebuck" target="_blank" rel="noreferrer">Skylar Roebuck</a>',
+      'Stakeholder & PM / <a href="mailto:michelle@8limbsinc.net">Michelle Baun</a>',
+    ],
   },
 
   lumen: {
