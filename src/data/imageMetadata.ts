@@ -2,7 +2,7 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/02_Projects/01_Winona/01_Winona_Drag.webp': { width: 790, height: 790 },
   '/02_Projects/01_Winona/02_Winona_Drag.webp': { width: 780, height: 787 },
   '/02_Projects/01_Winona/01_Winona_Cover.webp': { width: 1520, height: 1511 },
-  '/02_Projects/01_Winona/01_Winona_Projects.webp': { width: 1024, height: 1536 },
+  '/02_Projects/01_Winona/01_Winona_Projects.webp': { width: 1118, height: 1950 },
   '/02_Projects/07_Blend360/01_Blend360_Cover.webp': { width: 1342, height: 2000 },
   '/02_Projects/07_Blend360/01_Blend360_Cover_Wide.webp': { width: 1342, height: 886 },
   '/02_Projects/08_TexturesBody/01_TexturesBody_Cover.webp': { width: 2000, height: 1466 },
