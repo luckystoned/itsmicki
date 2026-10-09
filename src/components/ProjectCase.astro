@@ -29,7 +29,7 @@ const mediaStyle = (media: CaseMedia) => {
 const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
   `--cell-width:${media.width};--cell-height:${media.height};${mediaStyle(media)}`;
 const vimeoUrl = (id: string) =>
-  `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&controls=0&quality=2K`;
+  `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&controls=0&quality=1080p&dnt=1`;
 ---
 
 <div class="project-case-page" data-case={caseStudy.slug}>
@@ -1859,27 +1859,28 @@ const vimeoUrl = (id: string) =>
       transform-origin: left top;
     }
 
+    /* Same display face as the other years (2023 on Winona), right after the title. */
     .project-case-page[data-case='lumen'] .case-year {
       position: absolute;
       top: 38.2051vw;
-      left: 57.7vw;
+      left: 58.2vw;
       margin: 0;
-      font-family: var(--case-sans);
-      font-size: 10.72vw;
+      font-size: min(10.72vw, 41.814px);
       line-height: 1.2;
-      transform: scaleX(1.436);
-      transform-origin: left top;
     }
 
+    /* Placed as in the reference; above the title so both can be dragged, keychain in front of the tag. */
     .project-case-page[data-case='lumen'] .case-drag:nth-of-type(2) {
-      top: 50vw !important;
-      left: 59.605vw !important;
-      width: 46.18vw !important;
+      z-index: 12;
+      top: 53.05vw !important;
+      left: 65.9vw !important;
+      width: 40.9vw !important;
     }
     .project-case-page[data-case='lumen'] .case-drag:nth-of-type(3) {
-      top: 50vw !important;
-      left: 41.994vw !important;
-      width: 40.977vw !important;
+      z-index: 13;
+      top: 62.4vw !important;
+      left: 54.9vw !important;
+      width: 33.6vw !important;
     }
 
     /* Content in flow with the Figma spacing: 40px between sections, 32px between groups inside a
