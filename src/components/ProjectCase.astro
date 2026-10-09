@@ -814,6 +814,10 @@ const vimeoUrl = (id: string) =>
     will-change: transform;
   }
 
+  /* Outliant: the keys sit in front of the T-shirt until another sticker is picked up. */
+  .project-case-page[data-case='outliant'] .case-drag:nth-of-type(2) { z-index: 13; }
+  .project-case-page[data-case='outliant'] .case-drag:nth-of-type(3) { z-index: 12; }
+
   .case-drag.is-dragging {
     cursor: grabbing !important;
   }
@@ -1284,9 +1288,9 @@ const vimeoUrl = (id: string) =>
   }
 
 
-  /* Winona and Outliant on tablet and desktop: body and large copy justified, as on Lumen. */
+  /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
       text-align: justify;
     }
   }
@@ -1450,8 +1454,13 @@ const vimeoUrl = (id: string) =>
     }
 
     /* Body copy justified on phones, as on Lumen; role and headings keep their alignment. */
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
       text-align: justify;
+    }
+
+    /* MaxMaher's lead sections share the .case-text-lead class with their sentence; keep the 46px gap of the other sections. */
+    .project-case-page[data-case='maxmaher'] .case-flow > .case-text-lead {
+      margin: 46px 0 0;
     }
 
     /* The large first sentence stays left-aligned, as on Lumen. */
