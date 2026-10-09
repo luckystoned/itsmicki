@@ -23,16 +23,21 @@ const stripImages = [
   style: `--strip-w:${item.width};--strip-inner:${item.inner};--strip-rotate:${item.rotate}`,
 }));
 
-const filmPairs = [
+const filmPhotos = [
   'A subway passenger reflected in a black-and-white train window beside a close-up of green leaves.',
   'A profile portrait in red sunglasses beside people reclining together outdoors.',
   'A black-and-white cat behind a shop window beside a portrait with a cat paw across the face.',
   'A black-and-white street vendor beneath an umbrella beside a person waving a colorful fan.',
   'A pizza maker tossing dough beside a black-and-white ice-cream truck portrait.',
   'A woman sitting beside a pool beside a black cat peeking above a dark window ledge.',
-].map((alt, index) => {
-  const src = `/04_SideB/Film_${String(index + 1).padStart(2, '0')}_SideB.webp`;
-  return { src, alt, ...imageMetadata[src] };
+].flatMap((pairAlt, index) => {
+  // Each pair is two separate photos, so every photo in the strip gets the same gap.
+  const split = pairAlt.lastIndexOf(' beside ');
+  const alts = [`${pairAlt.slice(0, split)}.`, `${pairAlt.charAt(split + 8).toUpperCase()}${pairAlt.slice(split + 9)}`];
+  return ['a', 'b'].map((side, sideIndex) => {
+    const src = `/04_SideB/Film_${String(index + 1).padStart(2, '0')}${side}_SideB.webp`;
+    return { src, alt: alts[sideIndex], ...imageMetadata[src] };
+  });
 });
 
 const fashion = {
@@ -170,7 +175,7 @@ const fashion = {
               <div class="sideb-film-strip-track" data-marquee-track>
                 {[false, true].map((duplicate) => (
                   <div class="sideb-film-strip-set" data-marquee-set={duplicate ? undefined : ''} aria-hidden={duplicate ? 'true' : undefined}>
-                    {filmPairs.map((item) => (
+                    {filmPhotos.map((item) => (
                       <figure class="sideb-film-strip-item">
                         <img src={item.src} alt={duplicate ? '' : item.alt} width={item.width} height={item.height} loading="lazy" decoding="async" draggable="false" />
                       </figure>
