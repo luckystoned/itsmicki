@@ -1274,6 +1274,18 @@ const vimeoUrl = (id: string) =>
   }
 
 
+  /* Intro on every case (tablet and desktop): the Role / In a nutshell labels sit 7.34vw under the title baseline
+     and 1.39vw above their copy. The title itself does not move; only the intro block below it. */
+  @media (min-width: 761px) {
+    .project-case-page[data-case] .case-intro { margin-top: 4.594vw; }
+    .project-case-page[data-case='maxmaher'] .case-intro { margin-top: 1.094vw; }
+    .project-case-page[data-case] .case-intro .case-label { margin-bottom: 1.39vw; }
+
+    /* Textures & Body: "(from still to motion)" copy in the right half, ending on the right margin, as in Figma. */
+    .project-case-page[data-case='textures-body'] .case-text-content > .case-text-columns:has(> p:only-child) { justify-content: flex-end; }
+    .project-case-page[data-case='textures-body'] .case-text-content > .case-text-columns > p:only-child { flex: none; width: 47.94vw; }
+  }
+
   /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
     :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
