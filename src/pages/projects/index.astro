@@ -29,12 +29,12 @@ const definitions = [
   },
   {
     slug: 'outliant',
-    label: '05_Outliant_Art Direction+Visual Design+UXUI Lead',
+    label: '06_Outliant_Art Direction+Visual Design+UXUI Lead',
     width: 'calc((97.23vw - 6px) * .57451)', height: 'auto', ratio: '54.67 / 63.01',
   },
   {
     slug: 'lumen',
-    label: '06_Lumen_Art Direction+Visual Design',
+    label: '05_Lumen_Art Direction+Visual Design',
     width: 'calc((97.23vw - 6px) * .42549)', height: 'auto', ratio: '40.49 / 40.24',
     vimeoId: '1234293739',
   },
@@ -43,6 +43,12 @@ const definitions = [
     label: '07_Blend360_UX—UI Lead, Visual & Motion Designer — (Coming soon) !!!!!^*^',
     width: '100%', height: 'auto', ratio: '97.23 / 64.22',
     cover: '/02_Projects/07_Blend360/01_Blend360_Cover_Wide.webp',
+  },
+  {
+    slug: 'textures-body',
+    label: '08_Textures & Body_Art Direction+AI Image Generation',
+    width: 'calc(100% * 1046 / 1556)', height: 'auto', ratio: '1046 / 767',
+    vimeoId: '1234326440', videoRatio: '328 / 240',
   },
 ] as const;
 
@@ -55,11 +61,12 @@ const cards = definitions.map((definition) => {
     eager: 'eager' in definition ? definition.eager : false,
     cover: 'cover' in definition ? definition.cover : undefined,
     vimeoId: 'vimeoId' in definition ? definition.vimeoId : undefined,
+    videoRatio: 'videoRatio' in definition ? definition.videoRatio : undefined,
     style: `--project-width:${definition.width};--project-height:${definition.height};--project-ratio:${definition.ratio}`,
   };
 });
 
-const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
+const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody] = cards;
 ---
 
 <BaseLayout
@@ -103,11 +110,12 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       <ProjectGridItem project={maxMaher.project} label={maxMaher.label} style={maxMaher.style} cover={maxMaher.cover} vimeoId={maxMaher.vimeoId} />
 
       <div class="projects-row projects-row-secondary">
-        <ProjectGridItem project={outliant.project} label={outliant.label} style={outliant.style} cover={outliant.cover} vimeoId={outliant.vimeoId} />
         <ProjectGridItem project={lumen.project} label={lumen.label} style={lumen.style} cover={lumen.cover} vimeoId={lumen.vimeoId} />
+        <ProjectGridItem project={outliant.project} label={outliant.label} style={outliant.style} cover={outliant.cover} vimeoId={outliant.vimeoId} />
       </div>
 
       <ProjectGridItem project={blend360.project} label={blend360.label} style={blend360.style} cover={blend360.cover} vimeoId={blend360.vimeoId} />
+      <ProjectGridItem project={texturesBody.project} label={texturesBody.label} style={texturesBody.style} cover={texturesBody.cover} vimeoId={texturesBody.vimeoId} videoRatio={texturesBody.videoRatio} />
     </section>
 
     <footer class="projects-footer" id="projects-footer">
@@ -729,13 +737,14 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360] = cards;
       white-space: nowrap;
     }
 
+    /* Mobile proportions from Figma; in the second row Lumen now comes first and Outliant second. */
     .projects-row-primary .project-card:nth-child(1) .project-visual,
-    .projects-row-secondary .project-card:nth-child(1) .project-visual {
+    .projects-row-secondary .project-card:nth-child(2) .project-visual {
       aspect-ratio: 366 / 484.802429;
     }
 
     .projects-row-primary .project-card:nth-child(2) .project-visual,
-    .projects-row-secondary .project-card:nth-child(2) .project-visual {
+    .projects-row-secondary .project-card:nth-child(1) .project-visual {
       aspect-ratio: 366 / 363.78186;
     }
 

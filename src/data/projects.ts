@@ -43,18 +43,18 @@ export const projects: Project[] = [
     synopsis: 'The system brings together strong typography, energetic graphics and flexible templates to create consistency across a high-volume content ecosystem.',
   },
   {
-    slug: 'outliant', number: '05', title: 'Outliant', year: '2024',
-    role: 'Art Director, Brand Strategist & UX/UI Design Lead', accent: '#ddff55',
-    cover: '/02_Projects/05_Outliant/01_Outliant_Cover.webp',
-    summary: 'Outliant is a remote digital agency bringing together strategy, design, technology and growth.',
-    synopsis: 'As the company evolved, a central challenge emerged: defining a clear identity, positioning and territory. The work turned that strategic foundation into a scalable visual and digital system.',
-  },
-  {
-    slug: 'lumen', number: '06', title: 'Lumen', year: '2025',
+    slug: 'lumen', number: '05', title: 'Lumen', year: '2025',
     role: 'Art Direction, Brand Strategy, Visual Identity', accent: '#f6a66d',
     cover: '/02_Projects/06_Lumen/01_Lumen_Cover.webp',
     summary: 'An art and technology experience shaped through tactile digital storytelling, playful systems and expressive interaction.',
     synopsis: 'Lumen explores the meeting point between physical sensation and screen-based experiences through a flexible visual language built for discovery.',
+  },
+  {
+    slug: 'outliant', number: '06', title: 'Outliant', year: '2024',
+    role: 'Art Director, Brand Strategist & UX/UI Design Lead', accent: '#ddff55',
+    cover: '/02_Projects/05_Outliant/01_Outliant_Cover.webp',
+    summary: 'Outliant is a remote digital agency bringing together strategy, design, technology and growth.',
+    synopsis: 'As the company evolved, a central challenge emerged: defining a clear identity, positioning and territory. The work turned that strategic foundation into a scalable visual and digital system.',
   },
   {
     slug: 'blend360', number: '07', title: 'Blend360', year: '2024',
@@ -62,6 +62,13 @@ export const projects: Project[] = [
     cover: '/02_Projects/07_Blend360/01_Blend360_Cover.webp',
     summary: 'A digital and motion design case study currently being prepared for publication.',
     synopsis: 'Full case study coming soon.',
+  },
+  {
+    slug: 'textures-body', number: '08', title: 'Textures & Body', year: '2026',
+    role: 'Art Direction & AI Image Generation', accent: '#e9d6b4',
+    cover: '/02_Projects/08_TexturesBody/01_TexturesBody_Cover.webp',
+    summary: 'An exploration of ingredient textures and human skin through AI-generated imagery and video, focused on realistic surfaces and fine micro-detail.',
+    synopsis: 'Art direction and AI image generation with Magnific, HyperAgent, Higgsfield and Midjourney, extended from stills into motion.',
   },
 ];
 

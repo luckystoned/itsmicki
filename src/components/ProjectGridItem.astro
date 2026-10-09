@@ -11,9 +11,11 @@ type Props = {
   cover?: string;
   /** Vimeo video played muted in a loop over the cover. */
   vimeoId?: string;
+  /** Width / height of the Vimeo video when it is not 16:9, so it still covers the card. */
+  videoRatio?: string;
 };
 
-const { project, label, style, eager = false, cover = project.cover, vimeoId } = Astro.props;
+const { project, label, style, eager = false, cover = project.cover, vimeoId, videoRatio } = Astro.props;
 const href = project.comingSoon ? undefined : `/projects/${project.slug}`;
 const dimensions = cover ? imageMetadata[cover] : undefined;
 
@@ -39,7 +41,7 @@ const videoSrc = vimeoId
           fetchpriority={eager ? 'high' : undefined}
           decoding="async"
         />
-        {videoSrc && <iframe src={videoSrc} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-project-video></iframe>}
+        {videoSrc && <iframe src={videoSrc} style={videoRatio ? `aspect-ratio:${videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-project-video></iframe>}
       </span>
       <span class="project-label">{label}</span>
     </a>
@@ -55,7 +57,7 @@ const videoSrc = vimeoId
           fetchpriority={eager ? 'high' : undefined}
           decoding="async"
         />
-        {videoSrc && <iframe src={videoSrc} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-project-video></iframe>}
+        {videoSrc && <iframe src={videoSrc} style={videoRatio ? `aspect-ratio:${videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-project-video></iframe>}
       </span>
       <span class="project-label">{label}</span>
     </div>
