@@ -1228,6 +1228,14 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='lumen'] .case-flow > :nth-child(12) .case-text-content > .case-text-columns p { width: 29.8125vw; }
   }
 
+
+  /* Winona on tablet and desktop: body and large copy justified, as on Lumen. */
+  @media (min-width: 761px) {
+    .project-case-page[data-case='winona'] :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+      text-align: justify;
+    }
+  }
+
   @media (max-width: 760px) {
     /* Room at the end so the bottom navigation never covers the wordmark, as on /projects. */
     .project-case-page {
@@ -1385,6 +1393,21 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='winona'] .case-year {
       margin-left: 2.2vw;
     }
+
+    /* Body copy justified on phones, as on Lumen; role and headings keep their alignment. */
+    .project-case-page[data-case='winona'] :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy) {
+      text-align: justify;
+    }
+
+    /* Credits as on Lumen: no rule above, 40px under the last block and 10px between names. */
+    .project-case-page[data-case='winona'] .case-credits {
+      display: block;
+      margin-top: 40px;
+      padding: 0;
+      border: 0;
+    }
+    .project-case-page[data-case='winona'] .case-credits h2 { margin: 0 0 10px; }
+    .project-case-page[data-case='winona'] .case-credit-list { display: flex; flex-direction: column; gap: 10px; }
 
     /* The UGC caption only shows on desktop. */
     .case-media-caption {
