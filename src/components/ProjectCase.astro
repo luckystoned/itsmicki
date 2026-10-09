@@ -243,14 +243,16 @@ const vimeoUrl = (id: string) =>
       })}
     </div>
 
-    <section class="case-credits">
-      <h2 data-case-text-reveal>(credits)</h2>
-      <div class="case-credit-list">
-        {caseStudy.credits.map((credit, index) => (
-          <p data-case-text-reveal style={`--reveal-delay:${index * 70}ms`} set:html={credit} />
-        ))}
-      </div>
-    </section>
+    {caseStudy.credits.length > 0 && (
+      <section class="case-credits">
+        <h2 data-case-text-reveal>(credits)</h2>
+        <div class="case-credit-list">
+          {caseStudy.credits.map((credit, index) => (
+            <p data-case-text-reveal style={`--reveal-delay:${index * 70}ms`} set:html={credit} />
+          ))}
+        </div>
+      </section>
+    )}
   </article>
   <script is:inline>
     // Vimeo embeds start loading here, at 4K on wide screens and 1080p on phones.
@@ -1274,7 +1276,7 @@ const vimeoUrl = (id: string) =>
 
   /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
       text-align: justify;
     }
   }
@@ -1438,7 +1440,7 @@ const vimeoUrl = (id: string) =>
     }
 
     /* Body copy justified on phones, as on Lumen; role and headings keep their alignment. */
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
       text-align: justify;
     }
 

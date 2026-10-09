@@ -64,11 +64,11 @@ export const projects: Project[] = [
     synopsis: 'Full case study coming soon.',
   },
   {
-    slug: 'textures-body', number: '08', title: 'Textures & Body', year: '',
-    role: 'Art Direction+AI Image Generation', accent: '#e9d6b4', comingSoon: true,
+    slug: 'textures-body', number: '08', title: 'Textures & Body', year: '2026',
+    role: 'Art Direction & AI Image Generation', accent: '#e9d6b4',
     cover: '/02_Projects/08_TexturesBody/01_TexturesBody_Cover.webp',
-    summary: 'An AI image generation project currently being prepared for publication.',
-    synopsis: 'Full case study coming soon.',
+    summary: 'An exploration of ingredient textures and human skin through AI-generated imagery and video, focused on realistic surfaces and fine micro-detail.',
+    synopsis: 'Art direction and AI image generation with Magnific, HyperAgent, Higgsfield and Midjourney, extended from stills into motion.',
   },
 ];
 
