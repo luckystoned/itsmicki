@@ -176,28 +176,6 @@ const loops = [0, 1, 2];
   }
 
   @media (min-width: 761px) {
-    .case-more[data-current-case='maxmaher'] .case-more-divider {
-      height: .5px;
-      margin-top: 1.125vw;
-    }
-
-    .case-more[data-current-case='maxmaher'] .case-more-heading {
-      margin-top: 4.7375vw;
-    }
-
-    .case-more[data-current-case='maxmaher'] .more-carousel {
-      margin-top: 3.1375vw;
-    }
-
-    .case-more[data-current-case='maxmaher'] + .case-footer {
-      height: 36vw;
-      margin-top: 0;
-    }
-
-    .case-more[data-current-case='maxmaher'] + .case-footer .case-footer-wordmark {
-      transform: translateY(calc(var(--footer-wordmark-edge) - 11px));
-    }
-
     .case-footer-wordmark {
       font-size: var(--footer-wordmark-size);
       line-height: .8;
@@ -335,66 +313,6 @@ const loops = [0, 1, 2];
     .case-footer-info {
       display: none;
     }
-
-    .case-more[data-current-case='outliant'] {
-      position: absolute;
-      top: calc(2134.9633vw + 171.5px); /* 54px under the credits, as on the other cases. */
-      left: 2.307692vw;
-      width: 95.384616vw;
-      height: 114.7vw;
-      margin: 0;
-    }
-
-    /* Same divider and spacing under it as the other cases. */
-    .case-more[data-current-case='outliant'] .case-more-divider {
-      margin: 0;
-    }
-
-    .case-more[data-current-case='outliant'] .case-more-heading {
-      margin-top: 16px;
-    }
-
-    .case-more[data-current-case='outliant'] .case-more-heading h2 {
-      font-size: 24px;
-      line-height: 29px;
-    }
-
-    .case-more[data-current-case='outliant'] .case-more-heading a {
-      font-size: 16px;
-      line-height: 19px;
-    }
-
-    .case-more[data-current-case='outliant'] .more-carousel {
-      position: absolute;
-      top: 129px; /* Same gap under the heading and overlap with the wordmark as the other cases. */
-      left: -2.307692vw;
-      width: 100vw;
-      height: 94vw;
-      margin: 0;
-      padding: 20px 0 0;
-    }
-
-    .case-more[data-current-case='outliant'] + .case-footer {
-      position: absolute;
-      /* Case block top + carousel offset + tallest card (3:4) - 11px overlap - wordmark ink offset. */
-      top: calc(2134.9633vw + 171.5px + 138px + min(341.05px, 87.4483vw) - 11.2vw);
-      left: 0;
-      width: 100vw;
-      height: 44.376vw;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #fafafa;
-    }
-
-    .case-more[data-current-case='outliant'] + .case-footer .case-footer-wordmark {
-      font-size: 46.2021vw;
-      line-height: 1.2;
-      transform: none;
-    }
-
-    .case-more[data-current-case='outliant'] + .case-footer .case-footer-info { display: none; }
-
 
     /* "Itsmicki©2026" with the same position and size as the home wordmark. */
     .case-footer .case-footer-wordmark,

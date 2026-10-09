@@ -1210,25 +1210,9 @@ const vimeoUrl = (id: string) =>
       margin-bottom: 1.1057vw;
     }
 
-    .project-case-page[data-case='maxmaher'] .case-intro + .case-flow > .case-media-block:first-child {
-      margin-top: 3.25vw;
-    }
-
-    .project-case-page[data-case='maxmaher'] .case-credit-list {
-      width: 28.3125vw;
-      justify-self: end;
-      gap: 0;
-      font-size: 2.2175vw;
-      line-height: .966;
-      letter-spacing: -.01em;
-    }
-
-    .project-case-page[data-case='maxmaher'] .case-credits {
-      grid-template-columns: 1fr 28.3125vw;
-      min-height: 7.125vw;
-      margin-top: calc(4.6vw + 14.4375vw);
-      padding-top: 2.125vw;
-      border-top-width: .5px;
+    /* Lead sections share the .case-text-lead class with their sentence: no extra space under them. */
+    .project-case-page[data-case='maxmaher'] .case-flow > .case-text-lead {
+      margin-bottom: 0;
     }
 
     /* Credits at the Winona size on every case. */
@@ -1458,6 +1442,10 @@ const vimeoUrl = (id: string) =>
       text-align: justify;
     }
 
+    .project-case-page[data-case='maxmaher'] .case-credits {
+      margin-top: 40px;
+    }
+
     /* MaxMaher's lead sections share the .case-text-lead class with their sentence; keep the 46px gap of the other sections. */
     .project-case-page[data-case='maxmaher'] .case-flow > .case-text-lead {
       margin: 46px 0 0;
@@ -1640,21 +1628,15 @@ const vimeoUrl = (id: string) =>
       line-height: 34.265px;
     }
 
-    /* Mobile / Project Open / Outliant (Figma Frame 96). */
+    /* Mobile / Project Open / Outliant (Figma Frame 96): the hero keeps its Figma placement; the rest flows
+       with the Winona spacing, so nothing overlaps or leaves gaps at any phone width. */
     .project-case-page[data-case='outliant'] {
       position: relative;
       width: 100%;
-      /* Ends with the footer (placed from the card size in ProjectCaseFooter) plus the room kept for the bottom navigation. */
-      height: calc(2134.9633vw + 171.5px + 138px + min(341.05px, 87.4483vw) - 11.2vw + 44.376vw + min(48px, 12.307692vw) + env(safe-area-inset-bottom));
-      min-height: 0;
-      overflow: hidden;
     }
 
-    .project-case-page[data-case='outliant'] .project-case-canvas,
-    .project-case-page[data-case='outliant'] .case-flow {
-      position: static;
-      width: 100%;
-      margin: 0;
+    .project-case-page[data-case='outliant'] .project-case-canvas {
+      padding-top: 60.4287vw;
     }
 
     .project-case-page[data-case='outliant'] .editorial-case-hero {
@@ -1710,28 +1692,7 @@ const vimeoUrl = (id: string) =>
     }
 
     .project-case-page[data-case='outliant'] .case-intro {
-      display: contents;
-      width: auto;
-      margin: 0;
-    }
-
-    .project-case-page[data-case='outliant'] .case-intro > div {
-      position: absolute;
-      width: 95.384616vw;
-      margin: 0;
-    }
-
-    .project-case-page[data-case='outliant'] .case-intro > div:first-child {
-      top: 60.4287vw;
-      left: 2.307692vw;
-      width: 95.384616vw;
-      height: 45.8974vw;
-    }
-
-    .project-case-page[data-case='outliant'] .case-intro > div:nth-child(2) {
-      top: 116.5825vw;
-      left: 2.307692vw;
-      height: 90vw;
+      margin-top: 0;
     }
 
     .project-case-page[data-case='outliant'] .case-label {
@@ -1764,27 +1725,16 @@ const vimeoUrl = (id: string) =>
       line-height: 34px;
     }
 
-    .project-case-page[data-case='outliant'] .case-flow > * {
-      position: absolute;
-      left: 2.307692vw;
-      width: 95.384616vw;
-      margin: 0 !important;
-    }
-
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(1) { top: 216.839vw; height: 39.6241vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(2) { top: 258.191vw; height: 52.137vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(3) { top: 312.0559vw; height: 49.5553vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(4) { top: 371.9671vw; height: 259.7436vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(5) { top: 639.9159vw; height: 156.7518vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(6) { top: 798.2062vw; height: 51.6116vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(7) { top: 860.0743vw; height: 172.5641vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(8) { top: 1042.8949vw; height: 51.4477vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(9) { top: 1095.881vw; height: 51.4477vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(10) { top: 1157.5851vw; height: 290.2564vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(11) { top: 1456.0466vw; height: 51.6577vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(12) { top: 1517.9608vw; height: 181.2821vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(13) { top: 1709.4992vw; height: 206.2335vw; }
-    .project-case-page[data-case='outliant'] .case-flow > :nth-child(14) { top: 1925.989vw; height: 198.7179vw; }
+    /* Media blocks keep the Figma sizes, in flow. */
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(1) { height: 39.6241vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(2) { height: 52.137vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(3) { height: 49.5553vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(5) { height: 156.7518vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(6) { height: 51.6116vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(8) { height: 51.4477vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(9) { height: 51.4477vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(11) { height: 51.6577vw; }
+    .project-case-page[data-case='outliant'] .case-flow > :nth-child(13) { height: 206.2335vw; }
 
     .project-case-page[data-case='outliant'] .case-media-surface,
     .project-case-page[data-case='outliant'] .case-media-cell .case-media-surface {
@@ -1794,6 +1744,7 @@ const vimeoUrl = (id: string) =>
     }
 
     .project-case-page[data-case='outliant'] .case-media-pair {
+      position: relative;
       display: block;
     }
 
@@ -1820,6 +1771,7 @@ const vimeoUrl = (id: string) =>
 
     .project-case-page[data-case='outliant'] .case-text {
       display: block;
+      margin: 46px 0 0;
     }
 
     .project-case-page[data-case='outliant'] .case-text h2 {
@@ -1830,14 +1782,10 @@ const vimeoUrl = (id: string) =>
     }
 
     .project-case-page[data-case='outliant'] .case-text-content {
-      position: absolute;
-      top: 45px;
-      left: 0;
-      width: 100%;
-      margin: 0;
+      margin: 12px 0 0;
     }
 
-    .project-case-page[data-case='outliant'] .case-text-columns {
+    .project-case-page[data-case='outliant'] .case-text-content > .case-text-columns {
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -1885,13 +1833,8 @@ const vimeoUrl = (id: string) =>
     }
 
     .project-case-page[data-case='outliant'] .case-credits {
-      position: absolute;
-      top: 2134.9633vw;
-      left: 2.307692vw;
       display: block;
-      width: 95.384616vw;
-      height: 26.2014vw;
-      margin: 0;
+      margin-top: 40px;
       padding: 0; /* Credits as on Lumen and Winona: no rule above. */
       border: 0;
     }
@@ -1999,18 +1942,15 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='lumen'] .case-intro-columns,
     .project-case-page[data-case='lumen'] .case-flow > :not(:first-child),
     .project-case-page[data-case='lumen'] .case-credits { order: 1; }
-    .project-case-page[data-case='lumen'] .case-flow > :first-child { margin-top: 40px !important; }
-    .project-case-page[data-case='lumen'] .case-intro-columns { display: flex; flex-direction: column; gap: 16px; width: 100%; margin: 40px 0 0; }
+    .project-case-page[data-case='lumen'] .case-flow > :first-child { margin-top: 32px !important; }
+    .project-case-page[data-case='lumen'] .case-intro-columns { display: flex; flex-direction: column; gap: 16px; width: 100%; margin: 46px 0 0; }
     .project-case-page[data-case='lumen'] .case-intro-columns p { margin: 0; font-size: 24px; line-height: 34px; }
 
-    .project-case-page[data-case='lumen'] .case-flow > * { width: 100%; margin: 40px 0 0 !important; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(2),
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(3),
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(6),
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(10) { margin-top: 32px !important; }
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(4),
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(11),
-    .project-case-page[data-case='lumen'] .case-flow > :nth-child(16) { margin-top: 6px !important; }
+    /* Winona spacing: 6px between photos, 46px above a text section and 32px under it. */
+    .project-case-page[data-case='lumen'] .case-flow > * { width: 100%; margin: 6px 0 0 !important; }
+    .project-case-page[data-case='lumen'] .case-flow > .case-text { margin-top: 46px !important; }
+    .project-case-page[data-case='lumen'] .case-flow > .case-text + .case-media-block,
+    .project-case-page[data-case='lumen'] .case-flow > :nth-child(2) { margin-top: 32px !important; }
 
     .project-case-page[data-case='lumen'] .case-text { display: block; }
     .project-case-page[data-case='lumen'] .case-text h2 { margin: 0; font-size: 24px; line-height: 29px; text-transform: lowercase; }
