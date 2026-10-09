@@ -231,8 +231,8 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
     role: 'Art Director, Brand<br>Strategist & UX/UI<br>Design Lead',
     nutshell: `<a href="https://www.outliant.com/" target="_blank" rel="noreferrer">Outliant</a> is a fully remote digital agency that brings together strategy, design, technology, and growth. As the company evolved, a fundamental problem became increasingly visible: it had never clearly defined who it was, how it should position itself, or which part of the market it wanted to own.`,
     drags: [
-      { src: '/02_Projects/05_Outliant/01_OTL_Drag.webp', left: '59vw', top: '8vw', width: '21vw', rotation: '10deg' },
-      { src: '/02_Projects/05_Outliant/02_OTL_Drag.webp', left: '75vw', top: '14vw', width: '24vw', rotation: '-8deg' },
+      { src: '/02_Projects/05_Outliant/01_OTL_Drag.webp', left: '62.415vw', top: '3.98vw', width: '19.188vw', rotation: '10deg' },
+      { src: '/02_Projects/05_Outliant/02_OTL_Drag.webp', left: '71.547vw', top: '11.508vw', width: '25.55vw', rotation: '-8deg' },
     ],
     blocks: [
       single(video('1215371885', 'Outliant hero brand reel', '1556 / 665', '2530 / 1080')),

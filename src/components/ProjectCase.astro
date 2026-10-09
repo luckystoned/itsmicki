@@ -28,6 +28,7 @@ const mediaStyle = (media: CaseMedia) => {
 };
 const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
   `--cell-width:${media.width};--cell-height:${media.height};${mediaStyle(media)}`;
+// Phones get 1080p; the inline script after the case content asks Vimeo for 4K on wider screens.
 const vimeoUrl = (id: string) =>
   `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&controls=0&quality=1080p&dnt=1`;
 ---
@@ -172,7 +173,7 @@ const vimeoUrl = (id: string) =>
                     </div>
                   ) : item.vimeoId ? (
                     <iframe
-                      src={vimeoUrl(item.vimeoId)}
+                      data-vimeo-src={vimeoUrl(item.vimeoId)}
                       title={item.alt}
                       loading="lazy"
                       allow="autoplay; fullscreen; picture-in-picture"
@@ -224,7 +225,7 @@ const vimeoUrl = (id: string) =>
                         </div>
                       ) : item.vimeoId ? (
                         <iframe
-                          src={vimeoUrl(item.vimeoId)}
+                          data-vimeo-src={vimeoUrl(item.vimeoId)}
                           title={item.alt}
                           loading="lazy"
                           allow="autoplay; fullscreen; picture-in-picture"
@@ -251,6 +252,13 @@ const vimeoUrl = (id: string) =>
       </div>
     </section>
   </article>
+  <script is:inline>
+    // Vimeo embeds start loading here, at 4K on wide screens and 1080p on phones.
+    document.querySelectorAll('iframe[data-vimeo-src]').forEach((frame) => {
+      const src = frame.getAttribute('data-vimeo-src');
+      frame.src = matchMedia('(min-width: 761px)').matches ? src.replace('quality=1080p', 'quality=4k') : src;
+    });
+  </script>
 
   <ProjectCaseFooter currentSlug={caseStudy.slug} />
 </div>
@@ -484,6 +492,8 @@ const vimeoUrl = (id: string) =>
   const dragNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-case-drag]'));
   // Stickers hang from the finger or mouse on a loose spring: they trail, overshoot a little, swing with the
   // movement like a pendulum, lift while held and keep some momentum when released.
+  // The sticker last pressed comes to the front of everything on the page (below the navigation).
+  let frontLayer = 1000;
   dragNodes.forEach((node) => {
     let dragging = false;
     let pointerId = -1;
@@ -551,6 +561,7 @@ const vimeoUrl = (id: string) =>
       originY = targetY;
       velocityX = 0;
       velocityY = 0;
+      node.style.zIndex = String(++frontLayer);
       node.setPointerCapture(pointerId);
       node.classList.add('is-dragging');
       if (!reduceCaseMotion) run();
