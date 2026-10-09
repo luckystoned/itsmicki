@@ -29,12 +29,12 @@ const definitions = [
   },
   {
     slug: 'outliant',
-    label: '05_Outliant_Art Direction+Visual Design+UXUI Lead',
+    label: '06_Outliant_Art Direction+Visual Design+UXUI Lead',
     width: 'calc((97.23vw - 6px) * .57451)', height: 'auto', ratio: '54.67 / 63.01',
   },
   {
     slug: 'lumen',
-    label: '06_Lumen_Art Direction+Visual Design',
+    label: '05_Lumen_Art Direction+Visual Design',
     width: 'calc((97.23vw - 6px) * .42549)', height: 'auto', ratio: '40.49 / 40.24',
     vimeoId: '1234293739',
   },
@@ -108,8 +108,8 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody
       <ProjectGridItem project={maxMaher.project} label={maxMaher.label} style={maxMaher.style} cover={maxMaher.cover} vimeoId={maxMaher.vimeoId} />
 
       <div class="projects-row projects-row-secondary">
-        <ProjectGridItem project={outliant.project} label={outliant.label} style={outliant.style} cover={outliant.cover} vimeoId={outliant.vimeoId} />
         <ProjectGridItem project={lumen.project} label={lumen.label} style={lumen.style} cover={lumen.cover} vimeoId={lumen.vimeoId} />
+        <ProjectGridItem project={outliant.project} label={outliant.label} style={outliant.style} cover={outliant.cover} vimeoId={outliant.vimeoId} />
       </div>
 
       <ProjectGridItem project={blend360.project} label={blend360.label} style={blend360.style} cover={blend360.cover} vimeoId={blend360.vimeoId} />
@@ -735,13 +735,14 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody
       white-space: nowrap;
     }
 
+    /* Mobile proportions from Figma; in the second row Lumen now comes first and Outliant second. */
     .projects-row-primary .project-card:nth-child(1) .project-visual,
-    .projects-row-secondary .project-card:nth-child(1) .project-visual {
+    .projects-row-secondary .project-card:nth-child(2) .project-visual {
       aspect-ratio: 366 / 484.802429;
     }
 
     .projects-row-primary .project-card:nth-child(2) .project-visual,
-    .projects-row-secondary .project-card:nth-child(2) .project-visual {
+    .projects-row-secondary .project-card:nth-child(1) .project-visual {
       aspect-ratio: 366 / 363.78186;
     }
 
