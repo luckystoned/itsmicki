@@ -1,0 +1,82 @@
+---
+// Liquid ripple on the project cover images (desktop hover only): an animated SVG turbulence displaces the
+// image of the hovered card, and the card frame clips the rippled edges. Vimeo covers render in their own
+// cross-origin layer that browsers cannot filter, so video cards keep their regular hover. Off for touch and
+// reduced motion.
+---
+
+<svg class="liquid-hover-defs" aria-hidden="true" focusable="false" width="0" height="0">
+  <filter id="liquid-hover" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+    <feTurbulence data-liquid-noise type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="2" seed="7" result="noise" />
+    <feDisplacementMap data-liquid-map in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" />
+  </filter>
+</svg>
+
+<script>
+  const noise = document.querySelector<SVGFETurbulenceElement>('[data-liquid-noise]');
+  const map = document.querySelector<SVGFEDisplacementMapElement>('[data-liquid-map]');
+  const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+  const calm = matchMedia('(prefers-reduced-motion: reduce)');
+  const cards = '.carousel-card, .more-carousel-card, .project-card-inner';
+  const visuals = '.carousel-picture, .more-carousel-picture, .project-visual';
+  const strength = 46; // Displacement in px at full hover.
+
+  if (noise && map) {
+    let media: HTMLElement[] = [];
+    let amount = 0;
+    let goal = 0;
+    let running = false;
+    let previous = 0;
+
+    const apply = (value: string) => media.forEach((element) => { element.style.filter = value; });
+
+    const frame = (time: number) => {
+      const elapsed = previous ? Math.min(time - previous, 48) : 16;
+      previous = time;
+      amount += (goal - amount) * (1 - Math.pow(.9, elapsed / 16));
+      // The noise drifts slowly so the surface keeps moving like water while the pointer rests.
+      noise.setAttribute('baseFrequency', `${(.008 + .0025 * Math.sin(time * .0011)).toFixed(5)} ${(.014 + .003 * Math.cos(time * .0008)).toFixed(5)}`);
+      map.setAttribute('scale', (amount * strength).toFixed(2));
+      if (goal === 0 && amount < .01) {
+        apply('');
+        media = [];
+        running = false;
+        previous = 0;
+        map.setAttribute('scale', '0');
+        return;
+      }
+      requestAnimationFrame(frame);
+    };
+
+    const start = (card: Element) => {
+      if (!finePointer.matches || calm.matches) return;
+      const visual = card.querySelector(visuals);
+      if (!visual || visual.querySelector('iframe')) return;
+      const next = Array.from(visual.querySelectorAll<HTMLElement>('img'));
+      if (next[0] !== media[0]) { apply(''); amount = 0; }
+      media = next;
+      apply('url(#liquid-hover)');
+      goal = 1;
+      if (!running) { running = true; requestAnimationFrame(frame); }
+    };
+
+    document.addEventListener('pointerover', (event) => {
+      const card = (event.target as Element | null)?.closest?.(cards);
+      if (card && !card.contains(event.relatedTarget as Node | null)) start(card);
+    });
+    document.addEventListener('pointerout', (event) => {
+      const card = (event.target as Element | null)?.closest?.(cards);
+      if (card && !card.contains(event.relatedTarget as Node | null)) goal = 0;
+    });
+  }
+</script>
+
+<style>
+  .liquid-hover-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+</style>

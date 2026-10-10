@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import LiquidHover from '@/components/LiquidHover.astro';
 import { imageMetadata } from '@/data/imageMetadata';
 import { carouselProjects, desktopLength, vimeoBackground } from '@/data/carousel';
 
@@ -114,6 +115,7 @@ const loops = [0, 1, 2];
       }, { passive: false });
     }
   </script>
+  <LiquidHover />
 </BaseLayout>
 
 <style>

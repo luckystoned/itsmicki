@@ -2,6 +2,7 @@
 import { imageMetadata } from '@/data/imageMetadata';
 import { projectCases } from '@/data/projectCases';
 import { carouselProjects, desktopLength, vimeoBackground } from '@/data/carousel';
+import LiquidHover from '@/components/LiquidHover.astro';
 
 const { currentSlug } = Astro.props;
 const publishedCaseSlugs = new Set(Object.keys(projectCases));
@@ -58,6 +59,8 @@ const loops = [0, 1, 2];
     </span>
   </div>
 </footer>
+
+<LiquidHover />
 
 <style>
   .case-more {
