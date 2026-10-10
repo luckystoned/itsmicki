@@ -10,7 +10,6 @@ const loops = [0, 1, 2];
   hideFooter
   customCursor
   themeColor="#fafafa"
-  preconnectOrigins={['https://vumbnail.com']}
   preloadFonts={['/fonts/OTNeueMontreal-MediumSemiSqueezed.otf', '/fonts/OTNeueMontreal-MediumExtraSqueezed.otf']}
 >
   <div class="home-stage">
@@ -22,7 +21,7 @@ const loops = [0, 1, 2];
     <section class="home-carousel" aria-label="Selected projects" data-carousel data-reveal>
       <div class="carousel-track" data-carousel-track>
         {loops.map((loop) => carouselProjects.map((project, index) => {
-          const dimensions = imageMetadata[project.carouselCover] ?? (project.slug === 'amazon' ? { width: 640, height: 360 } : undefined);
+          const dimensions = imageMetadata[project.carouselCover];
           const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${desktopLength(project.carouselLayout.width)}`;
           const content = (
             <>

@@ -20,7 +20,7 @@ const loops = [0, 1, 2];
   <section class="more-carousel" aria-label="More selected projects" data-more-carousel data-case-text-reveal>
     <div class="more-carousel-track" data-more-carousel-track>
       {loops.map((loop) => carouselProjects.map((project) => {
-        const dimensions = imageMetadata[project.caseCarouselCover] ?? (project.slug === 'amazon' ? { width: 640, height: 360 } : undefined);
+        const dimensions = imageMetadata[project.caseCarouselCover];
         const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${desktopLength(project.carouselLayout.width)}`;
         const content = (
           <>

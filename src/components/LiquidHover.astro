@@ -2,7 +2,8 @@
 // Organic morphing on the project cover images (desktop hover only), after the Lumina-GL "Organic Morphism"
 // reference: the card tilts toward the pointer and follows it, and around the cursor the photo bends, melts and
 // refracts with a grainy frosted blur, leaving a trail that fades out, over a light film grain. Plain WebGL2, one shared canvas laid over the hovered
-// card. Vimeo covers live in a cross-origin layer that cannot be read as a texture, so video cards only tilt. Off for touch, reduced motion and browsers without WebGL2.
+// card. Vimeo covers live in a cross-origin layer that cannot be read as a texture, so on video cards the effect
+// runs on the video's still frame, which fades in over the video while hovered and out again on leave. Off for touch, reduced motion and browsers without WebGL2.
 ---
 
 <script>
@@ -14,7 +15,7 @@
   const canvas = document.createElement('canvas');
   canvas.className = 'liquid-hover-canvas';
   canvas.setAttribute('aria-hidden', 'true');
-  Object.assign(canvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', zIndex: '2', pointerEvents: 'none' });
+  Object.assign(canvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', zIndex: '2', pointerEvents: 'none', transition: 'opacity .35s cubic-bezier(.22, 1, .36, 1)' });
   const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, antialias: false });
 
   const VERT = `#version 300 es
@@ -142,6 +143,8 @@
     let last = { x: .5, y: .5 };
     let quiet = 0;
     let grain = 0;
+    // Video cards: the effect runs on the video's still frame, which fades in over the video while hovered.
+    let videoCard = false;
     // The card tilts in 3D toward the pointer and follows it a little, with some inertia.
     let tilt = { x: 0, y: 0, shiftX: 0, shiftY: 0 };
     const started = performance.now();
@@ -227,9 +230,11 @@
       gl.uniform1f(u(imageProgram, 'uGrain'), grain);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-      // Once the pointer has left and the trail has faded, hand the card back to the plain <img>.
+      // Once the pointer has left and the trail has faded, hand the card back to the plain <img> (or the video,
+      // which fades back in right away).
+      if (videoCard) canvas.style.opacity = hovering ? '1' : '0';
       quiet = hovering ? 0 : quiet + 1;
-      if (quiet > 90) { stop(); return; }
+      if (quiet > (videoCard ? 24 : 90)) { stop(); return; }
       requestAnimationFrame(frame);
     };
 
@@ -238,16 +243,22 @@
       const nextVisual = card.querySelector<HTMLElement>(VISUALS);
       if (!nextVisual) return;
       const photo = nextVisual.querySelector<HTMLImageElement>('img');
-      // Video cards (Vimeo) only tilt: their frames cannot be read into WebGL.
-      const nextImage = !nextVisual.querySelector('iframe') && photo?.complete && photo.naturalWidth ? photo : null;
+      // Vimeo frames cannot be read into WebGL, so video cards use their still frame (the <img> under the video).
+      const usable = photo?.complete && photo.naturalWidth && new URL(photo.currentSrc || photo.src, location.href).origin === location.origin;
+      const nextImage = usable ? photo : null;
       if (nextVisual !== visual) {
         canvas.remove();
         resetTilt(visual);
         tilt = { x: 0, y: 0, shiftX: 0, shiftY: 0 };
         visual = nextVisual;
         image = nextImage;
+        videoCard = !!nextVisual.querySelector('iframe');
         (card as HTMLElement).style.perspective = '900px';
-        if (image) { clearField(); visual.appendChild(canvas); }
+        if (image) {
+          clearField();
+          canvas.style.opacity = videoCard ? '0' : '1';
+          visual.appendChild(canvas);
+        }
       }
       hovering = true;
       move(event);
