@@ -1,82 +1,235 @@
 ---
-// Liquid ripple on the project cover images (desktop hover only): an animated SVG turbulence displaces the
-// image of the hovered card, and the card frame clips the rippled edges. Vimeo covers render in their own
-// cross-origin layer that browsers cannot filter, so video cards keep their regular hover. Off for touch and
-// reduced motion.
+// Organic morphing on the project cover images (desktop hover only), after the Lumina-GL "Organic Morphism"
+// reference: around the cursor the photo bends, melts and refracts with a grainy frosted blur, leaving a trail
+// that fades out; the rest of the photo stays untouched. Plain WebGL2, one shared canvas laid over the hovered
+// card. Vimeo covers live in a cross-origin layer that cannot be read as a texture, so video cards keep their
+// regular hover. Off for touch, reduced motion and browsers without WebGL2.
 ---
 
-<svg class="liquid-hover-defs" aria-hidden="true" focusable="false" width="0" height="0">
-  <filter id="liquid-hover" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-    <feTurbulence data-liquid-noise type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="2" seed="7" result="noise" />
-    <feDisplacementMap data-liquid-map in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" />
-  </filter>
-</svg>
-
 <script>
-  const noise = document.querySelector<SVGFETurbulenceElement>('[data-liquid-noise]');
-  const map = document.querySelector<SVGFEDisplacementMapElement>('[data-liquid-map]');
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
-  const cards = '.carousel-card, .more-carousel-card, .project-card-inner';
-  const visuals = '.carousel-picture, .more-carousel-picture, .project-visual';
-  const strength = 46; // Displacement in px at full hover.
+  const CARDS = '.carousel-card, .more-carousel-card, .project-card-inner';
+  const VISUALS = '.carousel-picture, .more-carousel-picture, .project-visual';
 
-  if (noise && map) {
-    let media: HTMLElement[] = [];
-    let amount = 0;
-    let goal = 0;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'liquid-hover-canvas';
+  canvas.setAttribute('aria-hidden', 'true');
+  Object.assign(canvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', zIndex: '2', pointerEvents: 'none' });
+  const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, antialias: false });
+
+  const VERT = `#version 300 es
+  in vec2 aPos; out vec2 vUv;
+  void main() { vUv = vec2(aPos.x * .5 + .5, .5 - aPos.y * .5); gl_Position = vec4(aPos, 0., 1.); }`;
+
+  // Energy field: decays every frame; the cursor splats energy and its velocity into it, leaving a trail.
+  const ENERGY = `#version 300 es
+  precision highp float;
+  in vec2 vUv; out vec4 outColor;
+  uniform sampler2D uPrev; uniform vec2 uMouse; uniform vec2 uVel; uniform float uAspect; uniform float uSplat; uniform float uDecay;
+  void main() {
+    vec4 prev = texture(uPrev, vUv);
+    float e = prev.r * uDecay;
+    vec2 vel = (prev.gb - .5) * uDecay;
+    vec2 d = (vUv - uMouse) * vec2(uAspect, 1.);
+    float s = exp(-dot(d, d) / .018) * uSplat;
+    e += s;
+    vel += s * uVel;
+    outColor = vec4(clamp(e, 0., 1.), clamp(vel * .5 + .5, 0., 1.), 1.);
+  }`;
+
+  const IMAGE = `#version 300 es
+  precision highp float;
+  in vec2 vUv; out vec4 outColor;
+  uniform sampler2D uImage; uniform sampler2D uEnergy; uniform vec4 uRect; uniform vec2 uCover; uniform float uTime; uniform vec2 uRes;
+  float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  float noise(vec2 p) {
+    vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3. - 2. * f);
+    return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
+  }
+  vec2 texUv(vec2 uv) {
+    vec2 local = (uv - uRect.xy) / uRect.zw;
+    return clamp((local - .5) * uCover + .5, 0., 1.);
+  }
+  void main() {
+    vec4 field = texture(uEnergy, vUv);
+    float e = smoothstep(0., .85, field.r);
+    vec2 vel = field.gb - .5;
+    vec2 flow = vec2(noise(vUv * 4. + uTime * .35), noise(vUv * 4. + 7.3 - uTime * .3)) - .5;
+    vec2 offset = (flow * .11 + vel * .09) * e;
+    vec3 color = vec3(0.);
+    for (int i = 0; i < 10; i++) {
+      float fi = float(i);
+      vec2 jitter = (vec2(hash(vUv * uRes + fi * 13.1 + uTime), hash(vUv * uRes - fi * 7.7 + uTime * 1.3)) - .5) * .045 * e;
+      color += texture(uImage, texUv(vUv + offset + jitter)).rgb;
+    }
+    outColor = vec4(color / 10., 1.);
+  }`;
+
+  const compile = (type: number, source: string) => {
+    const shader = gl!.createShader(type)!;
+    gl!.shaderSource(shader, source);
+    gl!.compileShader(shader);
+    return shader;
+  };
+  const program = (fragment: string) => {
+    const p = gl!.createProgram()!;
+    gl!.attachShader(p, compile(gl!.VERTEX_SHADER, VERT));
+    gl!.attachShader(p, compile(gl!.FRAGMENT_SHADER, fragment));
+    gl!.bindAttribLocation(p, 0, 'aPos');
+    gl!.linkProgram(p);
+    return gl!.getProgramParameter(p, gl!.LINK_STATUS) ? p : null;
+  };
+
+  const energyProgram = gl && program(ENERGY);
+  const imageProgram = gl && program(IMAGE);
+
+  if (gl && energyProgram && imageProgram) {
+    const quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+    const FIELD = 128;
+    const makeTarget = () => {
+      const texture = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FIELD, FIELD, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      const framebuffer = gl.createFramebuffer()!;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      return { texture, framebuffer };
+    };
+    let targets = [makeTarget(), makeTarget()];
+    const clearField = () => targets.forEach(({ framebuffer }) => {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+      gl.clearColor(0, .5, .5, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    });
+
+    const textures = new Map<string, WebGLTexture>();
+    const textureFor = (img: HTMLImageElement) => {
+      const key = img.currentSrc || img.src;
+      let texture = textures.get(key);
+      if (!texture) {
+        texture = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        textures.set(key, texture);
+      }
+      return texture;
+    };
+
+    const u = (p: WebGLProgram, name: string) => gl.getUniformLocation(p, name);
+    let visual: HTMLElement | null = null;
+    let image: HTMLImageElement | null = null;
+    let hovering = false;
     let running = false;
-    let previous = 0;
+    let mouse = { x: .5, y: .5 };
+    let last = { x: .5, y: .5 };
+    let quiet = 0;
+    const started = performance.now();
 
-    const apply = (value: string) => media.forEach((element) => { element.style.filter = value; });
+    const stop = () => {
+      running = false;
+      canvas.remove();
+      visual = null;
+      image = null;
+    };
 
     const frame = (time: number) => {
-      const elapsed = previous ? Math.min(time - previous, 48) : 16;
-      previous = time;
-      amount += (goal - amount) * (1 - Math.pow(.9, elapsed / 16));
-      // The noise drifts slowly so the surface keeps moving like water while the pointer rests.
-      noise.setAttribute('baseFrequency', `${(.008 + .0025 * Math.sin(time * .0011)).toFixed(5)} ${(.014 + .003 * Math.cos(time * .0008)).toFixed(5)}`);
-      map.setAttribute('scale', (amount * strength).toFixed(2));
-      if (goal === 0 && amount < .01) {
-        apply('');
-        media = [];
-        running = false;
-        previous = 0;
-        map.setAttribute('scale', '0');
-        return;
-      }
+      if (!visual || !image) { stop(); return; }
+      const box = visual.getBoundingClientRect();
+      const ratio = Math.min(devicePixelRatio || 1, 2);
+      const width = Math.max(1, Math.round(box.width * ratio));
+      const height = Math.max(1, Math.round(box.height * ratio));
+      if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+
+      // 1. Energy field.
+      const velocity = { x: (mouse.x - last.x) * 6, y: (mouse.y - last.y) * 6 };
+      const speed = Math.hypot(velocity.x, velocity.y);
+      last = { ...mouse };
+      gl.useProgram(energyProgram);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, targets[1].framebuffer);
+      gl.viewport(0, 0, FIELD, FIELD);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, targets[0].texture);
+      gl.uniform1i(u(energyProgram, 'uPrev'), 0);
+      gl.uniform2f(u(energyProgram, 'uMouse'), mouse.x, mouse.y);
+      gl.uniform2f(u(energyProgram, 'uVel'), velocity.x, velocity.y);
+      gl.uniform1f(u(energyProgram, 'uAspect'), box.width / box.height);
+      gl.uniform1f(u(energyProgram, 'uSplat'), hovering ? Math.min(.55, .05 + speed * 2.4) : 0);
+      gl.uniform1f(u(energyProgram, 'uDecay'), .955);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      targets = [targets[1], targets[0]];
+
+      // 2. The photo, sampled through the field, placed exactly where the <img> is (parallax and hover scale included).
+      const rect = image.getBoundingClientRect();
+      const boxAspect = rect.width / rect.height;
+      const imageAspect = image.naturalWidth / image.naturalHeight;
+      const cover = boxAspect > imageAspect ? [1, imageAspect / boxAspect] : [boxAspect / imageAspect, 1];
+      gl.useProgram(imageProgram);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, width, height);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, textureFor(image));
+      gl.uniform1i(u(imageProgram, 'uImage'), 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, targets[0].texture);
+      gl.uniform1i(u(imageProgram, 'uEnergy'), 1);
+      gl.uniform4f(u(imageProgram, 'uRect'), (rect.left - box.left) / box.width, (rect.top - box.top) / box.height, rect.width / box.width, rect.height / box.height);
+      gl.uniform2f(u(imageProgram, 'uCover'), cover[0], cover[1]);
+      gl.uniform1f(u(imageProgram, 'uTime'), (time - started) / 1000);
+      gl.uniform2f(u(imageProgram, 'uRes'), width, height);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      // Once the pointer has left and the trail has faded, hand the card back to the plain <img>.
+      quiet = hovering ? 0 : quiet + 1;
+      if (quiet > 90) { stop(); return; }
       requestAnimationFrame(frame);
     };
 
-    const start = (card: Element) => {
+    const pointerIn = (card: Element, event: PointerEvent) => {
       if (!finePointer.matches || calm.matches) return;
-      const visual = card.querySelector(visuals);
-      if (!visual || visual.querySelector('iframe')) return;
-      const next = Array.from(visual.querySelectorAll<HTMLElement>('img'));
-      if (next[0] !== media[0]) { apply(''); amount = 0; }
-      media = next;
-      apply('url(#liquid-hover)');
-      goal = 1;
+      const nextVisual = card.querySelector<HTMLElement>(VISUALS);
+      const nextImage = nextVisual?.querySelector<HTMLImageElement>('img');
+      if (!nextVisual || !nextImage || nextVisual.querySelector('iframe') || !nextImage.complete || !nextImage.naturalWidth) return;
+      if (nextVisual !== visual) {
+        visual = nextVisual;
+        image = nextImage;
+        clearField();
+        visual.appendChild(canvas);
+      }
+      hovering = true;
+      move(event);
+      last = { ...mouse };
       if (!running) { running = true; requestAnimationFrame(frame); }
     };
 
+    const move = (event: PointerEvent) => {
+      if (!visual) return;
+      const box = visual.getBoundingClientRect();
+      mouse = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height };
+    };
+
     document.addEventListener('pointerover', (event) => {
-      const card = (event.target as Element | null)?.closest?.(cards);
-      if (card && !card.contains(event.relatedTarget as Node | null)) start(card);
+      const card = (event.target as Element | null)?.closest?.(CARDS);
+      if (card && !card.contains(event.relatedTarget as Node | null)) pointerIn(card, event);
     });
     document.addEventListener('pointerout', (event) => {
-      const card = (event.target as Element | null)?.closest?.(cards);
-      if (card && !card.contains(event.relatedTarget as Node | null)) goal = 0;
+      const card = (event.target as Element | null)?.closest?.(CARDS);
+      if (card && !card.contains(event.relatedTarget as Node | null)) hovering = false;
     });
+    document.addEventListener('pointermove', (event) => { if (hovering) move(event); }, { passive: true });
   }
 </script>
-
-<style>
-  .liquid-hover-defs {
-    position: absolute;
-    width: 0;
-    height: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
-</style>
