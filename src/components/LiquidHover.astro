@@ -159,10 +159,6 @@
 
     const frame = (time: number) => {
       if (!visual) { stop(); return; }
-      // Follow: the card drifts up to 10px toward the pointer, flat (no tilt or perspective), back to rest on leave.
-      tilt.shiftX += ((hovering ? (mouse.x - .5) * 20 : 0) - tilt.shiftX) * .1;
-      tilt.shiftY += ((hovering ? (mouse.y - .5) * 20 : 0) - tilt.shiftY) * .1;
-      visual.style.translate = `${tilt.shiftX.toFixed(2)}px ${tilt.shiftY.toFixed(2)}px`;
       if (!image) {
         quiet = hovering ? 0 : quiet + 1;
         if (quiet > 90) { stop(); return; }
