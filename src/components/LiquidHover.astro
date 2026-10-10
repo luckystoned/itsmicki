@@ -1,9 +1,8 @@
 ---
 // Organic morphing on the project cover images (desktop hover only), after the Lumina-GL "Organic Morphism"
-// reference: around the cursor the photo bends, melts and refracts with a grainy frosted blur, leaving a trail
-// that fades out; the rest of the photo stays untouched. Plain WebGL2, one shared canvas laid over the hovered
-// card. Vimeo covers live in a cross-origin layer that cannot be read as a texture, so video cards keep their
-// regular hover. Off for touch, reduced motion and browsers without WebGL2.
+// reference: the card tilts toward the pointer and follows it, and around the cursor the photo bends, melts and
+// refracts with a grainy frosted blur, leaving a trail that fades out, over a light film grain. Plain WebGL2, one shared canvas laid over the hovered
+// card. Vimeo covers live in a cross-origin layer that cannot be read as a texture, so video cards only tilt. Off for touch, reduced motion and browsers without WebGL2.
 ---
 
 <script>
@@ -41,7 +40,7 @@
   const IMAGE = `#version 300 es
   precision highp float;
   in vec2 vUv; out vec4 outColor;
-  uniform sampler2D uImage; uniform sampler2D uEnergy; uniform vec4 uRect; uniform vec2 uCover; uniform float uTime; uniform vec2 uRes;
+  uniform sampler2D uImage; uniform sampler2D uEnergy; uniform vec4 uRect; uniform vec2 uCover; uniform float uTime; uniform vec2 uRes; uniform float uGrain;
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float noise(vec2 p) {
     vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3. - 2. * f);
@@ -63,7 +62,11 @@
       vec2 jitter = (vec2(hash(vUv * uRes + fi * 13.1 + uTime), hash(vUv * uRes - fi * 7.7 + uTime * 1.3)) - .5) * .045 * e;
       color += texture(uImage, texUv(vUv + offset + jitter)).rgb;
     }
-    outColor = vec4(color / 10., 1.);
+    color /= 10.;
+    // Film grain: a light animated grain over the whole hovered photo, much stronger inside the melted area.
+    float grain = hash(floor(vUv * uRes / 1.5) + fract(uTime * 7.) * 91.7) - .5;
+    color += grain * (uGrain * .07 + e * .22);
+    outColor = vec4(color, 1.);
   }`;
 
   const compile = (type: number, source: string) => {
@@ -138,17 +141,47 @@
     let mouse = { x: .5, y: .5 };
     let last = { x: .5, y: .5 };
     let quiet = 0;
+    let grain = 0;
+    // The card tilts in 3D toward the pointer and follows it a little, with some inertia.
+    let tilt = { x: 0, y: 0, shiftX: 0, shiftY: 0 };
     const started = performance.now();
+    const resetTilt = (element: HTMLElement | null) => {
+      if (!element) return;
+      element.style.rotate = '';
+      element.style.translate = '';
+      const card = element.closest<HTMLElement>(CARDS);
+      if (card) card.style.perspective = '';
+    };
 
     const stop = () => {
       running = false;
       canvas.remove();
+      resetTilt(visual);
       visual = null;
       image = null;
+      tilt = { x: 0, y: 0, shiftX: 0, shiftY: 0 };
+      grain = 0;
     };
 
     const frame = (time: number) => {
-      if (!visual || !image) { stop(); return; }
+      if (!visual) { stop(); return; }
+      // Tilt and follow: up to 7° toward the pointer and 10px of travel, eased; back to rest on leave.
+      const aimX = hovering ? (mouse.y - .5) * -14 : 0;
+      const aimY = hovering ? (mouse.x - .5) * 14 : 0;
+      tilt.x += (aimX - tilt.x) * .1;
+      tilt.y += (aimY - tilt.y) * .1;
+      tilt.shiftX += ((hovering ? (mouse.x - .5) * 20 : 0) - tilt.shiftX) * .1;
+      tilt.shiftY += ((hovering ? (mouse.y - .5) * 20 : 0) - tilt.shiftY) * .1;
+      const angle = Math.hypot(tilt.x, tilt.y);
+      visual.style.rotate = angle > .01 ? `${tilt.x.toFixed(3)} ${tilt.y.toFixed(3)} 0 ${angle.toFixed(2)}deg` : '';
+      visual.style.translate = `${tilt.shiftX.toFixed(2)}px ${tilt.shiftY.toFixed(2)}px`;
+      grain += ((hovering ? 1 : 0) - grain) * .08;
+      if (!image) {
+        quiet = hovering ? 0 : quiet + 1;
+        if (quiet > 90) { stop(); return; }
+        requestAnimationFrame(frame);
+        return;
+      }
       const box = visual.getBoundingClientRect();
       const ratio = Math.min(devicePixelRatio || 1, 2);
       const width = Math.max(1, Math.round(box.width * ratio));
@@ -191,6 +224,7 @@
       gl.uniform2f(u(imageProgram, 'uCover'), cover[0], cover[1]);
       gl.uniform1f(u(imageProgram, 'uTime'), (time - started) / 1000);
       gl.uniform2f(u(imageProgram, 'uRes'), width, height);
+      gl.uniform1f(u(imageProgram, 'uGrain'), grain);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
       // Once the pointer has left and the trail has faded, hand the card back to the plain <img>.
@@ -202,13 +236,18 @@
     const pointerIn = (card: Element, event: PointerEvent) => {
       if (!finePointer.matches || calm.matches) return;
       const nextVisual = card.querySelector<HTMLElement>(VISUALS);
-      const nextImage = nextVisual?.querySelector<HTMLImageElement>('img');
-      if (!nextVisual || !nextImage || nextVisual.querySelector('iframe') || !nextImage.complete || !nextImage.naturalWidth) return;
+      if (!nextVisual) return;
+      const photo = nextVisual.querySelector<HTMLImageElement>('img');
+      // Video cards (Vimeo) only tilt: their frames cannot be read into WebGL.
+      const nextImage = !nextVisual.querySelector('iframe') && photo?.complete && photo.naturalWidth ? photo : null;
       if (nextVisual !== visual) {
+        canvas.remove();
+        resetTilt(visual);
+        tilt = { x: 0, y: 0, shiftX: 0, shiftY: 0 };
         visual = nextVisual;
         image = nextImage;
-        clearField();
-        visual.appendChild(canvas);
+        (card as HTMLElement).style.perspective = '900px';
+        if (image) { clearField(); visual.appendChild(canvas); }
       }
       hovering = true;
       move(event);
