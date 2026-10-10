@@ -815,15 +815,20 @@ const vimeoUrl = (id: string) =>
     user-select: none;
     touch-action: none;
     transform: translate3d(var(--drag-x), calc(var(--drag-y) - var(--drag-lift)), 0) rotate(calc(var(--drag-rotation) + var(--drag-tilt, 0deg))) scale(var(--drag-scale, 1));
-    cursor: grab !important;
     will-change: transform;
+  }
+
+  /* System grab cursors only when the custom hand cursor is not drawn (touch, keyboard, no pointer yet);
+     otherwise the hand from SiteCursor is the only cursor on screen, also while dragging. */
+  :root:not(.site-pointer-on) .case-drag {
+    cursor: grab !important;
   }
 
   /* Outliant: the keys sit in front of the T-shirt until another sticker is picked up. */
   .project-case-page[data-case='outliant'] .case-drag:nth-of-type(2) { z-index: 13; }
   .project-case-page[data-case='outliant'] .case-drag:nth-of-type(3) { z-index: 12; }
 
-  .case-drag.is-dragging {
+  :root:not(.site-pointer-on) .case-drag.is-dragging {
     cursor: grabbing !important;
   }
 
