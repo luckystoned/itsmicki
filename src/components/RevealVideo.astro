@@ -33,10 +33,12 @@ const { top, under, poster, label } = Astro.props;
     grain: .5, // Fine, jagged detail on the edge (notches and small islands), continuous so each contour stays one line.
     stroke: [.96, .94, .88], // Ivory stroke.
     strokeWidth: 1.3, // Half the line width, in CSS pixels.
-    ink: .8, // Printed look: how much the ink thins out and breaks into grain along the line (0 = solid line).
-    asciiCell: 9, // ASCII cell size on the negative, in CSS pixels.
-    asciiGlyphs: ' .,:;-=+*#%@', // From dark to light.
-    asciiBackground: .42, // Each cell's background: its own colour, this much of it (the characters carry the full colour, a little brighter).
+    inkBreak: .8, // Printed look: how much the ink thins out and breaks into grain (0 = solid).
+    asciiCell: 11, // ASCII cell size, in CSS pixels.
+    asciiGlyphs: ' .:-+=', // From dark to light: a sparse, minimal set.
+    paper: [.075, .075, .07], // The negative is printed in two tones: ivory ink (the stroke's) on black paper.
+    ink: [.96, .94, .88],
+    particles: 1, // How many small islands the fading trail leaves behind (0 = none).
   };
 
   const VERT = `#version 300 es
@@ -64,18 +66,21 @@ const { top, under, poster, label } = Astro.props;
         outColor = vec4(mix(f.x, around, .08) * uKeep, f.yz * uVelKeep, 1.); }`,
     display: `${HEAD}${NOISE}uniform sampler2D uField; uniform sampler2D uTop; uniform sampler2D uUnder; uniform vec2 uCover; uniform float uTime;
       uniform float uWobble; uniform float uEdgeNoise; uniform float uGrain; uniform vec3 uStroke; uniform float uStrokeWidth; uniform float uAspect; uniform float uInk;
-      uniform sampler2D uAtlas; uniform float uGlyphs; uniform float uCell; uniform vec2 uResolution; uniform float uAsciiBackground;
-      // The negative as ASCII: one character per cell, chosen by the cell's brightness and drawn in its own colour.
+      uniform sampler2D uAtlas; uniform float uGlyphs; uniform float uCell; uniform vec2 uResolution; uniform vec3 uPaper; uniform vec3 uInkColor; uniform float uParticles;
+      // The negative, printed as ASCII: one character per cell, denser where the image is lighter, in ivory ink on black
+      // paper; the ink thins out and breaks into grain like a print.
       vec3 ascii() {
         vec2 cell = floor(gl_FragCoord.xy / uCell);
         vec2 local = fract(gl_FragCoord.xy / uCell);
         vec2 center = (cell + .5) * uCell / uResolution;
         vec2 uv = (vec2(center.x, 1. - center.y) - .5) * uCover + .5;
-        vec3 c = texture(uUnder, uv).rgb;
-        float lum = dot(c, vec3(.299, .587, .114));
+        float lum = dot(texture(uUnder, uv).rgb, vec3(.299, .587, .114));
         float index = floor(clamp(lum, 0., 1.) * (uGlyphs - 1.) + .5);
         float glyph = texture(uAtlas, vec2((index + local.x) / uGlyphs, 1. - local.y)).r;
-        return mix(c * uAsciiBackground, min(vec3(1.), c * 1.3 + .04), glyph);
+        float density = 1. - uInk * (1. - noise(gl_FragCoord.xy * .09)) * .6;
+        float printed = glyph * step(hash(floor(gl_FragCoord.xy) + 17.) * uInk * .8, glyph * density);
+        vec3 paper = uPaper + (noise(gl_FragCoord.xy * .35) - .5) * .03;
+        return mix(paper, uInkColor, printed);
       }
       void main() {
         vec2 video = (vUv - .5) * uCover + .5;
@@ -87,9 +92,13 @@ const { top, under, poster, label } = Astro.props;
         float jag = (noise(p * 16. - uTime * .2) - .5) + (noise(p * 36.8 + 3.1) - .5) * .7 + (noise(p * 81.6 + 9.7) - .5) * .45;
         float shape = (fbm(p * 3.2 + uTime * .04) - .5) * uEdgeNoise + jag * uGrain;
         float m = open + shape * smoothstep(0., .18, open);
+        // The fading trail sheds small particles: little islands, each with its own outline.
+        float fringe = smoothstep(.02, .1, open) * (1. - smoothstep(.32, .52, open));
+        float bits = min(1., step(1. - .17 * uParticles, noise(p * 60. + floor(uTime * 2.) * 3.7)) + step(1. - .12 * uParticles, noise(p * 120. + 11.3)));
+        m = max(m, (.5 + .35 * fringe) * bits * step(.01, fringe));
         float inside = step(.5, m);
         // Film grain over the negative.
-        vec3 under = ascii() + (hash(gl_FragCoord.xy + floor(uTime * 24.) * 13.) - .5) * .05;
+        vec3 under = ascii();
         vec3 color = mix(top, under, inside);
         // An ivory line on every contour, printed: its ink density wanders along it and breaks into fine grain.
         float press = .55 + .9 * noise(gl_FragCoord.xy * .045 + 4.2); // Heavier and lighter ink along the line.
@@ -225,6 +234,69 @@ const { top, under, poster, label } = Astro.props;
     root.addEventListener('touchmove', touchAt, { passive: true });
     root.addEventListener('touchend', () => { pointer = null; last = null; }, { passive: true });
 
+    // Camera: the nose becomes the brush. The face detector (MediaPipe, loaded only when asked for) runs in the
+    // browser; the camera image never leaves the device. The button lives in the caption under the frame.
+    const cameraButtons = [...(root.closest('section') ?? document).querySelectorAll<HTMLButtonElement>('[data-reveal-camera]')];
+    const cameraVideo = document.createElement('video');
+    cameraVideo.muted = true;
+    cameraVideo.playsInline = true;
+    let stream: MediaStream | null = null;
+    let detector: { detectForVideo: (video: HTMLVideoElement, time: number) => { detections: Array<{ keypoints: Array<{ x: number; y: number }> }> } } | null = null;
+    let nose: { x: number; y: number } | null = null;
+    const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
+    const cameraOff = () => {
+      stream?.getTracks().forEach((track) => track.stop());
+      stream = null;
+      nose = null;
+      pointer = null;
+      last = null;
+      setLabel('turn the camera on', false);
+    };
+    const track = () => {
+      if (!stream) return;
+      if (detector && cameraVideo.readyState >= 2) {
+        const face = detector.detectForVideo(cameraVideo, performance.now()).detections[0];
+        const tip = face?.keypoints[2]; // Nose tip.
+        if (tip) {
+          // Mirrored like a selfie, and stretched so small head moves reach the whole frame.
+          const target = { x: Math.min(1, Math.max(0, .5 - (tip.x - .5) * 1.8)), y: Math.min(1, Math.max(0, .5 + (tip.y - .5) * 1.8)) };
+          nose = nose ? { x: nose.x + (target.x - nose.x) * .35, y: nose.y + (target.y - nose.y) * .35 } : target;
+          pointer = { ...nose };
+          lastContact = performance.now();
+          start();
+        }
+      }
+      requestAnimationFrame(track);
+    };
+    const cameraOn = async () => {
+      setLabel('starting the camera…', true);
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+        cameraVideo.srcObject = stream;
+        await cameraVideo.play();
+        if (!detector) {
+          const version = '0.10.14';
+          const vision = await import(/* @vite-ignore */ `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/vision_bundle.mjs`);
+          const files = await vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/wasm`);
+          detector = await vision.FaceDetector.createFromOptions(files, {
+            baseOptions: { modelAssetPath: '/models/blaze_face_short_range.tflite', delegate: 'GPU' },
+            runningMode: 'VIDEO',
+            minDetectionConfidence: .5,
+          });
+        }
+        if (!stream) return; // Turned off while loading.
+        setLabel('turn the camera off', true);
+        requestAnimationFrame(track);
+      } catch {
+        cameraOff();
+        setLabel('camera unavailable', false);
+      }
+    };
+    cameraButtons.forEach((button) => button.addEventListener('click', () => (stream ? cameraOff() : cameraOn())));
+    // The camera option only shows where the effect runs and the browser can use a camera.
+    if ('mediaDevices' in navigator) (root.closest('section') ?? document).querySelectorAll<HTMLElement>('[data-reveal-camera-option]').forEach((option) => { option.hidden = false; });
+    addEventListener('pagehide', cameraOff);
+
     let running = false, previous = 0, ready = false;
     function start() { if (!running && visible) { running = true; previous = 0; requestAnimationFrame(frame); } }
 
@@ -272,8 +344,9 @@ const { top, under, poster, label } = Astro.props;
         const cover = aspect > videoAspect ? [1, videoAspect / aspect] : [aspect / videoAspect, 1];
         run(programs.display!, null, { uField: field.read.texture, uTop: topTexture, uUnder: underTexture, uAtlas: atlasTexture }, {
           uCover: cover, uTime: time / 1000, uWobble: SETTINGS.wobble, uEdgeNoise: SETTINGS.edgeNoise, uGrain: SETTINGS.grain,
-          uStroke: SETTINGS.stroke, uStrokeWidth: SETTINGS.strokeWidth * ratio, uAspect: aspect, uInk: SETTINGS.ink,
-          uGlyphs: SETTINGS.asciiGlyphs.length, uCell: SETTINGS.asciiCell * ratio, uResolution: [canvas.width, canvas.height], uAsciiBackground: SETTINGS.asciiBackground,
+          uStroke: SETTINGS.stroke, uStrokeWidth: SETTINGS.strokeWidth * ratio, uAspect: aspect, uInk: SETTINGS.inkBreak,
+          uGlyphs: SETTINGS.asciiGlyphs.length, uCell: SETTINGS.asciiCell * ratio, uResolution: [canvas.width, canvas.height],
+          uPaper: SETTINGS.paper, uInkColor: SETTINGS.ink, uParticles: SETTINGS.particles,
         });
         if (!ready) { ready = true; root.classList.add('is-drawn'); }
       }

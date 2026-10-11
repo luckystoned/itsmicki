@@ -190,6 +190,11 @@ const vimeoUrl = (id: string) =>
                 </div>
               </div>
               {item.caption && <p class="case-media-caption" data-case-text-reveal>{item.caption}</p>}
+              {item.type === 'reveal' && (
+                <p class="case-media-caption case-reveal-caption" data-case-text-reveal>
+                  hover, drag<span data-reveal-camera-option hidden> or <button type="button" class="case-reveal-camera" data-reveal-camera aria-pressed="false">turn the camera on</button></span> for this one ↑
+                </p>
+              )}
             </section>
           );
         }
@@ -1019,6 +1024,25 @@ const vimeoUrl = (id: string) =>
     transform: translate(-50%, -50%) rotate(90deg);
   }
 
+  .case-reveal-caption {
+    margin-top: .6vw;
+    font-size: 1.25vw;
+  }
+
+  /* "turn the camera on" reads as an underlined word in the caption. */
+  .case-reveal-camera {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .12em;
+    cursor: pointer;
+  }
+
   .case-carousel,
   .case-carousel-track {
     width: 100%;
@@ -1527,6 +1551,13 @@ const vimeoUrl = (id: string) =>
     /* The UGC caption only shows on desktop. */
     .case-media-caption {
       display: none;
+    }
+
+    /* The interactive frame keeps its how-to line on phones. */
+    .case-media-caption.case-reveal-caption {
+      display: block;
+      margin-top: 8px;
+      font-size: min(14px, 3.589744vw);
     }
 
     /* Winona's synopsis is one paragraph split into two columns on desktop: on phones it reads as one. */
