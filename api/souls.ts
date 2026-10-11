@@ -5,7 +5,8 @@
  *
  * Nothing of the photo is stored: it is read on the visitor's device, and all that is sent is a short description of
  * the pet, e.g. "c12_f2d9b0b98a5e4a3326": c(at) or d(og), its size (0–2), its markings (0 plain, 1 tabby, 2 patches)
- * and three colours. It is kept in the soul's own name, so listing the store is enough to draw everyone.
+ * and three colours, then its name (hex of its UTF-8). It is kept in the soul's own pathname, so listing the store is
+ * enough to draw everyone.
  *
  *   GET  /api/souls               → { souls: string[] (names, oldest first), cap }
  *   POST /api/souls { look }      → 201 { id } · 409 { full: true } when the place is full · 400 if it is not a look
@@ -14,7 +15,7 @@ import { list, put } from '@vercel/blob';
 
 const CAP = 42; // Souls the place holds; then it is full, for good.
 const PREFIX = 'souls/';
-const LOOK = /^[cd][012][012]_[0-9a-f]{18}$/;
+const LOOK = /^[cd][012][012]_[0-9a-f]{18}(_[0-9a-f]{2,40})?$/; // Look, then the name as hex of its UTF-8 (up to 20 bytes).
 
 const json = (body: unknown, status = 200, cache = 'no-store') =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': cache } });
@@ -36,7 +37,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (Number(request.headers.get('content-length') ?? 0) > 200) return json({ error: 'Too large' }, 413);
+  if (Number(request.headers.get('content-length') ?? 0) > 300) return json({ error: 'Too large' }, 413);
   const body = await request.json().catch(() => null) as { look?: unknown } | null;
   const look = typeof body?.look === 'string' ? body.look : '';
   if (!LOOK.test(look)) return json({ error: 'Not a look' }, 400);
