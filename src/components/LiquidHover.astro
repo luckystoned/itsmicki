@@ -39,7 +39,9 @@
   canvas.className = 'liquid-hover-canvas';
   canvas.setAttribute('aria-hidden', 'true');
   Object.assign(canvas.style, { position: 'fixed', left: '0', top: '0', zIndex: '1500', pointerEvents: 'none' });
-  const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, alpha: true, antialias: false });
+  // Premultiplied output: iOS WebKit composites non-premultiplied canvases as if they were premultiplied, which turned the
+  // transparent margin around the card into a white veil.
+  const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, alpha: true, antialias: false });
   const floatTargets = !!gl?.getExtension('EXT_color_buffer_float');
 
   const VERT = `#version 300 es
@@ -96,7 +98,7 @@
           color += texture(uImage, coverUv(tap), uSoften * frost).rgb;
         }
         color = color / 12. + (hash(pixel + 91.7) - .5) * 2. * uGrain * sqrt(frost);
-        outColor = vec4(clamp(color, 0., 1.), alpha);
+        outColor = vec4(clamp(color, 0., 1.) * alpha, alpha);
       }`,
   };
 
@@ -325,6 +327,8 @@
     }, { passive: true });
     const touchEnd = (event: PointerEvent) => { if (event.pointerId === touchId) { touchId = null; hovering = false; } };
     document.addEventListener('pointerup', touchEnd, { passive: true });
+    // Leaving the page mid-effect (a tap that navigates) must not leave the cover hidden behind a stale canvas.
+    addEventListener('pagehide', () => { touchId = null; hovering = false; if (running) stop(); });
     document.addEventListener('pointercancel', touchEnd, { passive: true });
     document.addEventListener('pointermove', (event) => { pointer = { x: event.clientX, y: event.clientY }; }, { passive: true });
   }
