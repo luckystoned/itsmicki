@@ -9,12 +9,17 @@
  * three colours, then its name
  * and its owner's (hex of their UTF-8), e.g. "souls/<stem>_c114_f2d9b0b98a5e4a3326_4d696c6f_4d69636b69.json".
  *
- *   GET  /api/souls                → { souls: Array<{ id, photo? }> (oldest first), cap }
- *   POST /api/souls { look, photo } → 201 { id, photo } · 409 { full: true } when full · 400 if it is not a soul
+ * Whoever leaves a soul gets a key (kept in their browser) to change its look or take it out again; only the key's
+ * SHA-256 is stored, inside the look's blob.
+ *
+ *   GET    /api/souls                    → { souls: Array<{ id, photo? }> (oldest first), cap }
+ *   POST   /api/souls { look, photo }     → 201 { id, photo, key } · 409 { full: true } when full · 400 if it is not a soul
+ *   PATCH  /api/souls { id, key, look }   → 200 { id } (its new id) · 403 with the wrong key · 404 if it is gone
+ *   DELETE /api/souls { id, key }         → 200 { gone: id } · 403 with the wrong key · 404 if it is gone
  */
-import { list, put } from '@vercel/blob';
+import { del, list, put } from '@vercel/blob';
 
-const CAP = 42; // Souls the place holds; then it is full, for good.
+const CAP = 42; // Souls the place holds; then it is full (until someone takes theirs out).
 const PREFIX = 'souls/';
 const LOOK = /^[cd][012][012][0-9]_[0-9a-f]{18}_[0-9a-f]{2,40}_[0-9a-f]{2,40}$/; // Look (with build 0–9), name, owner.
 const MAX_PHOTO = 600_000; // Bytes of JPEG.
@@ -36,11 +41,25 @@ const everything = async () => {
 };
 const stemOf = (pathname: string) => pathname.replace(/^souls\//, '').split('_')[0].replace(/\.jpg$/, '');
 const shown = (pathname: string) => !HIDDEN.has(stemOf(pathname));
+const sha256 = async (text: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map((b) => b.toString(16).padStart(2, '0')).join('');
+
+/** The soul `id` names, if `key` is the one it was left with: its look blob and its photo blob. */
+const owned = async (id: unknown, key: unknown) => {
+  if (typeof id !== 'string' || typeof key !== 'string' || !/^souls\/[0-9a-z]+-[0-9a-f]{8}_/.test(id) || key.length < 32 || key.length > 128) return { status: 400 as const };
+  const stem = stemOf(id);
+  const blobs = (await list({ prefix: `${PREFIX}${stem}` })).blobs;
+  const look = blobs.find((blob) => blob.pathname === id);
+  if (!look || !shown(id)) return { status: 404 as const };
+  const kept = await fetch(look.url, { cache: 'no-store' }).then((response) => response.json()).catch(() => null) as { keyHash?: string } | null;
+  if (!kept?.keyHash || kept.keyHash !== await sha256(key)) return { status: 403 as const };
+  return { status: 200 as const, stem, look, photo: blobs.find((blob) => blob.pathname.endsWith('.jpg')), keyHash: kept.keyHash };
+};
 
 export async function GET() {
   const blobs = (await everything()).filter((blob) => shown(blob.pathname));
   const photos = new Map(blobs.filter((blob) => blob.pathname.endsWith('.jpg')).map((blob) => [stemOf(blob.pathname), blob.url]));
-  const souls = blobs.filter((blob) => blob.pathname.endsWith('.json')).sort((a, b) => +a.uploadedAt - +b.uploadedAt)
+  // Oldest first, by when they were left (the stem starts with that time), so an edited soul keeps its place.
+  const souls = blobs.filter((blob) => blob.pathname.endsWith('.json')).sort((a, b) => stemOf(a.pathname).localeCompare(stemOf(b.pathname)))
     .map((blob) => ({ id: blob.pathname, photo: photos.get(stemOf(blob.pathname)) }));
   // Cached at the edge for 30 seconds: listing counts against Blob's monthly operations (2,000 on Hobby). Whoever just
   // added a soul sees it right away anyway (their browser adds it until the list catches up).
@@ -62,6 +81,29 @@ export async function POST(request: Request) {
   const stem = `${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
   const picture = await put(`${PREFIX}${stem}.jpg`, photo, { access: 'public', contentType: 'image/jpeg', addRandomSuffix: false, cacheControlMaxAge: 31536000 });
   const id = `${PREFIX}${stem}_${look}.json`;
-  await put(id, JSON.stringify({ look }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
-  return json({ id, photo: picture.url, count: souls.length + 1, cap: CAP }, 201);
+  const key = `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(/-/g, '');
+  await put(id, JSON.stringify({ look, keyHash: await sha256(key) }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+  return json({ id, photo: picture.url, key, count: souls.length + 1, cap: CAP }, 201);
+}
+
+export async function PATCH(request: Request) {
+  const body = await request.json().catch(() => null) as { id?: unknown; key?: unknown; look?: unknown } | null;
+  const look = typeof body?.look === 'string' ? body.look : '';
+  if (!LOOK.test(look)) return json({ error: 'Not a look' }, 400);
+  const soul = await owned(body?.id, body?.key);
+  if (soul.status !== 200) return json({ error: 'Not yours' }, soul.status);
+  const id = `${PREFIX}${soul.stem}_${look}.json`;
+  if (id !== soul.look.pathname) {
+    await put(id, JSON.stringify({ look, keyHash: soul.keyHash }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+    await del(soul.look.url);
+  }
+  return json({ id });
+}
+
+export async function DELETE(request: Request) {
+  const body = await request.json().catch(() => null) as { id?: unknown; key?: unknown } | null;
+  const soul = await owned(body?.id, body?.key);
+  if (soul.status !== 200) return json({ error: 'Not yours' }, soul.status);
+  await del([soul.look.url, ...(soul.photo ? [soul.photo.url] : [])]);
+  return json({ gone: soul.look.pathname });
 }
