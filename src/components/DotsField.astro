@@ -23,7 +23,10 @@ const { label } = Astro.props;
     huddle: [14, 110], // Each dot keeps its own distance from the pointer (CSS pixels): a loose cloud, not a ball.
     follow: { reach: .45, pull: 9, spread: 2 }, // Following the pointer: how far it reaches (share of the width), how hard it
     // pulls (loosely) and how wide the cloud around it is (times each dot's distance).
-    gather: { pull: 140, drag: 18, tight: .3 }, // Gathered: how fast all the dots come together and how tight.
+    gather: { pull: 140, drag: 12, tight: .3, swirl: 2200, jitter: 1400, breathe: .45 }, // Gathered: how fast all the
+    // dots come together and how tight; and how they keep moving in there: swirling round, jittering and breathing.
+    settle: 3500, // ms the dropped dots get to bounce before they may go back to their flow.
+    bounce: [.65, .85], // Dropped: how much of its speed each dot keeps on every bounce (a lot: they bounce and bounce).
     gravity: 2600, // Dropped dots: CSS px/s².
     still: { pointer: 1.5, hand: 14 }, // How far (CSS px) the pointer or the hand has to move to count as moving.
     stillAfter: 5000, // ms without moving before the dots go back to their own flow.
@@ -239,7 +242,7 @@ const { label } = Astro.props;
       start();
     };
     const gather = (point: { x: number; y: number }) => { mode = 'gathered'; modeAt = lastMove = lastInteraction = performance.now(); anchor = point; start(); };
-    const drop = () => { mode = 'falling'; modeAt = lastInteraction = performance.now(); dots.forEach((d) => { d.vx += (random() - .5) * 120; d.vy += (random() - .5) * 60; }); start(); };
+    const drop = () => { mode = 'falling'; modeAt = lastInteraction = performance.now(); dots.forEach((d) => { d.vx += (random() - .5) * 600; d.vy -= random() * 500; }); start(); };
     const tap = (point: { x: number; y: number }) => (mode === 'gathered' ? drop() : gather(point));
     const leave = () => { if (pointer) lastInteraction = performance.now(); pointer = null; };
 
@@ -344,7 +347,7 @@ const { label } = Astro.props;
       const now = performance.now();
       const moving = pointer && now - lastMove < SETTINGS.stillAfter;
       // Dropped or gathered, they go back to their own flow once left alone for a while.
-      if (mode === 'falling' && now - modeAt > SETTINGS.returnAfter && now - lastInteraction > SETTINGS.returnAfter) mode = 'free';
+      if (mode === 'falling' && now - modeAt > SETTINGS.settle && now - lastInteraction > SETTINGS.returnAfter) mode = 'free';
       if (mode === 'gathered' && !pointer && now - lastInteraction > SETTINGS.stillAfter) mode = 'free';
       const following = mode === 'free' && pointer && moving;
       // Their own flow once the pointer has held still for a while, or a little after it left.
@@ -356,9 +359,12 @@ const { label } = Astro.props;
           ay += SETTINGS.gravity;
         } else if (mode === 'gathered') {
           // All of them, at once, into a tight cloud where the click was (following the pointer from there).
-          const dx = d.x - anchor.x, dy = d.y - anchor.y, dist = Math.hypot(dx, dy) || 1, spot = d.huddle * SETTINGS.gather.tight;
-          ax += (anchor.x + dx / dist * spot - d.x) * SETTINGS.gather.pull - d.vx * SETTINGS.gather.drag;
-          ay += (anchor.y + dy / dist * spot - d.y) * SETTINGS.gather.pull - d.vy * SETTINGS.gather.drag;
+          // Once there they keep moving: swirling round it (each its own way), jittering, the cloud breathing.
+          const { pull, drag, tight, swirl, jitter, breathe } = SETTINGS.gather;
+          const dx = d.x - anchor.x, dy = d.y - anchor.y, dist = Math.hypot(dx, dy) || 1;
+          const spot = d.huddle * tight * (1 + breathe * Math.sin(time / 380 + d.phase)), turn = d.phase < Math.PI ? 1 : -1;
+          ax += (anchor.x + dx / dist * spot - d.x) * pull - d.vx * drag - dy / dist * swirl * turn + Math.sin(time / 90 + d.spin * 7) * jitter;
+          ay += (anchor.y + dy / dist * spot - d.y) * pull - d.vy * drag + dx / dist * swirl * turn + Math.cos(time / 110 + d.spin * 5) * jitter;
         } else if (following && pointer) {
           // Loosely: nearby dots drift after the pointer into a wide cloud around it, gliding (extra drag, no overshoot).
           const dx = d.x - pointer.x, dy = d.y - pointer.y, dist = Math.hypot(dx, dy) || 1;
@@ -378,10 +384,11 @@ const { label } = Astro.props;
         d.vy = (d.vy + ay * dt) * (mode === 'falling' ? Math.exp(-.4 * dt) : damping);
         d.x += d.vx * dt;
         d.y += d.vy * dt;
-        // The floor and walls: dropped dots bounce a little and settle in a loose pile.
+        // The floor and walls: dropped dots bounce and bounce, then settle in a loose pile.
         const floor = height - d.r - (d.phase / (Math.PI * 2)) * 6;
-        if (d.y > floor) { d.y = floor; d.vy *= -.25; d.vx *= .6; }
-        if (d.x < d.r) { d.x = d.r; d.vx *= -.4; } else if (d.x > width - d.r) { d.x = width - d.r; d.vx *= -.4; }
+        const bounce = SETTINGS.bounce[0] + (SETTINGS.bounce[1] - SETTINGS.bounce[0]) * d.phase / (Math.PI * 2);
+        if (d.y > floor) { d.y = floor; d.vy *= mode === 'falling' ? -bounce : -.4; d.vx *= .9; }
+        if (d.x < d.r) { d.x = d.r; d.vx *= -.7; } else if (d.x > width - d.r) { d.x = width - d.r; d.vx *= -.7; }
         if (d.y < d.r) { d.y = d.r; d.vy *= -.4; }
       }
       drift(time);
