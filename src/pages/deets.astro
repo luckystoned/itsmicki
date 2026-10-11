@@ -4,8 +4,8 @@ import { imageMetadata } from '@/data/imageMetadata';
 
 const image = (src: string, alt: string) => ({ src, alt, ...imageMetadata[src] });
 const portrait = image('/03_Deets/01_Deets.webp', 'Micaela resting with her face partly hidden by a white duvet.');
-const desk = image('/03_Deets/02_Deets.webp', 'A softly blurred desk with colorful printed materials and design objects.');
-const cap = image('/03_Deets/03_Deets.webp', 'Micaela seen from behind wearing a green cap.');
+const desk = image('/03_Deets/02_Deets.webp', 'A softly blurred desk with printed materials and design objects.');
+const cap = image('/03_Deets/03_Deets.webp', 'Micaela seen from behind wearing a cap.');
 const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pair of boots.');
 ---
 
@@ -285,6 +285,11 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
   body:has(.deets-page) ::selection {
     background: var(--deets-ink);
     color: var(--deets-paper);
+  }
+
+  /* Every photo on this page in black and white (the files stay in colour). */
+  .deets-page img {
+    filter: grayscale(1);
   }
 
   body:has(.deets-page) .site-header {
