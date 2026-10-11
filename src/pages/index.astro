@@ -2,7 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import LiquidHover from '@/components/LiquidHover.astro';
 import { imageMetadata } from '@/data/imageMetadata';
-import { carouselProjects, desktopLength, vimeoBackground } from '@/data/carousel';
+import { carouselProjects, cardLength } from '@/data/carousel';
 
 const loops = [0, 1, 2];
 ---
@@ -22,13 +22,13 @@ const loops = [0, 1, 2];
       <div class="carousel-track" data-carousel-track>
         {loops.map((loop) => carouselProjects.map((project, index) => {
           const dimensions = imageMetadata[project.carouselCover];
-          const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${desktopLength(project.carouselLayout.width)}`;
+          const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${cardLength(project.carouselLayout.width)}`;
           const content = (
             <>
               <span class="carousel-name" aria-hidden="true"><span class="carousel-name-text">{project.carouselLayout.label}</span></span>
               <span class="carousel-picture">
                 <img src={project.carouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading={index < 3 && loop === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 && loop === 0 ? 'high' : undefined} decoding="async" />
-                {project.carouselLayout.vimeoId && <iframe src={vimeoBackground(project.carouselLayout.vimeoId)} style={project.carouselLayout.videoRatio ? `aspect-ratio:${project.carouselLayout.videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-carousel-video></iframe>}
+                {project.carouselLayout.video && <video src={project.carouselLayout.video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
               </span>
             </>
           );
@@ -54,14 +54,14 @@ const loops = [0, 1, 2];
   </div>
 
   <script>
+    import { playVisibleVideos } from '@/scripts/playVisibleVideos';
+
     const carousel = document.querySelector<HTMLElement>('[data-carousel]');
     const track = document.querySelector<HTMLElement>('[data-carousel-track]');
     if (carousel && track) {
       const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
-      if (reduceMotion) track.querySelectorAll<HTMLIFrameElement>('[data-carousel-video]').forEach((video) => {
-        video.addEventListener('load', () => video.contentWindow?.postMessage(JSON.stringify({ method: 'pause' }), 'https://player.vimeo.com'));
-      });
+      playVisibleVideos(track, reduceMotion);
       // `target` is where the strip wants to be; `offset` eases toward it every frame for a soft, inertial feel.
       let target = 0, offset = 0, cycle = 0, speed = 1, velocity = 0, dragging = false, hovered = false, lastX = 0, moved = 0, wheelUntil = 0;
       let previousTime = 0;
@@ -136,12 +136,12 @@ const loops = [0, 1, 2];
   .carousel-name-text { display: block; transform: translateY(105%); transition: transform .16s cubic-bezier(.55,0,.75,0); }
   .carousel-picture { position: absolute; z-index: 1; inset: 0; display: block; overflow: hidden; transition: transform .6s cubic-bezier(.65,0,.35,1) .14s; }
   .carousel-picture img { pointer-events: none; transition: transform .8s cubic-bezier(.16,1,.3,1); }
-  .carousel-picture iframe { position: absolute; top: 50%; left: 50%; width: auto; min-width: calc(100% + 4px); height: calc(100% + 4px); /* 2px overscan per side: the video never leaves a sliver of the poster at the edges. */ aspect-ratio: 426 / 240; border: 0; pointer-events: none; transform: translate(-50%, -50%); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+  .carousel-picture video { position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); /* 2px overscan per side: the video never leaves a sliver of the poster at the edges. */ object-fit: cover; pointer-events: none; transition: transform .8s cubic-bezier(.16,1,.3,1); }
   @media (hover: hover) and (pointer: fine) {
     .carousel-card:is(:hover, :focus-visible) { z-index: 1000; }
     .carousel-card:is(:hover, :focus-visible) .carousel-picture { transform: translateY(calc(var(--name-size) * 1.24 + 8px)); transition: transform .6s cubic-bezier(.65,0,.35,1); }
     .carousel-card:is(:hover, :focus-visible) img { transform: scale(1.15); }
-    .carousel-card:is(:hover, :focus-visible) iframe { transform: translate(-50%, -50%) scale(1.15); }
+    .carousel-card:is(:hover, :focus-visible) video { transform: scale(1.15); }
     .carousel-card:is(:hover, :focus-visible) .carousel-name-text { transform: none; transition: transform .65s cubic-bezier(.22,1,.36,1) .28s; }
   }
   /* Touch screens (phones, tablets): names always sit above each photo, with no hover motion. */

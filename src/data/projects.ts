@@ -14,19 +14,19 @@ export type Project = {
 
 export const projects: Project[] = [
   {
-    slug: 'winona', number: '01', title: 'Winona', year: '2023',
+    slug: 'genova', number: '01', title: 'Genova', year: '2025',
+    role: 'Art Direction + Visual Design', accent: '#b7d5ff', comingSoon: true,
+    cover: '/02_Projects/02_Genova/01_Genova_Cover.webp',
+    summary: 'A visual identity and art direction project currently being prepared for publication.',
+    synopsis: 'Full case study coming soon.',
+  },
+  {
+    slug: 'winona', number: '02', title: 'Winona', year: '2023',
     role: 'UX—UI Lead, Visual & Motion Designer', accent: '#ecb2c5',
     cover: '/02_Projects/01_Winona/01_Winona_Cover.webp',
     summary: "Winona is a women’s wellness center that provides support and care via educational resources and hormone replacement therapy.",
     synopsis: "After collaborating closely with the marketing team to understand the brand, its pain points and strengths, we embarked on a complete rebranding project. I led the art direction for the website and helped the UX/UI team scale the chosen concept across its many pages.",
     conclusion: "A collaborative process created a cohesive and engaging online presence that reflects Winona’s mission while improving the experience across the full product.",
-  },
-  {
-    slug: 'genova', number: '02', title: 'Genova', year: '2025',
-    role: 'Art Direction + Visual Design', accent: '#b7d5ff', comingSoon: true,
-    cover: '/02_Projects/02_Genova/01_Genova_Cover.webp',
-    summary: 'A visual identity and art direction project currently being prepared for publication.',
-    synopsis: 'Full case study coming soon.',
   },
   {
     slug: 'amazon', number: '03', title: 'Amazon', year: '2024',

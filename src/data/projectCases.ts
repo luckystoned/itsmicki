@@ -1,7 +1,10 @@
 export type CaseMedia = {
   type: 'image' | 'video' | 'carousel';
   alt: string;
+  /** Image file, or for a video served from the site (not Vimeo) the .mp4 file. */
   src?: string;
+  /** Still frame shown until a site video plays, and instead of it with reduced motion. */
+  poster?: string;
   vimeoId?: string;
   sourceRatio?: string;
   /** Turns a video by 90° clockwise inside its frame (a vertical clip shown in a horizontal frame). */
@@ -61,6 +64,11 @@ const image = (src: string, alt: string, ratio: string, caption?: string): CaseM
 
 const video = (vimeoId: string, alt: string, ratio: string, sourceRatio: string, caption?: string): CaseMedia => ({
   type: 'video', vimeoId, alt, ratio, sourceRatio, caption,
+});
+
+/** Short video served from the site, muted and looping, over its still frame. */
+const clip = (src: string, poster: string, alt: string, ratio: string, caption?: string): CaseMedia => ({
+  type: 'video', src, poster, alt, ratio, caption,
 });
 
 const carousel = (
@@ -412,8 +420,8 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       }),
       single(image('/02_Projects/08_TexturesBody/02_TexturesBody.webp', 'Golden serum spreading across a pale surface with tiny bubbles.', '1556 / 870')),
       pair(
-        image('/02_Projects/08_TexturesBody/03_TexturesBody.webp', 'Translucent pink and green petal-like folds seen up close.', '773 / 955'), '48.3125vw', '59.6875vw',
-        image('/02_Projects/08_TexturesBody/04_TexturesBody.webp', 'Clear gel with suspended shapes and air bubbles.', '773 / 955'), '48.3125vw', '59.6875vw',
+        clip('/02_Projects/08_TexturesBody/03_TexturesBody.mp4', '/02_Projects/08_TexturesBody/03_TexturesBody.webp', 'Translucent coral membrane folds moving slowly, seen up close.', '773 / 955'), '48.3125vw', '59.6875vw',
+        clip('/02_Projects/08_TexturesBody/04_TexturesBody.mp4', '/02_Projects/08_TexturesBody/04_TexturesBody.webp', 'Emerald serum texture shifting slowly under the microscope.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
       single(image('/02_Projects/08_TexturesBody/05_TexturesBody.webp', 'Chain of clear bubbles over a milky, creamy texture.', '1556 / 870')),
       single(image('/02_Projects/08_TexturesBody/06_TexturesBody.webp', 'Deep pink gel with a cluster of small bubbles.', '1556 / 870')),
