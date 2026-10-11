@@ -1,11 +1,12 @@
 ---
-// Hover on the carousel covers (home and case pages; desktop only). One small, soft spot follows the pointer and turns
+// Hover on the carousel covers (home and case pages). One small, soft spot follows the pointer (or, on touch screens,
+// the finger while it presses and drags on the photo) and turns
 // the photo into grainy frosted glass (scattered and blurred, never lightened), leaving a diffuse frosted trail. The
 // pointer's motion only nudges the photo a little, which can spill just past the card edges and flows back quickly.
 // The head of the trail, the frost and the nudge share one point, so it never reads as two spots. The cover is redrawn
 // on a fixed WebGL2 canvas a bit larger than the card while the original image is hidden; inside the card the photo
 // always covers it, and outside only what was carried out is drawn, so no page white shows. Video cards use their
-// still frame, since Vimeo frames cannot be read. Off for touch, reduced motion and browsers without WebGL2.
+// still frame, since Vimeo frames cannot be read. Off for reduced motion and browsers without WebGL2.
 ---
 
 <script>
@@ -282,7 +283,7 @@
     };
 
     const pointerIn = (card: Element, event: PointerEvent) => {
-      if (!finePointer.matches || calm.matches) return;
+      if (calm.matches || (event.pointerType !== 'touch' && !finePointer.matches)) return;
       const nextVisual = card.querySelector<HTMLElement>(VISUALS);
       const photo = nextVisual?.querySelector<HTMLImageElement>('img');
       // Vimeo frames cannot be read into WebGL, so video cards use their still frame (the <img> under the video).
@@ -303,13 +304,28 @@
     };
 
     document.addEventListener('pointerover', (event) => {
+      if (event.pointerType === 'touch') return;
       const card = (event.target as Element | null)?.closest?.(CARDS);
       if (card && !card.contains(event.relatedTarget as Node | null)) pointerIn(card, event);
     });
     document.addEventListener('pointerout', (event) => {
+      if (event.pointerType === 'touch') return;
       const card = (event.target as Element | null)?.closest?.(CARDS);
       if (card && !card.contains(event.relatedTarget as Node | null)) hovering = false;
     });
+    // Touch: the effect follows the finger from the moment it presses on a photo until it lifts (the carousel may
+    // capture the pointer to drag, so leaving is tracked by the touch ending, not by pointerout).
+    let touchId: number | null = null;
+    document.addEventListener('pointerdown', (event) => {
+      if (event.pointerType !== 'touch' || !event.isPrimary) return;
+      const card = (event.target as Element | null)?.closest?.(CARDS);
+      if (!card) return;
+      touchId = event.pointerId;
+      pointerIn(card, event);
+    }, { passive: true });
+    const touchEnd = (event: PointerEvent) => { if (event.pointerId === touchId) { touchId = null; hovering = false; } };
+    document.addEventListener('pointerup', touchEnd, { passive: true });
+    document.addEventListener('pointercancel', touchEnd, { passive: true });
     document.addEventListener('pointermove', (event) => { pointer = { x: event.clientX, y: event.clientY }; }, { passive: true });
   }
 </script>
