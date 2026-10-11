@@ -54,4 +54,3 @@ export const sideBCarousel = carouselCards.map((card, index) => {
     href: project.comingSoon ? undefined : sideBHref(project.slug),
   };
 });
-

@@ -485,4 +485,3 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
     credits: [],
   },
 };
-
