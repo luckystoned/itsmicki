@@ -16,7 +16,7 @@ export type SideBProject = {
 const coming = ' — (Coming soon) !!!!!^*^';
 
 export const sideBProjects: SideBProject[] = [
-  { slug: 'mkp-hair', title: 'Mkp & Hair', label: '01_Mkp & Hair_Art Direction+AI Image Generation', gridCover: '/04_SideB/Home/01_SideBProjects.webp' },
+  { slug: 'mkp-hair', title: 'Mkp & Hair', label: '01_Mkp & Hair_Art Direction+AI Image Generation', gridCover: '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp' },
   { slug: 'ok-computer', title: 'OK Computer', label: '02_OK Computer_Art Direction+Photography+Mkp & Styling', gridCover: '/04_SideB/Home/02_SideBProjects.webp' },
   { slug: 'general-immersive', title: 'General', label: '03_General_Art Direction+Immersive Interaction Design', gridCover: '/04_SideB/Home/03_SideBProjects.webp', gridVideo: '/04_SideB/Home/03_SideBProjects.mp4' },
   { slug: 'monday-0803am', title: 'Monday, 08.03am', label: `04_Monday, 08.03am_Art Direction+Photography+Styling${coming}`, comingSoon: true, gridCover: '/04_SideB/Home/04_SideBProjects.webp' },
