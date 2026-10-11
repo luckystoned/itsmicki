@@ -7,7 +7,7 @@ Este repositorio contiene el portfolio estático Itsmicki. Leer `README.md` y la
 - Contenido de cada página de caso (bloques, imágenes, Vimeo, créditos): `src/data/projectCases.ts`.
 - Dimensiones de imágenes: `src/data/imageMetadata.ts`.
 - Plantilla de casos: `src/pages/projects/[slug].astro`.
-- Video: Vimeo embebido; nunca agregar videos locales.
+- Video: Vimeo embebido; nunca agregar videos locales, excepto los videos cortos de las portadas del carrusel (`*_Loop.mp4` en `public/02_Projects/`, H.264 de 1280 px sin audio), que se sirven desde el sitio para que el efecto de hover pueda leer sus cuadros.
 - Assets: `public/` contiene solo archivos usados; los originales están en `../Referencias originales`.
 - Diseño: conservar la dirección editorial definida en Figma y verificar móvil/escritorio.
 - Alcance: no sumar frameworks, CMS, SSR o infraestructura sin aprobación.

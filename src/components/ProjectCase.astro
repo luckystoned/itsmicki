@@ -266,6 +266,8 @@ const vimeoUrl = (id: string) =>
 </div>
 
 <script>
+  import { playCarouselVideos } from '@/scripts/carouselVideos';
+
   /* Native scroll plus the same frame-rate-independent damping as the reference. */
   (function () {
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -608,9 +610,7 @@ const vimeoUrl = (id: string) =>
   const carouselTrack = carousel?.querySelector<HTMLElement>('[data-more-carousel-track]');
   if (carousel && carouselTrack) {
     const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
-    if (reduceCaseMotion) carouselTrack.querySelectorAll<HTMLIFrameElement>('[data-carousel-video]').forEach((video) => {
-      video.addEventListener('load', () => video.contentWindow?.postMessage(JSON.stringify({ method: 'pause' }), 'https://player.vimeo.com'));
-    });
+    playCarouselVideos(carouselTrack, reduceCaseMotion);
     let target = 0, offset = 0, cycle = 0, speed = 1, velocity = 0, dragging = false, hovered = false, lastX = 0, moved = 0, wheelUntil = 0;
     let previousTime = 0;
     let pointerId = -1;

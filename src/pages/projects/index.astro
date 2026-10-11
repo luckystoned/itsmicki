@@ -6,17 +6,17 @@ import { projects } from '@/data/projects';
 const projectBySlug = new Map(projects.map((project) => [project.slug, project]));
 const definitions = [
   {
-    slug: 'winona',
-    label: '01_Winona_UX—UI Lead, Visual & Motion Designer',
-    width: 'calc((97.23vw - 6px) * .49953)', height: 'auto', ratio: '47.48 / 47.19', eager: true,
-    cover: '/02_Projects/01_Winona/01_Winona_Projects.webp',
-  },
-  {
     slug: 'genova',
-    label: '02_Genova_Art Direction+Visual Design — (Coming soon) !!!!!^*^',
+    label: '01_Genova_Art Direction+Visual Design — (Coming soon) !!!!!^*^',
     width: 'calc((97.23vw - 6px) * .50047)', height: 'auto', ratio: '47.57 / 63.01', eager: true,
     // The photo fills its frame (pizza boxes with the logo): a small, centred travel keeps the logo in view.
     parallaxHeight: '108%', parallaxStart: '-6%', parallaxSpan: '2%',
+  },
+  {
+    slug: 'winona',
+    label: '02_Winona_UX—UI Lead, Visual & Motion Designer',
+    width: 'calc((97.23vw - 6px) * .49953)', height: 'auto', ratio: '47.48 / 47.19', eager: true,
+    cover: '/02_Projects/01_Winona/01_Winona_Projects.webp',
   },
   {
     slug: 'amazon',
@@ -68,7 +68,7 @@ const cards = definitions.map((definition) => {
   };
 });
 
-const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody] = cards;
+const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody] = cards;
 ---
 
 <BaseLayout
@@ -104,8 +104,8 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody
 
     <section class="projects-grid" aria-label="Selected projects">
       <div class="projects-row projects-row-primary">
-        <ProjectGridItem project={winona.project} label={winona.label} style={winona.style} cover={winona.cover} vimeoId={winona.vimeoId} eager={winona.eager} />
         <ProjectGridItem project={genova.project} label={genova.label} style={genova.style} cover={genova.cover} vimeoId={genova.vimeoId} eager={genova.eager} />
+        <ProjectGridItem project={winona.project} label={winona.label} style={winona.style} cover={winona.cover} vimeoId={winona.vimeoId} eager={winona.eager} />
       </div>
 
       <ProjectGridItem project={amazon.project} label={amazon.label} style={amazon.style} cover={amazon.cover} vimeoId={amazon.vimeoId} />
@@ -740,13 +740,14 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody
       white-space: nowrap;
     }
 
-    /* Mobile proportions from Figma; in the second row Lumen now comes first and Outliant second. */
-    .projects-row-primary .project-card:nth-child(1) .project-visual,
+    /* Mobile proportions from Figma; each row was reordered (Genova before Winona, Lumen before Outliant), so each
+       card keeps its own proportion. */
+    .projects-row-primary .project-card:nth-child(2) .project-visual,
     .projects-row-secondary .project-card:nth-child(2) .project-visual {
       aspect-ratio: 366 / 484.802429;
     }
 
-    .projects-row-primary .project-card:nth-child(2) .project-visual,
+    .projects-row-primary .project-card:nth-child(1) .project-visual,
     .projects-row-secondary .project-card:nth-child(1) .project-visual {
       aspect-ratio: 366 / 363.78186;
     }
