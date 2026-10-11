@@ -27,7 +27,7 @@ const loops = [0, 1, 2];
             <span class="more-carousel-name" aria-hidden="true"><span class="more-carousel-name-text">{project.carouselLayout.label}</span></span>
             <span class="more-carousel-picture">
               <img src={project.caseCarouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading="lazy" decoding="async" draggable="false" />
-              {project.carouselLayout.video && <video src={project.carouselLayout.video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-carousel-video></video>}
+              {project.carouselLayout.video && <video src={project.carouselLayout.video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
             </span>
           </>
         );

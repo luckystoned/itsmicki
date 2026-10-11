@@ -171,6 +171,8 @@ const vimeoUrl = (id: string) =>
                         ))}
                       </span>
                     </div>
+                  ) : item.type === 'video' && item.src ? (
+                    <video src={item.src} poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video></video>
                   ) : item.vimeoId ? (
                     <iframe
                       data-vimeo-src={vimeoUrl(item.vimeoId)}
@@ -223,6 +225,8 @@ const vimeoUrl = (id: string) =>
                         ))}
                       </span>
                         </div>
+                      ) : item.type === 'video' && item.src ? (
+                        <video src={item.src} poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video></video>
                       ) : item.vimeoId ? (
                         <iframe
                           data-vimeo-src={vimeoUrl(item.vimeoId)}
@@ -266,7 +270,7 @@ const vimeoUrl = (id: string) =>
 </div>
 
 <script>
-  import { playCarouselVideos } from '@/scripts/carouselVideos';
+  import { playVisibleVideos } from '@/scripts/playVisibleVideos';
 
   /* Native scroll plus the same frame-rate-independent damping as the reference. */
   (function () {
@@ -321,6 +325,8 @@ const vimeoUrl = (id: string) =>
   })();
 
   const reduceCaseMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const caseCanvas = document.querySelector<HTMLElement>('.project-case-canvas');
+  if (caseCanvas) playVisibleVideos(caseCanvas, reduceCaseMotion);
   const caseCarousels = Array.from(document.querySelectorAll<HTMLElement>('[data-case-carousel]'));
 
   // Photo carousels inside the cases: they advance on their own while the active bar fills up, and any
@@ -610,7 +616,7 @@ const vimeoUrl = (id: string) =>
   const carouselTrack = carousel?.querySelector<HTMLElement>('[data-more-carousel-track]');
   if (carousel && carouselTrack) {
     const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
-    playCarouselVideos(carouselTrack, reduceCaseMotion);
+    playVisibleVideos(carouselTrack, reduceCaseMotion);
     let target = 0, offset = 0, cycle = 0, speed = 1, velocity = 0, dragging = false, hovered = false, lastX = 0, moved = 0, wheelUntil = 0;
     let previousTime = 0;
     let pointerId = -1;
@@ -961,6 +967,7 @@ const vimeoUrl = (id: string) =>
   }
 
   .case-media-content img,
+  .case-media-content video,
   .case-media-content iframe {
     display: block;
     width: 100%;

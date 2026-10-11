@@ -28,7 +28,7 @@ const loops = [0, 1, 2];
               <span class="carousel-name" aria-hidden="true"><span class="carousel-name-text">{project.carouselLayout.label}</span></span>
               <span class="carousel-picture">
                 <img src={project.carouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading={index < 3 && loop === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 && loop === 0 ? 'high' : undefined} decoding="async" />
-                {project.carouselLayout.video && <video src={project.carouselLayout.video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-carousel-video></video>}
+                {project.carouselLayout.video && <video src={project.carouselLayout.video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
               </span>
             </>
           );
@@ -54,14 +54,14 @@ const loops = [0, 1, 2];
   </div>
 
   <script>
-    import { playCarouselVideos } from '@/scripts/carouselVideos';
+    import { playVisibleVideos } from '@/scripts/playVisibleVideos';
 
     const carousel = document.querySelector<HTMLElement>('[data-carousel]');
     const track = document.querySelector<HTMLElement>('[data-carousel-track]');
     if (carousel && track) {
       const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
-      playCarouselVideos(track, reduceMotion);
+      playVisibleVideos(track, reduceMotion);
       // `target` is where the strip wants to be; `offset` eases toward it every frame for a soft, inertial feel.
       let target = 0, offset = 0, cycle = 0, speed = 1, velocity = 0, dragging = false, hovered = false, lastX = 0, moved = 0, wheelUntil = 0;
       let previousTime = 0;
