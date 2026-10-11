@@ -136,9 +136,11 @@ const loops = [0, 1, 2];
 
 <style>
   /* Side A is light; Side B (`.home-stage-b`) is the same page in inverted colours. The footer labels are boxes in
-     the ink colour with text in the paper colour: dark on Side A, white with dark type on Side B. */
+     the ink colour with text in the paper colour: dark on Side A; on Side B dark
+     with white type on desktop and white with dark type on phones. */
   :global(html:has(.home-stage)) { --home-paper: #fafafa; --home-ink: #2e2e2e; --home-chip: #2e2e2e; --home-chip-ink: #fafafa; }
-  :global(html:has(.home-stage-b)) { --home-paper: #202020; --home-ink: #fafafa; --home-chip: #fafafa; --home-chip-ink: #202020; }
+  :global(html:has(.home-stage-b)) { --home-paper: #202020; --home-ink: #fafafa; --home-chip: #202020; --home-chip-ink: #fafafa; }
+  @media (max-width: 760px) { :global(html:has(.home-stage-b)) { --home-chip: #fafafa; --home-chip-ink: #202020; } }
   @font-face { font-family: 'OT Neue Montreal Home'; src: url('/fonts/OTNeueMontreal-MediumSemiSqueezed.otf') format('opentype'); font-style: normal; font-weight: 400 600; font-display: swap; }
   @font-face { font-family: 'OT Neue Montreal Home Extra'; src: url('/fonts/OTNeueMontreal-MediumExtraSqueezed.otf') format('opentype'); font-style: normal; font-weight: 400 600; font-display: swap; }
   :global(body:has(.home-carousel)) { background: var(--home-paper); color: var(--home-ink); }

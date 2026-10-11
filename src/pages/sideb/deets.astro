@@ -365,7 +365,8 @@ const filmPhotos = [
 
   html:has(.sideb-page),
   body:has(.sideb-page) {
-    /* Side B is dark (Figma 925:1755). The footer and contact labels stay dark boxes with light text. */
+    /* Side B is dark (Figma 925:1755). The footer and contact labels are dark boxes with light text (white with
+       dark text on phones). */
     --sideb-ink: #fafafa;
     --sideb-paper: #202020;
     --sideb-chip: #202020;
@@ -377,6 +378,15 @@ const filmPhotos = [
     cursor: url('/cursors/view.png') 0 0, auto;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+  }
+
+  /* On phones, Side B's link boxes turn white with dark type; on desktop they stay dark with white type. */
+  @media (max-width: 760px) {
+    html:has(.sideb-page),
+    body:has(.sideb-page) {
+      --sideb-chip: #fafafa;
+      --sideb-chip-ink: #202020;
+    }
   }
 
   html:has(.sideb-page) {

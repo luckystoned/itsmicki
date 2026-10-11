@@ -402,6 +402,15 @@ const { side = 'a', wordmark } = Astro.props;
     --projects-chip-ink: #fafafa;
   }
 
+  /* On phones, Side B's link boxes turn white with dark type; on desktop they stay dark with white type. */
+  @media (max-width: 760px) {
+    html:has(.projects-page-b),
+    body:has(.projects-page-b) {
+      --projects-chip: #fafafa;
+      --projects-chip-ink: #202020;
+    }
+  }
+
   body:has(.projects-page-b) .site-header[data-header] { background: var(--projects-paper) !important; color: var(--projects-ink); }
 
 

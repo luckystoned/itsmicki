@@ -752,6 +752,15 @@ const vimeoUrl = (id: string) =>
     --case-chip-ink: #fafafa;
   }
 
+  /* On phones, Side B's link boxes turn white with dark type; on desktop they stay dark with white type. */
+  @media (max-width: 760px) {
+    html:has(.project-case-page-b),
+    body:has(.project-case-page-b) {
+      --case-chip: #fafafa;
+      --case-chip-ink: #202020;
+    }
+  }
+
   body:has(.project-case-page-b) .site-header[data-header] { background: var(--case-paper) !important; }
 
   body:has(.project-case-page) a,
