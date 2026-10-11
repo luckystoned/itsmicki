@@ -3,13 +3,14 @@
 // after the animals people leave with her. Anyone can add their cat or dog from a full-body photo. The photo is read on
 // their device (MediaPipe finds the animal, reads its colours and markings, and turns down photos full of people), then
 // a little form asks its name, its owner's, cat or dog, a few words about its coat (which win over the photo), how thin
-// or chubby it is (a slider, with a live preview) and its size. In the place it becomes an illustrated figure from that description, its name shown near it on hover; and its
-// photo, cropped around it and re-drawn (no location or camera details), is kept for the list of who's here. Each one becomes a soft,
-// ethereal illustrated cat or dog in its own colours, with an aura. Once here, it lives its own little life: it stands,
-// walks about on its paws, hops, stretches, grooms, lies down to nap and blinks; and a newcomer is first stroked by the
-// caregiver. The souls are shared by every visitor (api/souls.ts, Vercel Blob) and stay for good, until the place is
-// full; without the shared store (local dev, or before it is connected) they are kept on the visitor's device. With
-// reduced motion nothing moves.
+// or chubby it is (a slider, with a live preview) and its size. In the place it becomes a soft, glowing illustrated cat
+// or dog in its own colours, with an aura and colours fringing off its edges, its name shown near it on hover; its
+// photo, cropped around it and re-drawn (no location or camera details), is kept for the list of who's here. Once here,
+// it lives its own little life: it stands, walks about on its paws, hops, stretches, grooms, lies down to nap and blinks;
+// a newcomer is first stroked by the caregiver, and anyone can pick one up (legs dangling) and set it down elsewhere.
+// The souls are shared by every visitor (api/souls.ts, Vercel Blob) and stay for good, until the place is full; without
+// the shared store (local dev, or before it is connected) they are kept on the visitor's device. With reduced motion
+// nothing moves.
 type Props = { label: string };
 const { label } = Astro.props;
 ---
