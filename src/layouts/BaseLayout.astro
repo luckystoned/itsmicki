@@ -1,6 +1,7 @@
 ---
 import Header from '@/components/Header.astro';
 import SiteCursor from '@/components/SiteCursor.astro';
+import PageLoader from '@/components/PageLoader.astro';
 import Footer from '@/components/Footer.astro';
 import { DEFAULT_DESCRIPTION, DEFAULT_SOCIAL_IMAGE, DEFAULT_TITLE, PERSON_ALTERNATE_NAMES, SITE_NAME, socialProfiles } from '@/data/seo';
 import '@/styles/global.css';
@@ -52,6 +53,7 @@ const globalStructuredData = {
 <!doctype html>
 <html lang="en" data-theme={theme}>
   <head>
+    <script is:inline>try { if (!sessionStorage.getItem('itsmicki-loaded')) document.documentElement.classList.add('is-loading'); } catch (error) {}</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
@@ -86,6 +88,7 @@ const globalStructuredData = {
     <title>{title}</title>
   </head>
   <body>
+    <PageLoader />
     <a class="skip-link" href="#content">Skip to content</a>
     {!customCursor && <div class="cursor" data-cursor aria-hidden="true"><span>view</span></div>}
     <SiteCursor />

@@ -42,10 +42,15 @@ export function initPageMotion(root: HTMLElement | null) {
   update();
 
   document.documentElement.classList.add('appear-ready');
-  const appearObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
-    if (!entry.isIntersecting) return;
-    entry.target.classList.add('is-visible');
-    appearObserver.unobserve(entry.target);
-  }), { threshold: .12 });
-  root.querySelectorAll('[data-appear]').forEach((node) => appearObserver.observe(node));
+  const appear = () => {
+    const appearObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      appearObserver.unobserve(entry.target);
+    }), { threshold: .12 });
+    root.querySelectorAll('[data-appear]').forEach((node) => appearObserver.observe(node));
+  };
+  // Behind the loading screen, wait for it to leave so the load-in is seen.
+  if (document.documentElement.classList.contains('is-loading')) document.addEventListener('page-loader-done', appear, { once: true });
+  else appear();
 }
