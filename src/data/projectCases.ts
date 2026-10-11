@@ -424,13 +424,38 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         clip('/02_Projects/08_TexturesBody/04_TexturesBody.mp4', '/02_Projects/08_TexturesBody/04_TexturesBody.webp', 'Emerald serum texture shifting slowly under the microscope.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
       single(image('/02_Projects/08_TexturesBody/05_TexturesBody.webp', 'Chain of clear bubbles over a milky, creamy texture.', '1556 / 870')),
-      single(image('/02_Projects/08_TexturesBody/06_TexturesBody.webp', 'Deep pink gel with a cluster of small bubbles.', '1556 / 870')),
+      single(image('/02_Projects/08_TexturesBody/06_TexturesBody.webp', 'Deep red gel with a cluster of small bubbles.', '1556 / 870')),
       text('(from still to motion)', [
         `Once the still imagery established the look and feel of the project, I extended the exploration into video. The focus was on bringing the textures to life while preserving their realism and tactile quality, so the movement felt like a natural continuation of the images.`,
       ]),
       pair(
         video('1234325405', 'Translucent coral petal-like folds moving gently.', '773 / 955', '240 / 300'), '48.3125vw', '59.6875vw',
         video('1234325402', 'Clear gel shifting slowly around suspended shapes.', '773 / 955', '240 / 300'), '48.3125vw', '59.6875vw',
+      ),
+      text('(synthetic bodies)', [
+        `To bring more realism to their skin, I created a dedicated AI agent and supplied it with a curated set of skin-texture references, including photographs I took myself and selected stock imagery. These references guided the surface`,
+        `details—such as pores, tonal variation, and natural imperfections—while each subject’s identity remained prompt-generated. The goal was to create convincing human texture without using a specific person as a model.`,
+      ], {
+        variant: 'lead',
+        lead: `For the body-focused visuals, I wanted to create believable people without basing their identities on anyone in a reference photo. Each subject was developed from a detailed text prompt, building their appearance from scratch rather than using a real person’s likeness as a starting point.`,
+      }),
+      pair(
+        image('/02_Projects/08_TexturesBody/07_TexturesBody.webp', 'Freckled face partly veiled by a translucent sheet.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/02_Projects/08_TexturesBody/08_TexturesBody.webp', 'Close-up of an eye and nose behind a translucent veil.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/02_Projects/08_TexturesBody/09_TexturesBody.webp', 'Freckled face with drops of milky liquid on the cheek.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/02_Projects/08_TexturesBody/10_TexturesBody.webp', 'Glossy, wet skin around an eye.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      single(image('/02_Projects/08_TexturesBody/11_TexturesBody.webp', 'Deeply wrinkled lips and chin in extreme close-up.', '1556 / 870')),
+      pair(
+        clip('/02_Projects/08_TexturesBody/12_TexturesBody.mp4', '/02_Projects/08_TexturesBody/12_TexturesBody.webp', 'An eye with lilac eyeshadow on wrinkled skin, opening slowly.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/02_Projects/08_TexturesBody/13_TexturesBody.webp', 'Grey hair, an ear and lilac eyeshadow on older skin.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      single(image('/02_Projects/08_TexturesBody/14_TexturesBody.webp', 'Two glossy bare shoulders, one deep brown and one golden.', '1556 / 870')),
+      pair(
+        image('/02_Projects/08_TexturesBody/15_TexturesBody.webp', 'Glossy lips and neck with a soft red blush.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/02_Projects/08_TexturesBody/16_TexturesBody.webp', 'A finger pulling at glossy lips under bold blush.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
     ],
     credits: [],

@@ -1299,6 +1299,8 @@ const vimeoUrl = (id: string) =>
     /* Textures & Body: "(from still to motion)" copy in the right half, ending on the right margin, as in Figma. */
     .project-case-page[data-case='textures-body'] .case-text-content > .case-text-columns:has(> p:only-child) { justify-content: flex-end; }
     .project-case-page[data-case='textures-body'] .case-text-content > .case-text-columns > p:only-child { flex: none; width: 47.94vw; }
+    /* "(synthetic bodies)": the opening sentence at the large copy size, the two columns below it, as in Figma. */
+    .project-case-page[data-case='textures-body'] .case-text-content > .case-text-lead { width: 77.06vw; margin-bottom: 2.5vw; font-size: 4.03vw; line-height: .868; letter-spacing: -.03em; }
   }
 
   /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
@@ -1313,6 +1315,12 @@ const vimeoUrl = (id: string) =>
     .project-case-page {
       padding-bottom: calc(min(48px, 12.307692vw) + env(safe-area-inset-bottom));
     }
+
+    /* Textures & Body, "(synthetic bodies)": the two columns split mid-sentence on desktop, so on phones they read
+       as one paragraph. */
+    .project-case-page[data-case='textures-body'] .case-text-lead + .case-text-columns { display: block; }
+    .project-case-page[data-case='textures-body'] .case-text-lead + .case-text-columns > p { display: inline; }
+    .project-case-page[data-case='textures-body'] .case-text-lead + .case-text-columns > p + p::before { content: ' '; }
 
     /* Navigation pinned to the bottom on every case, with the same size and spacing as /projects. */
     body:has(.project-case-page) .site-header[data-header] {
