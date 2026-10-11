@@ -2,7 +2,8 @@
 // Dark brown dots wandering over a field of drifting pale-blue pixels that gather into abstract shapes (generated, landscape).
 // Moving the pointer (or a finger) pulls nearby dots like a magnet; after 5 s holding still they part to the sides; a
 // click or tap drops them all to the floor; after 2 s without hover or drag they find their way back. With the camera
-// on, an open hand moves like the pointer and closing it is the click. With reduced motion nothing moves.
+// on, the hand is a softer magnet: a fist gathers them, an open hand spreads them, and 5 s holding still lets them
+// go back to their flow. With reduced motion nothing moves.
 type Props = { label: string };
 const { label } = Astro.props;
 ---
@@ -28,6 +29,9 @@ const { label } = Astro.props;
     push: [.2, .38], // Holding still: the dots part like a curtain, this wide and this tall (shares of the width/height).
     stillAfter: 5000, // ms without moving before the pointer counts as still and the dots part.
     returnAfter: 2000, // ms without hover or drag before the dots go home.
+    hand: { reach: .6, pull: 26, gather: .35, spread: 2.4, still: 14 }, // Camera: how far the hand's magnet reaches (share of
+    // the width) and how hard it pulls; how tight a fist gathers them and how wide an open hand spreads them (times each
+    // dot's own distance); how far (CSS px) the hand has to move to count as moving.
     home: 9, // Spring back home.
     gravity: 2600, // Dropped dots: CSS px/s².
     damping: 3.2, // Per second.
@@ -178,11 +182,12 @@ const { label } = Astro.props;
 
     // Input: the pointer (mouse, finger) or, with the camera on, an open hand. `down` drops the dots.
     let pointer: { x: number; y: number } | null = null;
+    let handShape: 'open' | 'closed' | null = null; // Set while the camera follows a hand.
     let lastMove = -1e9, lastInteraction = -1e9;
     let falling = false;
     const at = (clientX: number, clientY: number) => { const r = root.getBoundingClientRect(); return { x: clientX - r.left, y: clientY - r.top }; };
-    const move = (point: { x: number; y: number }) => {
-      if (!pointer || Math.hypot(point.x - pointer.x, point.y - pointer.y) > 1.5) lastMove = performance.now();
+    const move = (point: { x: number; y: number }, still = 1.5) => {
+      if (!pointer || Math.hypot(point.x - pointer.x, point.y - pointer.y) > still) lastMove = performance.now();
       pointer = point;
       lastInteraction = performance.now();
       falling = false;
@@ -199,7 +204,8 @@ const { label } = Astro.props;
     root.addEventListener('touchmove', (event) => { const t = event.touches[0]; if (t) move(at(t.clientX, t.clientY)); }, { passive: true });
     root.addEventListener('touchend', leave, { passive: true });
 
-    // Camera: an open hand is the pointer; closing it is the click.
+    // Camera: the hand is a soft magnet. Moving it draws the dots toward it; a fist gathers them in tight, an open hand
+    // lets them spread; held still for 5 s, they go back to their own flow.
     const caption = root.closest('section') ?? document;
     const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-dots-camera]')];
     const cameraHelp = caption.querySelector<HTMLElement>('[data-dots-camera-help]');
@@ -210,7 +216,7 @@ const { label } = Astro.props;
     let closed = false, lostSince = 0;
     const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
     const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; };
-    const cameraOff = () => { camera?.stop(); camera = null; handPoint = null; closed = false; leave(); if (cameraHelp) cameraHelp.hidden = true; setLabel('turn the camera on', false); };
+    const cameraOff = () => { camera?.stop(); camera = null; handPoint = null; handShape = null; closed = false; leave(); if (cameraHelp) cameraHelp.hidden = true; setLabel('turn the camera on', false); };
     const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
     const track = () => {
       if (!camera) return;
@@ -224,13 +230,15 @@ const { label } = Astro.props;
           const isClosed = closed ? reach < 1.35 : reach < 1.05;
           // The middle of the palm, mirrored like a selfie and stretched a little to reach the edges.
           const target = { x: Math.min(1, Math.max(0, .5 - (hand[9].x - .5) * 1.3)) * width, y: Math.min(1, Math.max(0, .5 + (hand[9].y - .5) * 1.3)) * height };
-          handPoint = handPoint ? { x: handPoint.x + (target.x - handPoint.x) * .4, y: handPoint.y + (target.y - handPoint.y) * .4 } : target;
-          if (isClosed && !closed) drop();
+          handPoint = handPoint ? { x: handPoint.x + (target.x - handPoint.x) * .3, y: handPoint.y + (target.y - handPoint.y) * .3 } : target;
+          // Opening or closing the hand counts as moving, so the dots answer it even when the hand stays in place.
+          if (isClosed !== closed) lastMove = performance.now();
           closed = isClosed;
-          if (!closed) move(handPoint);
-          setStatus(closed ? 'Fist — the dots drop.' : 'Got your hand — move it, hold it still, or close it.');
+          handShape = closed ? 'closed' : 'open';
+          move(handPoint, SETTINGS.hand.still);
+          setStatus(closed ? 'Closed — the dots gather in.' : 'Open — move your hand, close it, or hold still.');
         } else {
-          if (handPoint) { handPoint = null; leave(); }
+          if (handPoint) { handPoint = null; handShape = null; leave(); }
           lostSince ||= performance.now();
           if (performance.now() - lostSince > 600) setStatus('Looking for your hand… show it open, in good light.');
         }
@@ -291,14 +299,25 @@ const { label } = Astro.props;
       previous = time;
       const now = performance.now();
       const moving = pointer && now - lastMove < SETTINGS.stillAfter;
-      // Home only once nobody has hovered or dragged for a while (holding still over the frame keeps pushing).
-      const goHome = !pointer && now - lastInteraction > SETTINGS.returnAfter;
+      // Home only once nobody has hovered or dragged for a while (holding still over the frame keeps pushing). A hand
+      // held still lets them go straight back to their flow.
+      const goHome = (!pointer && now - lastInteraction > SETTINGS.returnAfter) || (!!handShape && !moving);
       if (goHome) falling = false;
       const damping = Math.exp(-SETTINGS.damping * dt);
       for (const d of dots) {
         let ax = 0, ay = 0;
         if (falling) {
           ay += SETTINGS.gravity;
+        } else if (pointer && moving && handShape) {
+          // The hand: a soft, wide magnet. Each dot heads for a spot on its own side of the hand, closer in for a fist,
+          // further out for an open hand, and eases there (the damping keeps it smooth).
+          const dx = d.x - pointer.x, dy = d.y - pointer.y, dist = Math.hypot(dx, dy) || 1;
+          const reach = SETTINGS.hand.reach * width;
+          const weight = Math.max(0, 1 - dist / reach) ** .5;
+          const spot = d.huddle * (handShape === 'closed' ? SETTINGS.hand.gather : SETTINGS.hand.spread);
+          ax += (pointer.x + dx / dist * spot - d.x) * SETTINGS.hand.pull * weight;
+          ay += (pointer.y + dy / dist * spot - d.y) * SETTINGS.hand.pull * weight;
+          ax -= d.vx * 5 * weight; ay -= d.vy * 5 * weight; // Extra drag near the hand: they glide in, no overshoot.
         } else if (pointer && moving) {
           // Magnet: pulled toward the pointer, gathering in a small cloud around it.
           const dx = pointer.x - d.x, dy = pointer.y - d.y, dist = Math.hypot(dx, dy) || 1;
