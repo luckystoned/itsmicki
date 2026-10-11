@@ -4,7 +4,7 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/04_SideB/Projects/01_MkpHair/03_MkpHair.webp': { width: 1546, height: 1910 },
   '/04_SideB/Projects/01_MkpHair/04_MkpHair.webp': { width: 1546, height: 1909 },
   '/04_SideB/Projects/01_MkpHair/05_MkpHair.webp': { width: 1546, height: 1910 },
-  '/04_SideB/Projects/01_MkpHair/06_MkpHair.webp': { width: 1546, height: 1909 },
+  '/04_SideB/Projects/01_MkpHair/06_MkpHair.webp': { width: 1546, height: 1910 },
   '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp': { width: 1520, height: 1510 },
   '/02_Projects/01_Winona/01_Winona_Drag.webp': { width: 790, height: 790 },
   '/02_Projects/01_Winona/02_Winona_Drag.webp': { width: 780, height: 787 },

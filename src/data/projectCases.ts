@@ -494,7 +494,7 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
       ),
       pair(
         image('/04_SideB/Projects/01_MkpHair/05_MkpHair.webp', 'Face laced with pink cords, tassels and a mesh patch over one eye.', '773 / 955'), '48.3125vw', '59.6875vw',
-        image('/04_SideB/Projects/01_MkpHair/06_MkpHair.webp', 'A curved silver brow piece set with coloured beads.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/06_MkpHair.webp', 'Blonde face with a silver brow piece set with coloured beads and a beaded line under the other eye.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
     ],
     credits: [],
