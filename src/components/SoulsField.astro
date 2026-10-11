@@ -482,14 +482,14 @@ const { label } = Astro.props;
       };
     };
 
-    /** The caregiver, like the girl in the references: a soft, dark indigo figure with a bob, her dress glowing orange
+    /** The caregiver, like the girl in the references: a soft, white figure with a bob, her dress glowing orange
         from within, colours fringing off her outline, a layered halo; both arms drawn on their own so they can move. */
     let keeper: HTMLCanvasElement | null = null;
     const KEEPER = .78; // Her height, as a share of the frame's.
     type Limb = { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number; length: number };
     let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
     const UPPER = .13, FOREARM = .15; // Her upper arm and forearm, as shares of her height.
-    const KEEPER_PAD = .35; // Room around her for her halo, as a share of her height.
+    const KEEPER_PAD = .55; // Room around her for her halo, as a share of her height.
     const paintKeeper = (size: number) => {
       const w = size * .56, pad = size * KEEPER_PAD;
       const shape = canvasOf(w + pad * 2, size + pad * 2), s = shape.getContext('2d')!;
@@ -511,13 +511,13 @@ const { label } = Astro.props;
       s.beginPath(); s.ellipse(cx + .05 * u, top + .965 * u, .04 * u, .02 * u, 0, 0, Math.PI * 2); s.fill();
       const W = w + pad * 2, H = size + pad * 2;
       const tint = (source: HTMLCanvasElement, colour: string) => { const c = canvasOf(source.width, source.height), t = c.getContext('2d')!; t.drawImage(source, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = colour; t.fillRect(0, 0, c.width, c.height); return c; };
-      // Her colours, painted onto the crisp figure: deep indigo hair and shoulders, the dress glowing orange from
-      // within, legs fading to a soft violet; a little green light on her face.
+      // Her colours, painted onto the crisp figure: white hair and shoulders, the dress glowing orange from within, pale
+      // legs; a little green light on her face.
       const coloured = canvasOf(W, H), c = coloured.getContext('2d')!;
       c.drawImage(shape, 0, 0);
       c.globalCompositeOperation = 'source-in';
       const fill = c.createLinearGradient(0, top, 0, top + size);
-      fill.addColorStop(0, '#2c2868'); fill.addColorStop(.22, '#3a338c'); fill.addColorStop(.32, '#5a43a6'); fill.addColorStop(.48, '#ff7a55'); fill.addColorStop(.63, '#ff9d74'); fill.addColorStop(.72, '#7a72d2'); fill.addColorStop(1, '#4e48aa');
+      fill.addColorStop(0, '#fdfbf6'); fill.addColorStop(.22, '#f8f4ec'); fill.addColorStop(.32, '#fbe3d2'); fill.addColorStop(.48, '#ff8a62'); fill.addColorStop(.63, '#ffa880'); fill.addColorStop(.72, '#f6efe6'); fill.addColorStop(1, '#ede6f2');
       c.fillStyle = fill; c.fillRect(0, 0, W, H);
       c.globalCompositeOperation = 'source-atop';
       const glow = c.createRadialGradient(cx, top + .45 * u, 0, cx, top + .45 * u, .2 * u);
@@ -531,7 +531,7 @@ const { label } = Astro.props;
       g.imageSmoothingQuality = 'high';
       // Her halo fades out in layers, wider and fainter each time, warm near her and green further out, so it has no
       // edge of its own; then her colours fringing off her outline, then herself, soft.
-      for (const [blur, grow, alpha, colour] of [[40, 1.32, .2, '#8ad8b4'], [26, 1.2, .24, '#b5d89a'], [16, 1.1, .3, '#ffb48a'], [9, 1.03, .35, '#ff9a72']] as Array<[number, number, number, string]>) {
+      for (const [blur, grow, alpha, colour] of [[72, 1.7, .14, '#8ad8b4'], [52, 1.48, .16, '#b5d89a'], [36, 1.3, .2, '#fff4e2'], [22, 1.15, .24, '#ffb48a'], [12, 1.05, .26, '#ffd2b4']] as Array<[number, number, number, string]>) {
         g.globalAlpha = alpha; g.drawImage(tint(soften(shape, blur), colour), W * (1 - grow) / 2, H * (1 - grow) / 2.6, W * grow, H * grow);
       }
       const soft = soften(coloured, 4), shift = .012 * u;
@@ -586,10 +586,10 @@ const { label } = Astro.props;
         return { canvas: done, w: form.width, h: form.height, pivotX: ax, pivotY: y0, length };
       };
       keeperArms = {
-        reachUpper: limb(UPPER * u, .028 * u, .019 * u, ['#3a338c', '#4a3d9e'], false, true),
-        reachLower: limb(FOREARM * u, .019 * u, .013 * u, ['#4a3d9e', '#7f78d8', '#b0a6f2'], true, false),
-        restUpper: limb(UPPER * u, .028 * u, .019 * u, ['#3a338c', '#4a3d9e'], false, true),
-        restLower: limb(FOREARM * u, .019 * u, .013 * u, ['#4a3d9e', '#6f68c8', '#8f88e0'], true, false),
+        reachUpper: limb(UPPER * u, .028 * u, .019 * u, ['#fbf8f2', '#f6f1ea'], false, true),
+        reachLower: limb(FOREARM * u, .019 * u, .013 * u, ['#f6f1ea', '#e0daf4', '#b9b0f2'], true, false),
+        restUpper: limb(UPPER * u, .028 * u, .019 * u, ['#fbf8f2', '#f6f1ea'], false, true),
+        restLower: limb(FOREARM * u, .019 * u, .013 * u, ['#f6f1ea', '#efe9f2', '#e2dcf2'], true, false),
       };
     };
     let petting = 0; // Until when she is stroking a newcomer.
