@@ -18,8 +18,8 @@ const coming = ' — (Coming soon) !!!!!^*^';
 const MKP_LOOP = '/04_SideB/Projects/01_MkpHair/00_MkpHair_Loop.mp4';
 /** Missing souls' muted 6-second loop (square): a detail of its lilac flowers swaying, the sky melting from orange into lilac. */
 const SOULS_LOOP = '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Loop.mp4';
-/** Nostalgia as Agony's muted 4-second loops: the photo holds still and breaks into big pixels in hits, short ones
-    and held ones that melt, with bursts of colour (landscape for the grid, portrait for its carousel card). */
+/** Nostalgia as Agony's muted 4-second loops: the photo holds still and breaks into horizontal bars of big pixels
+    in hits, short ones and held ones that drag sideways (landscape for the grid, portrait for its carousel card). */
 const NOSTALGIA_LOOP = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Loop.mp4';
 const NOSTALGIA_CARD = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Card.mp4';
 
@@ -41,7 +41,7 @@ const carouselCards: Array<{ width: number; height: number; alt: string; video?:
   { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.', project: 1 },
   { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true, project: 2 },
   { width: 357, height: 354, alt: 'Lilac flowers on green stems swaying against a coral sky melting into lilac.', video: SOULS_LOOP, project: 3 },
-  { width: 358, height: 474, alt: 'A girl in lilac holding a baby against a tiled wall, the photo breaking into big pixels in bursts.', video: NOSTALGIA_CARD, project: 4 },
+  { width: 358, height: 474, alt: 'A girl in lilac holding a baby against a tiled wall, the photo breaking into horizontal bars of big pixels in bursts.', video: NOSTALGIA_CARD, project: 4 },
 ];
 
 export const sideBCarousel = carouselCards.map((card, index) => {
