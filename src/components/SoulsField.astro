@@ -17,16 +17,6 @@ const { label } = Astro.props;
 
 <div class="souls-field" data-souls-field>
   <canvas class="souls-field-canvas" role="img" aria-label={label}></canvas>
-  <!-- A song to listen to while here, if they want: the official audio on YouTube (whole song, its own volume control),
-       in the top right corner. It never plays on its own. -->
-  <iframe
-    class="souls-field-music"
-    src="https://www.youtube-nocookie.com/embed/Bi8G90nkmDA?rel=0&playsinline=1"
-    title="Dauwd — Theory of Colours (official audio, YouTube)"
-    loading="lazy"
-    allow="encrypted-media; picture-in-picture"
-    referrerpolicy="strict-origin-when-cross-origin"
-  ></iframe>
   <!-- Who they are: asked once the photo is read. The coat words correct the colours and markings read from the photo. -->
   <dialog class="souls-dialog" data-souls-dialog aria-labelledby="souls-dialog-title">
     <form method="dialog" class="souls-form">
@@ -301,6 +291,10 @@ const { label } = Astro.props;
     const setStatus = (text: string) => { if (status) { status.textContent = text; status.hidden = !text; } };
 
     let width = 0, height = 0, ratio = 1;
+    // The size everything is drawn to: the height in a landscape frame; in a tall one (a phone), a share of the width, so
+    // the caregiver and the animals keep their proportions and the extra height becomes sky and ground.
+    let base = 0;
+    const K = () => KEEPER * base / Math.max(1, height); // Her height, as a share of the frame's.
     let souls: Soul[] = [];
     let cap = SETTINGS.cap;
     let shared = true; // False when the shared place cannot be reached: souls are kept on this device.
@@ -490,7 +484,7 @@ const { label } = Astro.props;
     /** The caregiver: a soft, luminous girl with a bob and a short dress, warm white into pale lime, glowing orange from
         her chest, with a layered halo; both arms drawn on their own so they can move. */
     let keeper: HTMLCanvasElement | null = null;
-    const KEEPER = .78; // Her height, as a share of the frame's.
+    const KEEPER = .78; // Her height, as a share of the base size (the frame’s height when it is landscape).
     type Limb = { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number; length: number };
     let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
     const UPPER = .13, FOREARM = .15; // Her upper arm and forearm, as shares of her height.
@@ -590,13 +584,13 @@ const { label } = Astro.props;
     };
     let petting = 0; // Until when she is stroking a newcomer.
     // Her shoulders and her reaching hand, in the frame (shares of width and height).
-    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.09 * KEEPER * height) / width, y: 1.02 - KEEPER + .245 * KEEPER });
+    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.09 * K() * height) / width, y: 1.02 - K() + .245 * K() });
     // At rest (angles from straight down; positive swings to her right, our left): the reaching arm hangs a little out
     // with the elbow softly bent towards the animals; the other one hangs along her side.
     const UPPER_ANGLE = .26, FOREARM_ANGLE = .5, REST_UPPER = -.14, REST_FOREARM = -.05;
     const handAt = () => {
       const sh = shoulder(-1);
-      const dx = -(Math.sin(UPPER_ANGLE) * UPPER + Math.sin(FOREARM_ANGLE) * FOREARM) * KEEPER, dy = (Math.cos(UPPER_ANGLE) * UPPER + Math.cos(FOREARM_ANGLE) * FOREARM) * KEEPER;
+      const dx = -(Math.sin(UPPER_ANGLE) * UPPER + Math.sin(FOREARM_ANGLE) * FOREARM) * K(), dy = (Math.cos(UPPER_ANGLE) * UPPER + Math.cos(FOREARM_ANGLE) * FOREARM) * K();
       return { x: sh.x + dx * height / width, y: sh.y + dy };
     };
     const drawArm = (from: { x: number; y: number }, upperAngle: number, lowerAngle: number, upperLimb: Limb, lowerLimb: Limb, sway: number) => {
@@ -655,13 +649,13 @@ const { label } = Astro.props;
       const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
       const back: Plant[] = [], front: Plant[] = [];
       const horizon = height * SETTINGS.horizon;
-      const variants = Array.from({ length: 8 }, (_, i) => { const h = height * (.13 + random() * .14), w = h * .7; return { sprite: paintPlant('flower', w, h, 31 + i * 7, 4), w, h }; });
+      const variants = Array.from({ length: 8 }, (_, i) => { const h = base * (.13 + random() * .14), w = h * .7; return { sprite: paintPlant('flower', w, h, 31 + i * 7, 4), w, h }; });
       for (let x = -width * .02; x < width * 1.02; x += width * (.022 + random() * .025)) {
         const v = variants[Math.floor(random() * variants.length)];
         back.push({ ...v, x, y: horizon + height * (random() * .06 - .01), phase: random() * 6.28, sway: .04 + random() * .04 });
       }
       for (const [x, lean] of [[.03, 1], [.1, 1], [.18, 1], [.84, -1], [.92, -1], [.98, -1]] as Array<[number, number]>) {
-        const h = height * (.32 + random() * .22), w = h * .5;
+        const h = base * (.32 + random() * .22), w = h * .5;
         front.push({ sprite: paintPlant('leaves', w, h, 101 + Math.round(x * 100), 7), x: width * x + lean * random() * width * .02, y: height * 1.04, w, h, phase: random() * 6.28, sway: .05 + random() * .03 });
       }
       plants = { back, front };
@@ -693,7 +687,7 @@ const { label } = Astro.props;
     layout();
     // How big a soul is where it stands: smaller far away (up near the horizon), larger up close; and by its kind/size.
     const kindScale = (look: Look) => SETTINGS.scale[look.kind][look.size];
-    const unitAt = (soul: Soul) => soul.act === 'held' && soul.heldUnit ? soul.heldUnit : height * (.11 + Math.min(1, Math.max(0, (soul.y - SETTINGS.horizon) / (1 - SETTINGS.horizon))) * .2) * kindScale(soul.look);
+    const unitAt = (soul: Soul) => soul.act === 'held' && soul.heldUnit ? soul.heldUnit : base * (.11 + Math.min(1, Math.max(0, (soul.y - SETTINGS.horizon) / (1 - SETTINGS.horizon))) * .2) * kindScale(soul.look);
     const PAINT_AT = .32; // Figures are painted at the largest size they can have (share of the height), then drawn smaller.
 
     const meet = (id: string, look: Look, index: number, born: number): Soul => {
@@ -731,9 +725,9 @@ const { label } = Astro.props;
       const rect = root.getBoundingClientRect();
       ratio = Math.min(devicePixelRatio || 1, 2);
       if (Math.round(rect.width) === width && Math.round(rect.height) === height) return;
-      width = Math.round(rect.width); height = Math.round(rect.height);
+      width = Math.round(rect.width); height = Math.round(rect.height); base = Math.min(height, width * .88);
       canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
-      paintKeeper(height * KEEPER);
+      paintKeeper(base * KEEPER);
       growPlants();
       souls.forEach((soul) => { soul.figure = undefined; });
     };
@@ -762,7 +756,7 @@ const { label } = Astro.props;
         soul.drawn = now;
         const p = soul.actEnd > soul.actStart ? Math.min(1, (now - soul.actStart) / (soul.actEnd - soul.actStart)) : 1;
         if (soul.act === 'walk') { soul.x = soul.fromX + (soul.toX - soul.fromX) * ease(p); soul.y = soul.fromY + (soul.toY - soul.fromY) * ease(p); }
-        const unit = unitAt(soul), paintUnit = Math.round(height * PAINT_AT * kindScale(soul.look));
+        const unit = unitAt(soul), paintUnit = Math.round(base * PAINT_AT * kindScale(soul.look));
         if (!soul.figure || soul.figure.unit !== paintUnit) soul.figure = paintFigure(soul, paintUnit);
         const figure = soul.figure, k = unit / figure.unit;
         // Its pose for what it is doing, eased in and out so one thing flows into the next.
@@ -867,7 +861,7 @@ const { label } = Astro.props;
         drawArm(shoulder(1), REST_UPPER + idle, REST_FOREARM + idle * 1.4, keeperArms.restUpper, keeperArms.restLower, sway);
       }
       if (keeper) {
-        const w = keeper.width / ratio, h = keeper.height / ratio, size = height * KEEPER;
+        const w = keeper.width / ratio, h = keeper.height / ratio, size = base * KEEPER;
         context.drawImage(keeper, width * .5 - w / 2, height * 1.02 - (size * KEEPER_PAD + size) + sway, w, h);
       }
       order.filter((soul) => soul.y >= herLine).forEach(drawSoul);
@@ -890,7 +884,7 @@ const { label } = Astro.props;
         const unit = unitAt(named);
         context.save();
         context.globalAlpha = nameAlpha;
-        context.font = `400 ${Math.max(11, Math.round(height * .028))}px ${getComputedStyle(root).fontFamily}`;
+        context.font = `400 ${Math.max(11, Math.round(base * .028))}px ${getComputedStyle(root).fontFamily}`;
         context.textAlign = 'center';
         context.fillStyle = '#fffaf0';
         context.shadowColor = 'rgba(80, 60, 140, .6)';
@@ -1130,13 +1124,6 @@ const { label } = Astro.props;
 <style>
   .souls-field { position: absolute; inset: 0; overflow: hidden; }
   .souls-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-  /* Over the case page's own iframe rules (those centre Vimeo videos in their frame). */
-  .souls-field .souls-field-music { position: absolute; z-index: 2; inset: .8vw .8vw auto auto; width: min(240px, 34%); height: auto; aspect-ratio: 16 / 9; min-width: 0; min-height: 0; border: 0; border-radius: 10px; transform: none; }
-
-  @media (max-width: 760px) {
-    .souls-field .souls-field-music { inset: 8px 8px auto auto; width: min(200px, 46%); }
-  }
-
   /* The little form, in Side B's dark: white type, hairline fields, the page's own buttons. */
   .souls-dialog { width: min(420px, calc(100vw - 32px)); padding: 0; border: 1px solid rgb(250 250 250 / .25); border-radius: 14px; background: #202020; color: #fafafa; font: inherit; font-size: 16px; line-height: 1.25; }
   .souls-dialog::backdrop { background: rgb(20 14 30 / .55); backdrop-filter: blur(3px); }
