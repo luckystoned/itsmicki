@@ -24,18 +24,22 @@ const { top, under, poster, label } = Astro.props;
   const SETTINGS = {
     field: 200, // Simulation grid along the frame's longer side.
     radius: .085, // Brush radius, as a share of the frame height.
+    fingerRadius: .05, // With the camera on, each fingertip is a smaller brush.
     strength: .55, // How much each frame of contact opens the hole.
     drag: .9, // How much of the pointer's motion is handed to the liquid.
     velocityKeep: .93, // How long the liquid keeps flowing after a move.
     revealKeep: .985, // How long the trail stays open (per 60 fps frame).
+    drain: .006, // A steady drain on top of it, so the last small bits of the trail close quickly.
     wobble: .025, // How far the edges drift, as a share of the frame.
     edgeNoise: .95, // Large organic lobes on the edge.
     grain: .5, // Fine, jagged detail on the edge (notches and small islands), continuous so each contour stays one line.
     stroke: [.96, .94, .88], // Ivory stroke.
     strokeWidth: 1.3, // Half the line width, in CSS pixels.
     inkBreak: .8, // Printed look: how much the ink thins out and breaks into grain (0 = solid).
-    asciiCell: 11, // ASCII cell size, in CSS pixels.
-    asciiGlyphs: ' .:-+=', // From dark to light: a sparse, minimal set.
+    asciiCell: 9, // ASCII cell size, in CSS pixels.
+    asciiGlyphs: ' .:-=+*#%', // From dark to light.
+    asciiContrast: [.04, .52], // Brightness range stretched to the full set of characters, so the video reads clearly.
+    asciiTone: .3, // How much each cell's paper lightens with the image under it.
     paper: [.075, .075, .07], // The negative is printed in two tones: ivory ink (the stroke's) on black paper.
     ink: [.96, .94, .88],
     particles: 1, // How many small islands the fading trail leaves behind (0 = none).
@@ -60,13 +64,13 @@ const { top, under, poster, label } = Astro.props;
       void main() { vec4 f = texture(uField, vUv); vec2 d = (vUv - uPoint) * vec2(uAspect, 1.); float g = exp(-dot(d, d) / (uRadius * uRadius));
         outColor = vec4(min(1.4, f.x + uAmount * g), f.yz + uDrag * g, 1.); }`,
     // The field is carried along its own velocity; the trail fades and the liquid slows down.
-    advect: `${HEAD}uniform sampler2D uField; uniform float uDt; uniform float uKeep; uniform float uVelKeep; uniform vec2 uTexel;
+    advect: `${HEAD}uniform sampler2D uField; uniform float uDt; uniform float uKeep; uniform float uVelKeep; uniform vec2 uTexel; uniform float uDrain;
       void main() { vec2 v = texture(uField, vUv).yz; vec4 f = texture(uField, vUv - v * uDt);
         float around = (texture(uField, vUv + vec2(uTexel.x, 0.)).x + texture(uField, vUv - vec2(uTexel.x, 0.)).x + texture(uField, vUv + vec2(0., uTexel.y)).x + texture(uField, vUv - vec2(0., uTexel.y)).x) * .25;
-        outColor = vec4(mix(f.x, around, .08) * uKeep, f.yz * uVelKeep, 1.); }`,
+        outColor = vec4(max(0., mix(f.x, around, .08) * uKeep - uDrain), f.yz * uVelKeep, 1.); }`,
     display: `${HEAD}${NOISE}uniform sampler2D uField; uniform sampler2D uTop; uniform sampler2D uUnder; uniform vec2 uCover; uniform float uTime;
       uniform float uWobble; uniform float uEdgeNoise; uniform float uGrain; uniform vec3 uStroke; uniform float uStrokeWidth; uniform float uAspect; uniform float uInk;
-      uniform sampler2D uAtlas; uniform float uGlyphs; uniform float uCell; uniform vec2 uResolution; uniform vec3 uPaper; uniform vec3 uInkColor; uniform float uParticles;
+      uniform sampler2D uAtlas; uniform float uGlyphs; uniform float uCell; uniform vec2 uResolution; uniform vec3 uPaper; uniform vec3 uInkColor; uniform float uParticles; uniform vec2 uContrast; uniform float uTone;
       // The negative, printed as ASCII: one character per cell, denser where the image is lighter, in ivory ink on black
       // paper; the ink thins out and breaks into grain like a print.
       vec3 ascii() {
@@ -74,12 +78,12 @@ const { top, under, poster, label } = Astro.props;
         vec2 local = fract(gl_FragCoord.xy / uCell);
         vec2 center = (cell + .5) * uCell / uResolution;
         vec2 uv = (vec2(center.x, 1. - center.y) - .5) * uCover + .5;
-        float lum = dot(texture(uUnder, uv).rgb, vec3(.299, .587, .114));
+        float lum = smoothstep(uContrast.x, uContrast.y, dot(texture(uUnder, uv).rgb, vec3(.299, .587, .114)));
         float index = floor(clamp(lum, 0., 1.) * (uGlyphs - 1.) + .5);
         float glyph = texture(uAtlas, vec2((index + local.x) / uGlyphs, 1. - local.y)).r;
         float density = 1. - uInk * (1. - noise(gl_FragCoord.xy * .09)) * .6;
         float printed = glyph * step(hash(floor(gl_FragCoord.xy) + 17.) * uInk * .8, glyph * density);
-        vec3 paper = uPaper + (noise(gl_FragCoord.xy * .35) - .5) * .03;
+        vec3 paper = uPaper + lum * uTone + (noise(gl_FragCoord.xy * .35) - .5) * .03;
         return mix(paper, uInkColor, printed);
       }
       void main() {
@@ -93,7 +97,7 @@ const { top, under, poster, label } = Astro.props;
         float shape = (fbm(p * 3.2 + uTime * .04) - .5) * uEdgeNoise + jag * uGrain;
         float m = open + shape * smoothstep(0., .18, open);
         // The fading trail sheds small particles: little islands, each with its own outline.
-        float fringe = smoothstep(.02, .1, open) * (1. - smoothstep(.32, .52, open));
+        float fringe = smoothstep(.1, .18, open) * (1. - smoothstep(.32, .48, open));
         float bits = min(1., step(1. - .17 * uParticles, noise(p * 60. + floor(uTime * 2.) * 3.7)) + step(1. - .12 * uParticles, noise(p * 120. + 11.3)));
         m = max(m, (.5 + .35 * fringe) * bits * step(.01, fringe));
         float inside = step(.5, m);
@@ -185,7 +189,7 @@ const { top, under, poster, label } = Astro.props;
     atlasContext.fillStyle = '#000';
     atlasContext.fillRect(0, 0, atlasCanvas.width, atlasCanvas.height);
     atlasContext.fillStyle = '#fff';
-    atlasContext.font = `600 ${glyphSize * .82}px ui-monospace, Menlo, Consolas, monospace`;
+    atlasContext.font = `700 ${glyphSize * .9}px ui-monospace, Menlo, Consolas, monospace`;
     atlasContext.textAlign = 'center';
     atlasContext.textBaseline = 'middle';
     [...SETTINGS.asciiGlyphs].forEach((glyph, index) => atlasContext.fillText(glyph, (index + .5) * glyphSize, glyphSize * .54));
@@ -234,37 +238,42 @@ const { top, under, poster, label } = Astro.props;
     root.addEventListener('touchmove', touchAt, { passive: true });
     root.addEventListener('touchend', () => { pointer = null; last = null; }, { passive: true });
 
-    // Camera: the nose becomes the brush. The face detector (MediaPipe, loaded only when asked for) runs in the
+    // Camera: every fingertip becomes a brush. The hand tracker (MediaPipe, loaded only when asked for) runs in the
     // browser; the camera image never leaves the device. The button lives in the caption under the frame.
     const cameraButtons = [...(root.closest('section') ?? document).querySelectorAll<HTMLButtonElement>('[data-reveal-camera]')];
     const cameraVideo = document.createElement('video');
     cameraVideo.muted = true;
     cameraVideo.playsInline = true;
     let stream: MediaStream | null = null;
-    let detector: { detectForVideo: (video: HTMLVideoElement, time: number) => { detections: Array<{ keypoints: Array<{ x: number; y: number }> }> } } | null = null;
-    let nose: { x: number; y: number } | null = null;
+    let tracker: { detectForVideo: (video: HTMLVideoElement, time: number) => { landmarks: Array<Array<{ x: number; y: number }>> } } | null = null;
+    const fingers = new Map<string, { x: number; y: number }>();
+    const fingersLast = new Map<string, { x: number; y: number }>();
+    const TIPS = [4, 8, 12, 16, 20]; // Thumb, index, middle, ring and little fingertips.
     const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
     const cameraOff = () => {
       stream?.getTracks().forEach((track) => track.stop());
       stream = null;
-      nose = null;
-      pointer = null;
-      last = null;
+      fingers.clear();
+      fingersLast.clear();
       setLabel('turn the camera on', false);
     };
     const track = () => {
       if (!stream) return;
-      if (detector && cameraVideo.readyState >= 2) {
-        const face = detector.detectForVideo(cameraVideo, performance.now()).detections[0];
-        const tip = face?.keypoints[2]; // Nose tip.
-        if (tip) {
-          // Mirrored like a selfie, and stretched so small head moves reach the whole frame.
-          const target = { x: Math.min(1, Math.max(0, .5 - (tip.x - .5) * 1.8)), y: Math.min(1, Math.max(0, .5 + (tip.y - .5) * 1.8)) };
-          nose = nose ? { x: nose.x + (target.x - nose.x) * .35, y: nose.y + (target.y - nose.y) * .35 } : target;
-          pointer = { ...nose };
-          lastContact = performance.now();
-          start();
-        }
+      if (tracker && cameraVideo.readyState >= 2) {
+        const hands = tracker.detectForVideo(cameraVideo, performance.now()).landmarks;
+        const seen = new Set<string>();
+        hands.forEach((hand, h) => TIPS.forEach((tip) => {
+          const point = hand[tip];
+          if (!point) return;
+          const key = `${h}-${tip}`;
+          // Mirrored like a selfie, and stretched a little so the hands reach the edges of the frame.
+          const target = { x: Math.min(1, Math.max(0, .5 - (point.x - .5) * 1.3)), y: Math.min(1, Math.max(0, .5 + (point.y - .5) * 1.3)) };
+          const current = fingers.get(key);
+          fingers.set(key, current ? { x: current.x + (target.x - current.x) * .5, y: current.y + (target.y - current.y) * .5 } : target);
+          seen.add(key);
+        }));
+        [...fingers.keys()].forEach((key) => { if (!seen.has(key)) { fingers.delete(key); fingersLast.delete(key); } });
+        if (seen.size) { lastContact = performance.now(); start(); }
       }
       requestAnimationFrame(track);
     };
@@ -274,14 +283,14 @@ const { top, under, poster, label } = Astro.props;
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
         cameraVideo.srcObject = stream;
         await cameraVideo.play();
-        if (!detector) {
+        if (!tracker) {
           const version = '0.10.14';
           const vision = await import(/* @vite-ignore */ `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/vision_bundle.mjs`);
           const files = await vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/wasm`);
-          detector = await vision.FaceDetector.createFromOptions(files, {
-            baseOptions: { modelAssetPath: '/models/blaze_face_short_range.tflite', delegate: 'GPU' },
+          tracker = await vision.HandLandmarker.createFromOptions(files, {
+            baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', delegate: 'GPU' },
             runningMode: 'VIDEO',
-            minDetectionConfidence: .5,
+            numHands: 2,
           });
         }
         if (!stream) return; // Turned off while loading.
@@ -318,21 +327,22 @@ const { top, under, poster, label } = Astro.props;
       // Keep the negative on the same frame as the video on top.
       if (Math.abs(underVideo.currentTime - topVideo.currentTime) > .08 && underVideo.readyState >= 1) underVideo.currentTime = topVideo.currentTime;
 
-      // 1. The brush opens the hole and hands the liquid its motion.
-      if (pointer) {
-        const move = last ? [(pointer.x - last.x) / dt, (pointer.y - last.y) / dt] : [0, 0];
+      // 1. Each brush (the pointer, or every fingertip with the camera on) opens the hole and hands the liquid its motion.
+      const paint = (point: { x: number; y: number }, previous: { x: number; y: number } | undefined, radius: number) => {
+        const move = previous ? [(point.x - previous.x) / dt, (point.y - previous.y) / dt] : [0, 0];
         const speed = Math.hypot(move[0], move[1]);
         const capped = speed > 4 ? [move[0] * 4 / speed, move[1] * 4 / speed] : move;
         run(programs.splat!, field.write, { uField: field.read.texture }, {
-          uPoint: [pointer.x, pointer.y], uDrag: [capped[0] * SETTINGS.drag * .05, capped[1] * SETTINGS.drag * .05],
-          uAmount: SETTINGS.strength * k, uRadius: SETTINGS.radius, uAspect: aspect,
+          uPoint: [point.x, point.y], uDrag: [capped[0] * SETTINGS.drag * .05, capped[1] * SETTINGS.drag * .05],
+          uAmount: SETTINGS.strength * k, uRadius: radius, uAspect: aspect,
         });
         swap();
-        last = { ...pointer };
-      }
+      };
+      if (pointer) { paint(pointer, last ?? undefined, SETTINGS.radius); last = { ...pointer }; }
+      fingers.forEach((point, key) => { paint(point, fingersLast.get(key), SETTINGS.fingerRadius); fingersLast.set(key, { ...point }); });
       // 2. It flows, slows down and closes.
       run(programs.advect!, field.write, { uField: field.read.texture }, {
-        uDt: dt, uKeep: Math.pow(SETTINGS.revealKeep, k), uVelKeep: Math.pow(SETTINGS.velocityKeep, k), uTexel: [1 / fieldW, 1 / fieldH],
+        uDt: dt, uKeep: Math.pow(SETTINGS.revealKeep, k), uVelKeep: Math.pow(SETTINGS.velocityKeep, k), uTexel: [1 / fieldW, 1 / fieldH], uDrain: SETTINGS.drain * k,
       });
       swap();
 
@@ -346,7 +356,7 @@ const { top, under, poster, label } = Astro.props;
           uCover: cover, uTime: time / 1000, uWobble: SETTINGS.wobble, uEdgeNoise: SETTINGS.edgeNoise, uGrain: SETTINGS.grain,
           uStroke: SETTINGS.stroke, uStrokeWidth: SETTINGS.strokeWidth * ratio, uAspect: aspect, uInk: SETTINGS.inkBreak,
           uGlyphs: SETTINGS.asciiGlyphs.length, uCell: SETTINGS.asciiCell * ratio, uResolution: [canvas.width, canvas.height],
-          uPaper: SETTINGS.paper, uInkColor: SETTINGS.ink, uParticles: SETTINGS.particles,
+          uPaper: SETTINGS.paper, uInkColor: SETTINGS.ink, uParticles: SETTINGS.particles, uContrast: SETTINGS.asciiContrast, uTone: SETTINGS.asciiTone,
         });
         if (!ready) { ready = true; root.classList.add('is-drawn'); }
       }
