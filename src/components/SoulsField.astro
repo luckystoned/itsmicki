@@ -13,13 +13,15 @@ const { label } = Astro.props;
 
 <div class="souls-field" data-souls-field>
   <canvas class="souls-field-canvas" role="img" aria-label={label}></canvas>
-  <!-- A song to listen to while here, if they want: Spotify's own player, in the top right corner. -->
+  <!-- A song to listen to while here, if they want: the official audio on YouTube (whole song, its own volume control),
+       in the top right corner. It never plays on its own. -->
   <iframe
     class="souls-field-music"
-    src="https://open.spotify.com/embed/track/7nT24kprAb4l7tI5FSd9zU?utm_source=generator&theme=0"
-    title="Song to listen to while you’re here (Spotify)"
+    src="https://www.youtube-nocookie.com/embed/Bi8G90nkmDA?rel=0&playsinline=1"
+    title="Dauwd — Theory of Colours (official audio, YouTube)"
     loading="lazy"
-    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+    allow="encrypted-media; picture-in-picture"
+    referrerpolicy="strict-origin-when-cross-origin"
   ></iframe>
 </div>
 
@@ -107,6 +109,8 @@ const { label } = Astro.props;
   };
 
   // Souls kept on this device, when the shared place cannot be reached.
+  // `?souls=reset` in the address clears the souls kept on this device (they never reach anyone else).
+  try { if (new URLSearchParams(location.search).get('souls') === 'reset') localStorage.removeItem('missing-souls'); } catch { /* No storage. */ }
   const localSouls = (): Array<{ id: string; data: string }> => { try { return JSON.parse(localStorage.getItem(STORE) ?? '[]'); } catch { return []; } };
   const keepLocally = (id: string, bytes: Uint8Array) => { try { localStorage.setItem(STORE, JSON.stringify([...localSouls(), { id, data: toBase64(bytes) }])); } catch { /* Storage full or blocked: it stays for this visit. */ } };
 
@@ -395,29 +399,52 @@ const { label } = Astro.props;
       g.fillStyle = face; g.beginPath(); g.ellipse(cx, top + .135 * u, .065 * u, .075 * u, 0, 0, Math.PI * 2); g.fill();
       for (const ex of [-.028, .028]) drawEye(g, cx + ex * u, top + .13 * u, .009 * u);
       keeper = out;
-      // Her reaching arm, drawn on its own so it can move: from the shoulder down to the hand, turning lilac.
-      const length = .4 * u, armPad = .08 * u;
-      const armShape = canvasOf(armPad * 2 + .1 * u, length + armPad * 2), a = armShape.getContext('2d')!;
-      const ax = armShape.width / 2;
-      a.lineCap = 'round'; a.strokeStyle = '#fff'; a.fillStyle = '#fff'; a.lineWidth = .05 * u;
-      a.beginPath(); a.moveTo(ax, armPad); a.lineTo(ax, armPad + length * .92); a.stroke();
-      a.beginPath(); a.ellipse(ax, armPad + length * .93, .032 * u, .045 * u, 0, 0, Math.PI * 2); a.fill();
-      const armOut = canvasOf(armShape.width * ratio, armShape.height * ratio), ag = armOut.getContext('2d')!;
-      ag.scale(ratio, ratio); ag.imageSmoothingQuality = 'high';
-      ag.globalAlpha = .45; ag.drawImage(soften(armShape, 8), 0, 0, armShape.width, armShape.height);
-      ag.globalAlpha = .9; ag.drawImage(soften(armShape, 4), 0, 0, armShape.width, armShape.height);
-      ag.globalCompositeOperation = 'source-in';
-      const tint = ag.createLinearGradient(0, armPad, 0, armPad + length);
-      tint.addColorStop(0, '#f7f2e4'); tint.addColorStop(.5, '#e2dcf4'); tint.addColorStop(1, '#9a90ea');
-      ag.fillStyle = tint; ag.fillRect(0, 0, armShape.width, armShape.height);
-      keeperArm = { canvas: armOut, w: armShape.width, h: armShape.height, pivotX: ax, pivotY: armPad };
+      // Her reaching arm, on its own so it can move like an arm: an upper arm from the shoulder and a forearm with the
+      // hand from the elbow, each tapering, soft and glowing like her. The shoulder melts into her body; the forearm turns
+      // lilac towards the hand, like the reference.
+      const limb = (length: number, from: number, to: number, colours: string[], hand: boolean, fadeTop: boolean) => {
+        const pad = .07 * u, shape = canvasOf(pad * 2 + from * 2, length + pad * 2 + (hand ? .05 * u : 0)), a = shape.getContext('2d')!;
+        const ax = shape.width / 2, y0 = pad, y1 = pad + length;
+        a.fillStyle = '#fff';
+        a.beginPath(); a.arc(ax, y0, from, 0, Math.PI * 2); a.fill();
+        a.beginPath(); a.arc(ax, y1, to, 0, Math.PI * 2); a.fill();
+        a.beginPath(); a.moveTo(ax - from, y0); a.quadraticCurveTo(ax - (from + to) * .45, (y0 + y1) / 2, ax - to, y1); a.lineTo(ax + to, y1); a.quadraticCurveTo(ax + (from + to) * .5, (y0 + y1) / 2, ax + from, y0); a.fill();
+        if (hand) { a.beginPath(); a.ellipse(ax - to * .2, y1 + .028 * u, to * 1.05, .042 * u, -.25, 0, Math.PI * 2); a.fill(); }
+        const out = canvasOf(shape.width * ratio, shape.height * ratio), g = out.getContext('2d')!;
+        g.scale(ratio, ratio); g.imageSmoothingQuality = 'high';
+        g.globalAlpha = .4; g.drawImage(soften(shape, 10), 0, 0, shape.width, shape.height);
+        g.globalAlpha = 1; g.drawImage(soften(shape, 3.5), 0, 0, shape.width, shape.height);
+        g.globalCompositeOperation = 'source-in';
+        const tint = g.createLinearGradient(0, y0, 0, shape.height - pad);
+        colours.forEach((colour, i) => tint.addColorStop(i / (colours.length - 1), colour));
+        g.fillStyle = tint; g.fillRect(0, 0, shape.width, shape.height);
+        if (fadeTop) {
+          g.globalCompositeOperation = 'destination-out';
+          const fade = g.createLinearGradient(0, 0, 0, y0 + length * .45);
+          fade.addColorStop(0, 'rgba(0, 0, 0, 1)'); fade.addColorStop(.45, 'rgba(0, 0, 0, .55)'); fade.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          g.fillStyle = fade; g.fillRect(0, 0, shape.width, y0 + length * .45);
+        }
+        return { canvas: out, w: shape.width, h: shape.height, pivotX: ax, pivotY: y0, length };
+      };
+      keeperArm = {
+        upper: limb(UPPER * u, .034 * u, .025 * u, ['#f8f3e6', '#eeedd8'], false, true),
+        lower: limb(FOREARM * u, .026 * u, .018 * u, ['#eeedd8', '#d6d0f2', '#a99eec'], true, false),
+      };
     };
-    let keeperArm: { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number } | null = null;
+    type Limb = { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number; length: number };
+    let keeperArm: { upper: Limb; lower: Limb } | null = null;
+    const UPPER = .2, FOREARM = .19; // Her upper arm and forearm, as shares of her height.
     let petting = 0; // Until when she is stroking a newcomer.
     // Her shoulder and her resting hand, in the frame (shares of width and height).
     const shoulder = () => ({ x: .5 - (.12 * KEEPER * height) / width, y: 1.02 - KEEPER + .26 * KEEPER });
-    const ARM_ANGLE = Math.atan2(.18, .34); // From straight down, towards the hand at rest.
-    const handAt = () => { const sh = shoulder(), l = .4 * KEEPER * .93; return { x: sh.x - Math.sin(ARM_ANGLE) * l * height / width, y: sh.y + Math.cos(ARM_ANGLE) * l }; };
+    // At rest (angles from straight down): the upper arm hangs a little out, the forearm reaches further towards the
+    // animals, the elbow softly bent.
+    const UPPER_ANGLE = .3, FOREARM_ANGLE = .72;
+    const handAt = () => {
+      const sh = shoulder();
+      const dx = -(Math.sin(UPPER_ANGLE) * UPPER + Math.sin(FOREARM_ANGLE) * FOREARM) * KEEPER, dy = (Math.cos(UPPER_ANGLE) * UPPER + Math.cos(FOREARM_ANGLE) * FOREARM) * KEEPER;
+      return { x: sh.x + dx * height / width, y: sh.y + dy };
+    };
 
     /** Plants, blurred like they are out of focus: flowers on round heads along the horizon, and tall leafy stems in
         front, near the edges. Each sways from its base. */
@@ -647,11 +674,20 @@ const { label } = Astro.props;
       if (keeperArm) {
         // Her arm: resting, it sways a little; stroking a newcomer, it goes back and forth along its back.
         const sh = shoulder(), stroking = !calm && now < petting ? ease(Math.min(1, (petting - now) / 600, (now - petting + 5000) / 600)) : 0;
-        const angle = ARM_ANGLE + (calm ? 0 : Math.sin(t * .8) * .03) + stroking * (.1 + Math.sin(t * 2 * Math.PI * .9) * .16);
+        // The stroke comes from the elbow and wrist, the shoulder barely moves: slow, even, like a real caress.
+        const idle = calm ? 0 : Math.sin(t * .8) * .02;
+        const stroke = Math.sin(t * 2 * Math.PI * .65);
+        const upper = UPPER_ANGLE + idle + stroking * (.06 + stroke * .05);
+        const lower = FOREARM_ANGLE + idle * 1.5 + stroking * (.12 + stroke * .2);
+        const { upper: u1, lower: u2 } = keeperArm;
         context.save();
         context.translate(sh.x * width, sh.y * height + (calm ? 0 : Math.sin(t * .5) * height * .003));
-        context.rotate(angle);
-        context.drawImage(keeperArm.canvas, -keeperArm.pivotX, -keeperArm.pivotY, keeperArm.w, keeperArm.h);
+        context.rotate(upper);
+        context.drawImage(u1.canvas, -u1.pivotX, -u1.pivotY, u1.w, u1.h);
+        // On to the elbow, then the forearm and hand.
+        context.translate(0, u1.length);
+        context.rotate(lower - upper);
+        context.drawImage(u2.canvas, -u2.pivotX, -u2.pivotY, u2.w, u2.h);
         context.restore();
       }
       plants.front.forEach((plant) => drawPlant(plant, t, .8));
@@ -749,9 +785,9 @@ const { label } = Astro.props;
   .souls-field { position: absolute; inset: 0; overflow: hidden; }
   .souls-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
   /* Over the case page's own iframe rules (those centre Vimeo videos in their frame). */
-  .souls-field .souls-field-music { position: absolute; z-index: 2; inset: .8vw .8vw auto auto; width: min(300px, 46%); height: 80px; min-width: 0; min-height: 0; border: 0; border-radius: 12px; transform: none; }
+  .souls-field .souls-field-music { position: absolute; z-index: 2; inset: .8vw .8vw auto auto; width: min(240px, 34%); height: auto; aspect-ratio: 16 / 9; min-width: 0; min-height: 0; border: 0; border-radius: 10px; transform: none; }
 
   @media (max-width: 760px) {
-    .souls-field .souls-field-music { inset: 8px 8px auto auto; width: min(260px, 64%); }
+    .souls-field .souls-field-music { inset: 8px 8px auto auto; width: min(200px, 46%); }
   }
 </style>
