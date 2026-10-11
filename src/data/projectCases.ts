@@ -421,7 +421,7 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
       single(image('/02_Projects/08_TexturesBody/02_TexturesBody.webp', 'Golden serum spreading across a pale surface with tiny bubbles.', '1556 / 870')),
       pair(
         clip('/02_Projects/08_TexturesBody/03_TexturesBody.mp4', '/02_Projects/08_TexturesBody/03_TexturesBody.webp', 'Translucent coral membrane folds moving slowly, seen up close.', '773 / 955'), '48.3125vw', '59.6875vw',
-        image('/02_Projects/08_TexturesBody/04_TexturesBody.webp', 'Clear gel with suspended shapes and air bubbles.', '773 / 955'), '48.3125vw', '59.6875vw',
+        clip('/02_Projects/08_TexturesBody/04_TexturesBody.mp4', '/02_Projects/08_TexturesBody/04_TexturesBody.webp', 'Emerald serum texture shifting slowly under the microscope.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
       single(image('/02_Projects/08_TexturesBody/05_TexturesBody.webp', 'Chain of clear bubbles over a milky, creamy texture.', '1556 / 870')),
       single(image('/02_Projects/08_TexturesBody/06_TexturesBody.webp', 'Deep pink gel with a cluster of small bubbles.', '1556 / 870')),

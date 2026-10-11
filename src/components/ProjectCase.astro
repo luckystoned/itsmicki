@@ -30,7 +30,7 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
   `--cell-width:${media.width};--cell-height:${media.height};${mediaStyle(media)}`;
 // Phones get 1080p; the inline script after the case content asks Vimeo for 4K on wider screens.
 const vimeoUrl = (id: string) =>
-  `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&controls=0&quality=1080p&dnt=1`;
+  `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&muted=1&controls=0&quality=1080p&dnt=1`;
 ---
 
 <div class="project-case-page" data-case={caseStudy.slug}>
