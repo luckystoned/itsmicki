@@ -41,7 +41,7 @@ const wordmark = 'Itsmicki';
         const cardStyle = `--card-aspect:${card.width / card.height};--card-width:${cardLength(card.width)}`;
         const content = (
           <>
-            <span class="more-carousel-name" aria-hidden="true"><span class="more-carousel-name-text">{card.label}</span></span>
+            <span class="more-carousel-name" aria-hidden="true" data-name-scroll><span class="more-carousel-name-text"><span class="name-line" data-name-line>{card.label}</span></span></span>
             <span class="more-carousel-picture">
               <img src={card.src} alt={loop === 0 ? card.alt : ''} width={card.imageWidth} height={card.imageHeight} loading="lazy" decoding="async" draggable="false" />
               {card.video && <video src={card.video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
@@ -358,4 +358,16 @@ const wordmark = 'Itsmicki';
       transition: none;
     }
   }
+
+  /* Names longer than their card slide back and forth to show the whole line (see scrollLongNames). */
+  .name-line { display: inline-block; }
+  [data-name-scroll].is-long .name-line { animation: name-scroll var(--name-duration, 6s) ease-in-out infinite alternate; }
+  @keyframes name-scroll { 0%, 18% { transform: none; } 82%, 100% { transform: translateX(var(--name-shift, 0)); } }
+  @media (prefers-reduced-motion: reduce) { [data-name-scroll].is-long .name-line { animation: none; } }
 </style>
+
+<script>
+  import { scrollLongNames } from '@/scripts/scrollLongNames';
+
+  scrollLongNames();
+</script>
