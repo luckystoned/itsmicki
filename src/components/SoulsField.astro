@@ -10,8 +10,16 @@ type Props = { label: string };
 const { label } = Astro.props;
 ---
 
-<div class="souls-field" data-souls-field role="img" aria-label={label}>
-  <canvas class="souls-field-canvas" aria-hidden="true"></canvas>
+<div class="souls-field" data-souls-field>
+  <canvas class="souls-field-canvas" role="img" aria-label={label}></canvas>
+  <!-- A song to listen to while here, if they want: Spotify's own player, in the top right corner. -->
+  <iframe
+    class="souls-field-music"
+    src="https://open.spotify.com/embed/track/7nT24kprAb4l7tI5FSd9zU?utm_source=generator&theme=0"
+    title="Song to listen to while you’re here (Spotify)"
+    loading="lazy"
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+  ></iframe>
 </div>
 
 <script>
@@ -44,11 +52,11 @@ const { label } = Astro.props;
     eyes: '#ff4a2a', // Eyes are little arches (∩), smiling shut, not round glowing dots.
     grain: .17, // Strength of the film grain over everything.
     // What they do, and how often; lengths in seconds.
-    acts: { sit: [.32, 3, 8], walk: [.3, 0, 0], hop: [.08, .8, .8], stretch: [.1, 1.8, 1.8], groom: [.08, 2.4, 3.4], sleep: [.12, 7, 13] } as Record<string, [number, number, number]>,
+    acts: { sit: [.32, 3, 8], walk: [.3, 0, 0], hop: [.06, 1.1, 1.1], stretch: [.1, 1.8, 1.8], groom: [.08, 2.4, 3.4], sleep: [.12, 7, 13] } as Record<string, [number, number, number]>,
     walkSpeed: .045, // Share of the width per second.
   };
 
-  type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep';
+  type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep' | 'pet';
   type Soul = {
     id: string; width: number; height: number; mask: Uint8Array; born: number;
     sprite?: HTMLCanvasElement; spriteFor?: number; eyes?: Array<{ x: number; y: number }>; eyeR?: number; facing?: number;
@@ -56,7 +64,7 @@ const { label } = Astro.props;
     body?: HTMLCanvasElement; legs?: Array<{ canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number }>;
     // Life: its home, where it is (feet; shares of the frame), what it is doing and until when.
     hx: number; hy: number; x: number; y: number; fromX: number; fromY: number; toX: number; toY: number;
-    act: Act; actStart: number; actEnd: number; face: number; blink: number; phase: number;
+    act: Act; actStart: number; actEnd: number; face: number; faceShown: number; blink: number; phase: number; drawn: number;
   };
   type Plant = { sprite: HTMLCanvasElement; x: number; y: number; w: number; h: number; phase: number; sway: number };
 
@@ -324,7 +332,6 @@ const { label } = Astro.props;
       s.quadraticCurveTo(cx - .17 * u, top + .6 * u, cx - .11 * u, top + .22 * u);
       s.fill();
       s.lineCap = 'round'; s.strokeStyle = '#fff'; s.lineWidth = .055 * u;
-      s.beginPath(); s.moveTo(cx - .12 * u, top + .26 * u); s.quadraticCurveTo(cx - .24 * u, top + .42 * u, cx - .3 * u, top + .6 * u); s.stroke(); // Reaching down to an animal.
       s.beginPath(); s.moveTo(cx + .12 * u, top + .26 * u); s.quadraticCurveTo(cx + .17 * u, top + .42 * u, cx + .15 * u, top + .55 * u); s.stroke();
       const out = canvasOf((w + pad * 2) * ratio, (size + pad * 2) * ratio), g = out.getContext('2d')!;
       g.scale(ratio, ratio);
@@ -340,10 +347,6 @@ const { label } = Astro.props;
       const heart = g.createRadialGradient(cx, top + .4 * u, 0, cx, top + .4 * u, .26 * u);
       heart.addColorStop(0, 'rgba(255, 120, 70, .6)'); heart.addColorStop(.6, 'rgba(255, 160, 130, .2)'); heart.addColorStop(1, 'rgba(255, 160, 130, 0)');
       g.fillStyle = heart; g.fillRect(0, 0, out.width, out.height);
-      // Her reaching arm turns lilac towards the hand.
-      const arm = g.createRadialGradient(cx - .28 * u, top + .55 * u, 0, cx - .28 * u, top + .55 * u, .16 * u);
-      arm.addColorStop(0, 'rgba(110, 100, 225, .9)'); arm.addColorStop(1, 'rgba(110, 100, 225, 0)');
-      g.fillStyle = arm; g.fillRect(0, 0, out.width, out.height);
       // Her feet melt into the floor.
       g.globalCompositeOperation = 'destination-out';
       const floor = g.createLinearGradient(0, top + .78 * u, 0, top + 1.02 * u);
@@ -356,7 +359,29 @@ const { label } = Astro.props;
       g.fillStyle = face; g.beginPath(); g.ellipse(cx, top + .135 * u, .065 * u, .075 * u, 0, 0, Math.PI * 2); g.fill();
       for (const ex of [-.028, .028]) drawEye(g, cx + ex * u, top + .13 * u, .009 * u);
       keeper = out;
+      // Her reaching arm, drawn on its own so it can move: from the shoulder down to the hand, turning lilac.
+      const length = .4 * u, armPad = .08 * u;
+      const armShape = canvasOf(armPad * 2 + .1 * u, length + armPad * 2), a = armShape.getContext('2d')!;
+      const ax = armShape.width / 2;
+      a.lineCap = 'round'; a.strokeStyle = '#fff'; a.fillStyle = '#fff'; a.lineWidth = .05 * u;
+      a.beginPath(); a.moveTo(ax, armPad); a.lineTo(ax, armPad + length * .92); a.stroke();
+      a.beginPath(); a.ellipse(ax, armPad + length * .93, .032 * u, .045 * u, 0, 0, Math.PI * 2); a.fill();
+      const armOut = canvasOf(armShape.width * ratio, armShape.height * ratio), ag = armOut.getContext('2d')!;
+      ag.scale(ratio, ratio); ag.imageSmoothingQuality = 'high';
+      ag.globalAlpha = .45; ag.drawImage(soften(armShape, 8), 0, 0, armShape.width, armShape.height);
+      ag.globalAlpha = .9; ag.drawImage(soften(armShape, 4), 0, 0, armShape.width, armShape.height);
+      ag.globalCompositeOperation = 'source-in';
+      const tint = ag.createLinearGradient(0, armPad, 0, armPad + length);
+      tint.addColorStop(0, '#f7f2e4'); tint.addColorStop(.5, '#e2dcf4'); tint.addColorStop(1, '#9a90ea');
+      ag.fillStyle = tint; ag.fillRect(0, 0, armShape.width, armShape.height);
+      keeperArm = { canvas: armOut, w: armShape.width, h: armShape.height, pivotX: ax, pivotY: armPad };
     };
+    let keeperArm: { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number } | null = null;
+    let petting = 0; // Until when she is stroking a newcomer.
+    // Her shoulder and her resting hand, in the frame (shares of width and height).
+    const shoulder = () => ({ x: .5 - (.12 * KEEPER * height) / width, y: 1.02 - KEEPER + .26 * KEEPER });
+    const ARM_ANGLE = Math.atan2(.18, .34); // From straight down, towards the hand at rest.
+    const handAt = () => { const sh = shoulder(), l = .4 * KEEPER * .93; return { x: sh.x - Math.sin(ARM_ANGLE) * l * height / width, y: sh.y + Math.cos(ARM_ANGLE) * l }; };
 
     /** Plants, blurred like they are out of focus: flowers on round heads along the horizon, and tall leafy stems in
         front, near the edges. Each sways from its base. */
@@ -445,7 +470,7 @@ const { label } = Astro.props;
 
     const meet = (id: string, mask: { width: number; height: number; mask: Uint8Array }, index: number, born: number): Soul => {
       const home = homes[index % homes.length], h = hash(id);
-      return { id, ...mask, born, hx: home.x, hy: home.y, x: home.x, y: home.y, fromX: home.x, fromY: home.y, toX: home.x, toY: home.y, act: 'sit', actStart: 0, actEnd: 0, face: home.x < .5 ? 1 : -1, blink: 0, phase: (h % 1000) / 1000 * 6.28 };
+      return { id, ...mask, born, hx: home.x, hy: home.y, x: home.x, y: home.y, fromX: home.x, fromY: home.y, toX: home.x, toY: home.y, act: 'sit', actStart: 0, actEnd: 0, face: home.x < .5 ? 1 : -1, faceShown: home.x < .5 ? 1 : -1, blink: 0, phase: (h % 1000) / 1000 * 6.28, drawn: 0 };
     };
 
     /** What a soul does next. */
@@ -453,12 +478,15 @@ const { label } = Astro.props;
       const acts = Object.entries(SETTINGS.acts) as Array<[Act, [number, number, number]]>;
       let pick = Math.random(), act: Act = 'sit';
       for (const [name, [weight]] of acts) { pick -= weight; if (pick <= 0) { act = name; break; } }
+      // After her welcome, a newcomer walks off to its own place.
+      const goingHome = soul.act === 'pet';
+      if (goingHome) act = 'walk';
       soul.fromX = soul.x; soul.fromY = soul.y; soul.toX = soul.x; soul.toY = soul.y;
       let length: number;
       if (act === 'walk') {
         // A short walk around its home, then it faces where it goes.
-        soul.toX = Math.min(.96, Math.max(.04, soul.hx + (Math.random() - .5) * .22));
-        soul.toY = Math.min(.98, Math.max(SETTINGS.horizon + .05, soul.hy + (Math.random() - .5) * .1));
+        soul.toX = goingHome ? soul.hx : Math.min(.96, Math.max(.04, soul.hx + (Math.random() - .5) * .22));
+        soul.toY = goingHome ? soul.hy : Math.min(.98, Math.max(SETTINGS.horizon + .05, soul.hy + (Math.random() - .5) * .1));
         const distance = Math.hypot(soul.toX - soul.x, (soul.toY - soul.y) * height / width);
         length = Math.max(1.2, distance / SETTINGS.walkSpeed);
         if (Math.abs(soul.toX - soul.x) > .005) soul.face = Math.sign(soul.toX - soul.x);
@@ -502,26 +530,46 @@ const { label } = Astro.props;
 
       const drawSoul = (soul: Soul) => {
         if (!calm && now > soul.actEnd) decide(soul, now);
+        const dt = soul.drawn ? Math.min(.1, (now - soul.drawn) / 1000) : 0;
+        soul.drawn = now;
         const p = soul.actEnd > soul.actStart ? Math.min(1, (now - soul.actStart) / (soul.actEnd - soul.actStart)) : 1;
         if (soul.act === 'walk') { soul.x = soul.fromX + (soul.toX - soul.fromX) * ease(p); soul.y = soul.fromY + (soul.toY - soul.fromY) * ease(p); }
         const size = sizeAt(soul.y);
         if (!soul.sprite || soul.spriteFor !== Math.round(height * SPRITE_FOR)) paintSoul(soul, Math.round(height * SPRITE_FOR));
         const sprite = soul.sprite!, k = size / soul.spriteFor!, w = sprite.width / ratio * k, h = sprite.height / ratio * k;
-        // Its pose for what it is doing.
-        const breath = Math.sin(t * 1.6 + soul.phase);
-        let lift = 0, sx = 1, sy = 1 + breath * .012, tilt = 0, eyesOpen = 1;
+        // Its pose for what it is doing, eased in and out so one thing flows into the next.
+        const into = ease(Math.min(1, (now - soul.actStart) / 700)) * ease(Math.min(1, Math.max(0, (soul.actEnd - now) / 700)));
+        const breath = Math.sin(t * 1.5 + soul.phase);
+        let lift = 0, sx = 1, sy = 1 + breath * .01, tilt = 0, eyesOpen = 1, stride = 0, pace = 0;
         if (!calm) {
-          if (soul.act === 'walk') { const steps = (now - soul.actStart) / 1000 * 5; lift = Math.abs(Math.sin(steps * Math.PI)) * size * .035; tilt = Math.sin(steps * Math.PI) * .025; }
-          if (soul.act === 'hop') { const arc = Math.sin(p * Math.PI); lift = arc * size * .35; sy = 1 + (p < .15 || p > .85 ? -.08 : .05 * arc); sx = 2 - sy; }
-          if (soul.act === 'stretch') { const s = Math.sin(p * Math.PI); sx = 1 + s * .12; sy = 1 - s * .1; }
-          if (soul.act === 'groom') { tilt = Math.sin((now - soul.actStart) / 1000 * 9) * .05; sy = .97 + breath * .01; }
-          if (soul.act === 'sleep') { sy = .84 + Math.sin(t * .9 + soul.phase) * .015; sx = 1.06; eyesOpen = 0; }
+          if (soul.act === 'walk') {
+            // Steps follow the ground actually covered, so the legs slow down as it starts and stops.
+            const covered = Math.hypot((soul.x - soul.fromX) * width, (soul.y - soul.fromY) * height);
+            stride = covered / (size * .32) * Math.PI;
+            pace = Math.sin(p * Math.PI); // 0 standing, 1 at full pace.
+            lift = (1 - Math.cos(stride * 2)) / 2 * size * .012 * pace;
+            tilt = Math.sin(stride) * .008 * pace;
+          }
+          if (soul.act === 'hop') {
+            // Crouch, spring, land soft.
+            const air = p > .2 && p < .8 ? Math.sin((p - .2) / .6 * Math.PI) : 0;
+            const crouch = Math.max(0, 1 - Math.abs(p - .14) / .14) + Math.max(0, 1 - Math.abs(p - .88) / .12);
+            lift = Math.pow(air, 1.3) * size * .16;
+            sy = 1 - crouch * .07 + air * .03; sx = 1 + crouch * .05 - air * .02;
+          }
+          if (soul.act === 'stretch') { const e = ease(Math.sin(p * Math.PI)); sx = 1 + e * .07; sy = 1 - e * .05; }
+          if (soul.act === 'groom') tilt = Math.sin((now - soul.actStart) / 1000 * 3.2) * .02 * into;
+          if (soul.act === 'sleep') { sy = 1 - .13 * into + Math.sin(t * .8 + soul.phase) * .01; sx = 1 + .05 * into; }
+          if (soul.act === 'pet') { tilt = -soul.face * .03 * into; sy = 1 + Math.sin(t * 1.2) * .012; }
           // Blinks.
           if (now > soul.blink + 4200 + (soul.phase * 600)) soul.blink = now;
-          if (now - soul.blink < 140) eyesOpen = Math.min(eyesOpen, .1);
+          if (now - soul.blink < 140) eyesOpen = 0;
         }
+        // Turning round takes a moment: it narrows, then opens the other way.
+        soul.faceShown += (soul.face - soul.faceShown) * Math.min(1, dt * 5);
+        if (calm) soul.faceShown = soul.face;
         const fade = soul.born ? Math.min(1, (now - soul.born) / 1600) : 1;
-        const flip = soul.face * (soul.facing ?? 1);
+        const flip = soul.faceShown * (soul.facing ?? 1);
         context.save();
         context.globalAlpha = fade;
         context.translate(soul.x * width, soul.y * height - lift);
@@ -534,18 +582,17 @@ const { label } = Astro.props;
         const shade = context.createRadialGradient(0, 0, 0, 0, 0, w * .32); shade.addColorStop(0, '#2b2166'); shade.addColorStop(1, 'rgba(43, 33, 102, 0)');
         context.fillStyle = shade; context.fillRect(-w / 2, -w / 2, w, w); context.restore();
         if (soul.act === 'walk' && soul.legs && soul.body && !calm) {
-          // Walking on its paws: each leg swings from its hip, neighbours in opposite step.
-          const steps = (now - soul.actStart) / 1000 * 5 * Math.PI;
+          // Walking on its paws: each leg swings gently from its hip, neighbours in opposite step.
           context.drawImage(soul.body, -w / 2, top, w, h);
           soul.legs.forEach((leg, i) => {
             context.save();
             context.translate(-w / 2 + (leg.x + leg.w / 2) * k, top + leg.y * k);
-            context.rotate(Math.sin(steps + (i % 2) * Math.PI) * .32);
+            context.rotate(Math.sin(stride + (i % 2) * Math.PI) * .2 * pace);
             context.drawImage(leg.canvas, -leg.w / 2 * k, 0, leg.w * k, leg.h * k);
             context.restore();
           });
         } else context.drawImage(sprite, -w / 2, top, w, h);
-        if (soul.eyes?.length && (eyesOpen > .5 || soul.act === 'sleep')) {
+        if (soul.eyes?.length && (eyesOpen > .5 || soul.act === 'sleep') && Math.abs(soul.faceShown) > .3) {
           const r = (soul.eyeR ?? 1.5) * k * 1.1;
           for (const eye of soul.eyes) drawEye(context, -w / 2 + eye.x * k, top + eye.y * k, r, soul.act === 'sleep');
         }
@@ -560,6 +607,16 @@ const { label } = Astro.props;
         context.drawImage(keeper, width * .5 - w / 2, height * 1.02 - (size * .2 + size) + sway, w, h);
       }
       order.filter((soul) => soul.y >= herLine).forEach(drawSoul);
+      if (keeperArm) {
+        // Her arm: resting, it sways a little; stroking a newcomer, it goes back and forth along its back.
+        const sh = shoulder(), stroking = !calm && now < petting ? ease(Math.min(1, (petting - now) / 600, (now - petting + 5000) / 600)) : 0;
+        const angle = ARM_ANGLE + (calm ? 0 : Math.sin(t * .8) * .03) + stroking * (.1 + Math.sin(t * 2 * Math.PI * .9) * .16);
+        context.save();
+        context.translate(sh.x * width, sh.y * height + (calm ? 0 : Math.sin(t * .5) * height * .003));
+        context.rotate(angle);
+        context.drawImage(keeperArm.canvas, -keeperArm.pivotX, -keeperArm.pivotY, keeperArm.w, keeperArm.h);
+        context.restore();
+      }
       plants.front.forEach((plant) => drawPlant(plant, t, .8));
 
       // Grain over everything.
@@ -629,7 +686,15 @@ const { label } = Astro.props;
           if (response?.ok) id = ((await response.json()) as { id: string }).id;
           else { shared = false; keepLocally(id, bytes); }
         } else keepLocally(id, bytes);
-        souls.push(meet(id, found, souls.length, performance.now()));
+        // A newcomer is welcomed under her hand, and she strokes it for a few seconds before it goes to its place.
+        const newcomer = meet(id, found, souls.length, performance.now());
+        const hand = handAt();
+        newcomer.x = newcomer.fromX = newcomer.toX = Math.max(.06, hand.x - .01);
+        newcomer.y = newcomer.fromY = newcomer.toY = Math.min(.97, Math.max(.87, hand.y + .2));
+        newcomer.face = newcomer.faceShown = 1;
+        newcomer.act = 'pet'; newcomer.actStart = performance.now(); newcomer.actEnd = newcomer.actStart + 5000;
+        petting = newcomer.actEnd;
+        souls.push(newcomer);
         if (calm) draw(0);
         setStatus(shared ? 'Welcome. They’re in good company now, for good.' : 'Welcome. They’re in good company now (kept on this device).');
         showFull();
@@ -640,26 +705,16 @@ const { label } = Astro.props;
       }
     });
 
-    // Music, if they want it: the Spotify player loads only when asked for.
-    const musicButton = caption.querySelector<HTMLButtonElement>('[data-souls-music]');
-    const player = caption.querySelector<HTMLElement>('[data-souls-player]');
-    musicButton?.addEventListener('click', () => {
-      if (!player) return;
-      if (!player.firstElementChild) {
-        const frame = document.createElement('iframe');
-        frame.src = player.dataset.soulsPlayer ?? '';
-        frame.title = 'Spotify player';
-        frame.loading = 'lazy';
-        frame.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
-        player.append(frame);
-      }
-      player.hidden = !player.hidden;
-      musicButton.setAttribute('aria-expanded', String(!player.hidden));
-    });
   });
 </script>
 
 <style>
   .souls-field { position: absolute; inset: 0; overflow: hidden; }
   .souls-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  /* Over the case page's own iframe rules (those centre Vimeo videos in their frame). */
+  .souls-field .souls-field-music { position: absolute; z-index: 2; inset: .8vw .8vw auto auto; width: min(300px, 46%); height: 80px; min-width: 0; min-height: 0; border: 0; border-radius: 12px; transform: none; }
+
+  @media (max-width: 760px) {
+    .souls-field .souls-field-music { inset: 8px 8px auto auto; width: min(260px, 64%); }
+  }
 </style>
