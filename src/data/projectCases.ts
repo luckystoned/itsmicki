@@ -1,10 +1,12 @@
 export type CaseMedia = {
-  type: 'image' | 'video' | 'carousel';
+  type: 'image' | 'video' | 'carousel' | 'reveal' | 'dots' | 'souls';
   alt: string;
   /** Image file, or for a video served from the site (not Vimeo) the .mp4 file. */
   src?: string;
   /** Still frame shown until a site video plays, and instead of it with reduced motion. */
   poster?: string;
+  /** `reveal`: the video under `src`, shown through the hole the pointer opens (RevealVideo). */
+  revealSrc?: string;
   vimeoId?: string;
   sourceRatio?: string;
   /** Turns a video by 90° clockwise inside its frame (a vertical clip shown in a horizontal frame). */
@@ -41,7 +43,7 @@ export type CaseBlock =
     };
 
 export type ProjectCase = {
-  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body';
+  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body' | 'mkp-hair' | 'general-immersive' | 'missing-souls';
   title: string;
   year: string;
   role: string;
@@ -70,6 +72,16 @@ const video = (vimeoId: string, alt: string, ratio: string, sourceRatio: string,
 const clip = (src: string, poster: string, alt: string, ratio: string, caption?: string): CaseMedia => ({
   type: 'video', src, poster, alt, ratio, caption,
 });
+
+/** Two stacked videos of the same scene; the pointer opens a hole in `top` onto `under`. */
+const reveal = (top: string, under: string, poster: string, alt: string, ratio: string): CaseMedia => ({
+  type: 'reveal', src: top, revealSrc: under, poster, alt, ratio,
+});
+
+/** Dots drifting over a pink wash that follow, avoid and drop with the pointer (DotsField). */
+const dots = (alt: string, ratio: string): CaseMedia => ({ type: 'dots', alt, ratio });
+/** The caregiver's place, where visitors leave their cat or dog (SoulsField). */
+const souls = (alt: string, ratio: string): CaseMedia => ({ type: 'souls', alt, ratio });
 
 const carousel = (
   slides: Array<{ src: string; alt: string }>,
@@ -106,7 +118,7 @@ const text = (
   options: { variant?: 'columns' | 'wide' | 'lead'; lead?: string; wide?: string; mobile?: { lead?: string; columns: string[] } } = {},
 ): CaseBlock => ({ type: 'text', title, columns, ...options });
 
-export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
+export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, ProjectCase> = {
   winona: {
     slug: 'winona',
     title: 'Winona',
@@ -457,6 +469,60 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
         image('/02_Projects/08_TexturesBody/15_TexturesBody.webp', 'Glossy lips and neck with a soft red blush.', '773 / 955'), '48.3125vw', '59.6875vw',
         image('/02_Projects/08_TexturesBody/16_TexturesBody.webp', 'A finger pulling at glossy lips under bold blush.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
+    ],
+    credits: [],
+  },
+};
+
+/** Side B cases, at /sideb/projects/{slug}, with the dark Side B page. */
+type SideBCaseSlug = 'mkp-hair' | 'general-immersive' | 'missing-souls';
+export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
+  'mkp-hair': {
+    slug: 'mkp-hair',
+    title: 'Mkp & Hair',
+    year: '2026',
+    role: 'Art Direction &amp;<br>AI Image Generation',
+    nutshell: `For makeup inspiration, I use AI as an experimental tool, feeding it textures and color palettes drawn from everyday materials to generate unexpected looks. Familiar surfaces become starting points for expressive, unconventional makeup ideas.`,
+    drags: [],
+    // As in Figma (930:2203): three rows of two.
+    blocks: [
+      pair(
+        image('/04_SideB/Projects/01_MkpHair/01_MkpHair.webp', 'Face with a polished silver plate over one eye and lilac sheen on the skin.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/02_MkpHair.webp', 'Brown eye with lilac shadow and an iridescent ribbon across freckled skin.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/04_SideB/Projects/01_MkpHair/03_MkpHair.webp', 'Mesh over both eyes, cobalt-blue lips and a frill of orange tulle.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/04_MkpHair.webp', 'Moss-green brows, flushed cheeks and spiky tufts tied with pink ribbon.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/04_SideB/Projects/01_MkpHair/05_MkpHair.webp', 'Face laced with pink cords, tassels and a mesh patch over one eye.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/06_MkpHair.webp', 'Blonde face with a silver brow piece set with coloured beads and a beaded line under the other eye.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+    ],
+    credits: [],
+  },
+  'general-immersive': {
+    slug: 'general-immersive',
+    title: 'General',
+    year: '2026',
+    role: 'Art Direction,<br>Immersive Design &amp;<br>AI Image Generation',
+    nutshell: `An experimental exploration of animation and figure-based imagery, made with AI by reinterpreting visual references through a vintage, print-inspired aesthetic. Muted colors, soft glow, blur, and noise balance hazy surfaces with moments of sharp focus. Hover over the pieces—or drag them on mobile—to interact.`,
+    drags: [],
+    blocks: [
+      single(reveal('/04_SideB/Home/03_SideBProjects.mp4', '/04_SideB/Projects/03_General/01_General_Negativo.mp4', '/04_SideB/Home/03_SideBProjects.webp', 'Plants and cells under a microscope; the pointer opens a hole onto the same scene in negative.', '1556 / 870')),
+      single(dots('Dark brown dots drifting over a pale pink, pink and baby-blue wash; they follow, avoid and fall with the pointer.', '1556 / 870')),
+    ],
+    credits: [],
+  },
+  'missing-souls': {
+    slug: 'missing-souls',
+    title: 'Missing souls',
+    year: '2026',
+    role: 'Art Direction,<br>Immersive Design,<br>Depressed as hell',
+    nutshell: `I created a space where those who are no longer with us can be left in the care of a caregiver. Here, our animals can find one another and keep each other company for a while, until the day we’re reunited with them.`,
+    drags: [],
+    blocks: [
+      single(souls('A soft, glowing caregiver surrounded by luminous cats and dogs that visitors have left in her care.', '1556 / 870')),
     ],
     credits: [],
   },

@@ -10,6 +10,8 @@ The site is written in English. It presents selected professional case studies a
 - [Projects](https://www.itsmicki.com/projects): Directory of published and upcoming case studies.
 - [About](https://www.itsmicki.com/deets): Professional profile, experience and résumé.
 - [Side B](https://www.itsmicki.com/sideb): Personal experiments, photography and illustration.
+- [Side B deets](https://www.itsmicki.com/sideb/deets): Fashion, music and film photography on Micaela's personal side.
+- [Side B projects](https://www.itsmicki.com/sideb/projects): Personal projects in makeup and hair art direction, photography, styling and concept work.
 
 ## Published Case Studies
 

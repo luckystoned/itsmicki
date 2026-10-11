@@ -1,0 +1,29 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectCase from '@/components/ProjectCase.astro';
+import { sideBCases } from '@/data/projectCases';
+
+export function getStaticPaths() {
+  return Object.values(sideBCases).map((caseStudy) => ({ params: { slug: caseStudy.slug }, props: { caseStudy } }));
+}
+
+const { caseStudy } = Astro.props;
+const summary = caseStudy.nutshell.split('. ')[0] + '.';
+---
+
+<BaseLayout
+  title={`(${caseStudy.title}) — Itsmicki`}
+  description={summary}
+  ogType="article"
+  active="projects"
+  side="b"
+  hideFooter
+  customCursor
+  themeColor="#202020"
+  preloadFonts={[
+    '/fonts/OTNeueMontreal-MediumSemiSqueezed.otf',
+    '/fonts/OTNeueMontreal-MediumExtraSqueezed.otf',
+  ]}
+>
+  <ProjectCase caseStudy={caseStudy} side="b" />
+</BaseLayout>

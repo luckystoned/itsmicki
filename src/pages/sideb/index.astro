@@ -1,0 +1,29 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HomeStage, { type HomeCard } from '@/components/HomeStage.astro';
+import { sideBCarousel } from '@/data/sideBProjects';
+
+// Side B home (Figma 922:1494): the Side A home in inverted colours, with the Side B projects (names from Figma
+// 925:1848); cards of projects with a case page link to it.
+const cards: HomeCard[] = sideBCarousel;
+---
+<BaseLayout
+  title="(Side B) — Itsmicki"
+  description="The personal side of Micaela Galimberti: fashion, music, film photography and the visual references that shape her work."
+  side="b"
+  hideFooter
+  customCursor
+  themeColor="#202020"
+  preloadFonts={['/fonts/OTNeueMontreal-MediumSemiSqueezed.otf', '/fonts/OTNeueMontreal-MediumExtraSqueezed.otf']}
+>
+  <HomeStage
+    side="b"
+    intro={[
+      "I'm micki, a hyperactive creative director ①, freak ②, and mom of two insane cats ③. Born and raised in Buenos Aires, Argentina, surviving my early thirties",
+      "I’ve spent my life exploring art and design, drawn to experimentation, fashion, and aesthetics. I love photography—mostly analog—and feel equally at home in noise and silence, with a soft spot for glitches, distortion, and the beauty in between",
+    ]}
+    plusHref="/sideb/deets"
+    cards={cards}
+    wordmark="Itsmicki"
+  />
+</BaseLayout>

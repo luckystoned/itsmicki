@@ -1,0 +1,379 @@
+---
+// Two videos of the same scene stacked: `top` plays in view and, under the pointer (or a finger dragging on touch
+// screens), a liquid, grainy hole opens onto `under`. The hole follows the pointer's motion, leaves a trail that
+// slowly closes, and every edge of it (islands included) is drawn with a thin red stroke. Drawn with WebGL2; without
+// it the top video plays on its own, and with reduced motion only the still frame shows. Through the hole, the video
+// underneath is drawn as coloured ASCII.
+type Props = {
+  top: string;
+  under: string;
+  poster: string;
+  label: string;
+};
+
+const { top, under, poster, label } = Astro.props;
+---
+
+<div class="reveal-video" data-reveal-video role="img" aria-label={label}>
+  <video class="reveal-video-top" src={top} poster={poster} muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true"></video>
+  <video class="reveal-video-under" src={under} muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true"></video>
+  <canvas class="reveal-video-canvas" aria-hidden="true"></canvas>
+</div>
+
+<script>
+  import { loadVision, openCamera } from '@/scripts/camera';
+
+  const SETTINGS = {
+    field: 200, // Simulation grid along the frame's longer side.
+    radius: .085, // Brush radius, as a share of the frame height.
+    strength: .55, // How much each frame of contact opens the hole.
+    drag: .9, // How much of the pointer's motion is handed to the liquid.
+    velocityKeep: .93, // How long the liquid keeps flowing after a move.
+    revealKeep: .985, // How long the trail stays open (per 60 fps frame).
+    drain: .006, // A steady drain on top of it, so the last small bits of the trail close quickly.
+    wobble: .025, // How far the edges drift, as a share of the frame.
+    edgeNoise: .95, // Large organic lobes on the edge.
+    grain: .5, // Fine, jagged detail on the edge (notches and small islands), continuous so each contour stays one line.
+    stroke: [.96, .94, .88], // Ivory stroke.
+    strokeWidth: 1.3, // Half the line width, in CSS pixels.
+    inkBreak: .8, // Printed look: how much the ink thins out and breaks into grain (0 = solid).
+    asciiCell: 9, // ASCII cell size, in CSS pixels.
+    asciiGlyphs: ' .:-=+*#%', // From light to dark (more ink where the image is darker).
+    asciiContrast: [.04, .52], // Brightness range stretched to the full set of characters, so the video reads clearly.
+    asciiTone: .3, // How much each cell's paper darkens with the image under it.
+    paper: [.96, .94, .88], // The negative is printed in two tones: dark ink on ivory paper.
+    ink: [.08, .08, .075],
+    particles: 1, // How many small islands the fading trail leaves behind (0 = none).
+  };
+
+  const VERT = `#version 300 es
+  in vec2 aPos; out vec2 vUv;
+  void main() { vUv = vec2(aPos.x * .5 + .5, .5 - aPos.y * .5); gl_Position = vec4(aPos, 0., 1.); }`;
+  const HEAD = `#version 300 es
+  precision highp float;
+  in vec2 vUv; out vec4 outColor;
+  `;
+  const NOISE = `
+  float hash(vec2 p) { vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+  float noise(vec2 p) { vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3. - 2. * f);
+    return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y); }
+  float fbm(vec2 p) { float v = 0., a = .5; for (int i = 0; i < 3; i++) { v += a * noise(p); p *= 2.07; a *= .5; } return v / .875; }
+  `;
+  const SOURCES = {
+    // x: how open the hole is; yz: the liquid's velocity. The brush opens it and hands it the pointer's motion.
+    splat: `${HEAD}uniform sampler2D uField; uniform vec2 uPoint; uniform vec2 uDrag; uniform float uAmount; uniform float uRadius; uniform float uAspect;
+      void main() { vec4 f = texture(uField, vUv); vec2 d = (vUv - uPoint) * vec2(uAspect, 1.); float g = exp(-dot(d, d) / (uRadius * uRadius));
+        outColor = vec4(min(1.4, f.x + uAmount * g), f.yz + uDrag * g, 1.); }`,
+    // The field is carried along its own velocity; the trail fades and the liquid slows down.
+    advect: `${HEAD}uniform sampler2D uField; uniform float uDt; uniform float uKeep; uniform float uVelKeep; uniform vec2 uTexel; uniform float uDrain;
+      void main() { vec2 v = texture(uField, vUv).yz; vec4 f = texture(uField, vUv - v * uDt);
+        float around = (texture(uField, vUv + vec2(uTexel.x, 0.)).x + texture(uField, vUv - vec2(uTexel.x, 0.)).x + texture(uField, vUv + vec2(0., uTexel.y)).x + texture(uField, vUv - vec2(0., uTexel.y)).x) * .25;
+        outColor = vec4(max(0., mix(f.x, around, .08) * uKeep - uDrain), f.yz * uVelKeep, 1.); }`,
+    display: `${HEAD}${NOISE}uniform sampler2D uField; uniform sampler2D uTop; uniform sampler2D uUnder; uniform vec2 uCover; uniform float uTime;
+      uniform float uWobble; uniform float uEdgeNoise; uniform float uGrain; uniform vec3 uStroke; uniform float uStrokeWidth; uniform float uAspect; uniform float uInk;
+      uniform sampler2D uAtlas; uniform float uGlyphs; uniform float uCell; uniform vec2 uResolution; uniform vec3 uPaper; uniform vec3 uInkColor; uniform float uParticles; uniform vec2 uContrast; uniform float uTone;
+      // The negative, printed as ASCII: one character per cell, denser where the image is darker, in dark ink on ivory
+      // paper; the ink thins out and breaks into grain like a print.
+      vec3 ascii() {
+        vec2 cell = floor(gl_FragCoord.xy / uCell);
+        vec2 local = fract(gl_FragCoord.xy / uCell);
+        vec2 center = (cell + .5) * uCell / uResolution;
+        vec2 uv = (vec2(center.x, 1. - center.y) - .5) * uCover + .5;
+        float lum = smoothstep(uContrast.x, uContrast.y, dot(texture(uUnder, uv).rgb, vec3(.299, .587, .114)));
+        float index = floor(clamp(1. - lum, 0., 1.) * (uGlyphs - 1.) + .5);
+        float glyph = texture(uAtlas, vec2((index + local.x) / uGlyphs, 1. - local.y)).r;
+        float density = 1. - uInk * (1. - noise(gl_FragCoord.xy * .09)) * .6;
+        float printed = glyph * step(hash(floor(gl_FragCoord.xy) + 17.) * uInk * .8, glyph * density);
+        vec3 paper = uPaper - (1. - lum) * uTone + (noise(gl_FragCoord.xy * .35) - .5) * .03;
+        return mix(paper, uInkColor, printed);
+      }
+      void main() {
+        vec2 video = (vUv - .5) * uCover + .5;
+        vec3 top = texture(uTop, video).rgb;
+        // The edges drift slowly, like liquid: large lobes plus jagged detail (notches, small islands).
+        vec2 p = vUv * vec2(uAspect, 1.);
+        vec2 drift = vec2(fbm(p * 2.5 + uTime * .12), fbm(p * 2.5 - uTime * .1 + 7.3)) - .5;
+        float open = texture(uField, vUv + drift * uWobble).x;
+        float jag = (noise(p * 16. - uTime * .2) - .5) + (noise(p * 36.8 + 3.1) - .5) * .7 + (noise(p * 81.6 + 9.7) - .5) * .45;
+        float shape = (fbm(p * 3.2 + uTime * .04) - .5) * uEdgeNoise + jag * uGrain;
+        float m = open + shape * smoothstep(0., .18, open);
+        // The fading trail sheds small particles: little islands, each with its own outline.
+        float fringe = smoothstep(.1, .18, open) * (1. - smoothstep(.32, .48, open));
+        float bits = min(1., step(1. - .17 * uParticles, noise(p * 60. + floor(uTime * 2.) * 3.7)) + step(1. - .12 * uParticles, noise(p * 120. + 11.3)));
+        m = max(m, (.5 + .35 * fringe) * bits * step(.01, fringe));
+        float inside = step(.5, m);
+        // Film grain over the negative.
+        vec3 under = ascii();
+        vec3 color = mix(top, under, inside);
+        // An ivory line on every contour, printed: its ink density wanders along it and breaks into fine grain.
+        float press = .55 + .9 * noise(gl_FragCoord.xy * .045 + 4.2); // Heavier and lighter ink along the line.
+        float edge = 1. - smoothstep(0., max(fwidth(m), 1e-4) * uStrokeWidth * mix(1., press, uInk), abs(m - .5));
+        float density = 1. - uInk * (1. - noise(gl_FragCoord.xy * .11)) * .8;
+        float speck = step(hash(floor(gl_FragCoord.xy)) * uInk * .9, edge * density);
+        outColor = vec4(mix(color, uStroke, edge * speck * step(.02, open)), 1.);
+      }`,
+  };
+
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-reveal-video]').forEach((root) => {
+    const topVideo = root.querySelector<HTMLVideoElement>('.reveal-video-top')!;
+    const underVideo = root.querySelector<HTMLVideoElement>('.reveal-video-under')!;
+    const canvas = root.querySelector<HTMLCanvasElement>('.reveal-video-canvas')!;
+    if (calm) return; // Still frame only.
+
+    // Both videos play while the frame is on screen, kept on the same frame.
+    const play = () => { topVideo.preload = 'auto'; underVideo.preload = 'auto'; topVideo.play().catch(() => {}); underVideo.play().catch(() => {}); };
+    const pause = () => { topVideo.pause(); underVideo.pause(); };
+    let visible = false;
+    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) { play(); start(); } else pause(); }, { rootMargin: '20%' }).observe(root);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && visible) play(); });
+
+    const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false });
+    if (!gl || !gl.getExtension('EXT_color_buffer_float')) return; // The top video plays on its own.
+
+    const shader = (type: number, source: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, source); gl.compileShader(s); return s; };
+    const build = (fragment: string) => {
+      const p = gl.createProgram()!;
+      gl.attachShader(p, shader(gl.VERTEX_SHADER, VERT));
+      gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fragment));
+      gl.bindAttribLocation(p, 0, 'aPos');
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) return null;
+      const uniforms: Record<string, WebGLUniformLocation | null> = {};
+      for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i++) { const name = gl.getActiveUniform(p, i)!.name; uniforms[name] = gl.getUniformLocation(p, name); }
+      return { program: p, uniforms };
+    };
+    const programs = { splat: build(SOURCES.splat), advect: build(SOURCES.advect), display: build(SOURCES.display) };
+    if (!programs.splat || !programs.advect || !programs.display) return;
+    type Program = NonNullable<typeof programs.splat>;
+
+    const quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+    let fieldW = SETTINGS.field, fieldH = SETTINGS.field;
+    const makeTarget = () => {
+      const texture = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, fieldW, fieldH, 0, gl.RGBA, gl.HALF_FLOAT, null);
+      [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR));
+      [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
+      const framebuffer = gl.createFramebuffer()!;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      return { texture, framebuffer };
+    };
+    let field = { read: makeTarget(), write: makeTarget() };
+    const swap = () => { field = { read: field.write, write: field.read }; };
+
+    const videoTexture = () => {
+      const t = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR));
+      [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
+      return t;
+    };
+    const topTexture = videoTexture();
+    const underTexture = videoTexture();
+
+    // Glyph atlas for the ASCII negative: the characters side by side, white on black, one square each.
+    const glyphSize = 64;
+    const atlasCanvas = document.createElement('canvas');
+    atlasCanvas.width = glyphSize * SETTINGS.asciiGlyphs.length;
+    atlasCanvas.height = glyphSize;
+    const atlasContext = atlasCanvas.getContext('2d')!;
+    atlasContext.fillStyle = '#000';
+    atlasContext.fillRect(0, 0, atlasCanvas.width, atlasCanvas.height);
+    atlasContext.fillStyle = '#fff';
+    atlasContext.font = `700 ${glyphSize * .9}px ui-monospace, Menlo, Consolas, monospace`;
+    atlasContext.textAlign = 'center';
+    atlasContext.textBaseline = 'middle';
+    [...SETTINGS.asciiGlyphs].forEach((glyph, index) => atlasContext.fillText(glyph, (index + .5) * glyphSize, glyphSize * .54));
+    const atlasTexture = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, atlasTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, atlasCanvas);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
+    const upload = (texture: WebGLTexture, video: HTMLVideoElement) => {
+      if (video.readyState < 2) return false;
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+      return true;
+    };
+
+    const run = (p: Program, target: { framebuffer: WebGLFramebuffer } | null, inputs: Record<string, WebGLTexture>, values: Record<string, number | number[]>) => {
+      gl.useProgram(p.program);
+      let unit = 0;
+      for (const [name, texture] of Object.entries(inputs)) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, texture); gl.uniform1i(p.uniforms[name], unit++); }
+      for (const [name, value] of Object.entries(values)) {
+        const location = p.uniforms[name];
+        if (!location) continue;
+        if (!Array.isArray(value)) gl.uniform1f(location, value);
+        else if (value.length === 2) gl.uniform2f(location, value[0], value[1]);
+        else gl.uniform3f(location, value[0], value[1], value[2]);
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target ? target.framebuffer : null);
+      gl.viewport(0, 0, target ? fieldW : canvas.width, target ? fieldH : canvas.height);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    };
+
+    // Pointer, in the frame's 0–1 space. Touch uses passive listeners, so the page still scrolls under the finger.
+    let pointer: { x: number; y: number } | null = null;
+    let last: { x: number; y: number } | null = null;
+    let lastContact = -1e9;
+    const at = (clientX: number, clientY: number) => {
+      const r = root.getBoundingClientRect();
+      return { x: (clientX - r.left) / r.width, y: (clientY - r.top) / r.height };
+    };
+    const touchAt = (event: TouchEvent) => { const t = event.touches[0]; if (t) { pointer = at(t.clientX, t.clientY); lastContact = performance.now(); start(); } };
+    root.addEventListener('pointermove', (event) => { if (event.pointerType === 'touch') return; pointer = at(event.clientX, event.clientY); lastContact = performance.now(); start(); });
+    root.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') { pointer = null; last = null; } });
+    root.addEventListener('touchstart', touchAt, { passive: true });
+    root.addEventListener('touchmove', touchAt, { passive: true });
+    root.addEventListener('touchend', () => { pointer = null; last = null; }, { passive: true });
+
+    // Camera: the nose becomes the brush. The face detector (MediaPipe, loaded only when asked for) runs in the
+    // browser; the camera image never leaves the device. The button and the how-to live in the caption under the frame.
+    const caption = root.closest('section') ?? document;
+    const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-reveal-camera]')];
+    const cameraHelp = caption.querySelector<HTMLElement>('[data-reveal-camera-help]');
+    const cameraStatus = caption.querySelector<HTMLElement>('[data-reveal-camera-status]');
+    let camera: Awaited<ReturnType<typeof openCamera>> | null = null;
+    let detector: { detectForVideo: (video: HTMLVideoElement, time: number) => { detections: Array<{ keypoints: Array<{ x: number; y: number }> }> } } | null = null;
+    let nose: { x: number; y: number } | null = null;
+    let lostSince = 0;
+    const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
+    const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; };
+    const cameraOff = () => {
+      camera?.stop();
+      camera = null;
+      nose = null;
+      pointer = null;
+      last = null;
+      if (cameraHelp) cameraHelp.hidden = true;
+      setLabel('turn the camera on', false);
+    };
+    const track = () => {
+      if (!camera) return;
+      if (detector && camera.video.readyState >= 2) {
+        const tip = detector.detectForVideo(camera.video, performance.now()).detections[0]?.keypoints[2]; // Nose tip.
+        if (tip) {
+          // Mirrored like a selfie, and stretched so small head moves reach the whole frame.
+          const target = { x: Math.min(1, Math.max(0, .5 - (tip.x - .5) * 1.8)), y: Math.min(1, Math.max(0, .5 + (tip.y - .5) * 1.8)) };
+          nose = nose ? { x: nose.x + (target.x - nose.x) * .35, y: nose.y + (target.y - nose.y) * .35 } : target;
+          pointer = { ...nose };
+          lastContact = performance.now();
+          lostSince = 0;
+          setStatus('Got you — now move your head.');
+          start();
+        } else {
+          // The brush lifts while the face is out of view.
+          if (nose) { nose = null; pointer = null; last = null; }
+          lostSince ||= performance.now();
+          if (performance.now() - lostSince > 600) setStatus('Looking for your face… keep it in view, in good light.');
+        }
+      }
+      requestAnimationFrame(track);
+    };
+    const cameraOn = async () => {
+      setLabel('starting the camera…', true);
+      try {
+        camera = await openCamera();
+        if (!detector) {
+          const { module, files } = await loadVision();
+          detector = await module.FaceDetector.createFromOptions(files, {
+            baseOptions: { modelAssetPath: '/models/blaze_face_short_range.tflite', delegate: 'GPU' },
+            runningMode: 'VIDEO',
+            minDetectionConfidence: .5,
+          });
+        }
+        if (!camera) return; // Turned off while loading.
+        setLabel('turn the camera off', true);
+        if (cameraHelp) cameraHelp.hidden = false;
+        setStatus('Looking for your face…');
+        requestAnimationFrame(track);
+      } catch {
+        cameraOff();
+        setLabel('camera unavailable', false);
+      }
+    };
+    cameraButtons.forEach((button) => button.addEventListener('click', () => (camera ? cameraOff() : cameraOn())));
+    // The camera option only shows where the effect runs and the browser can use a camera.
+    if ('mediaDevices' in navigator) (root.closest('section') ?? document).querySelectorAll<HTMLElement>('[data-reveal-camera-option]').forEach((option) => { option.hidden = false; });
+    addEventListener('pagehide', cameraOff);
+
+    let running = false, previous = 0, ready = false;
+    function start() { if (!running && visible) { running = true; previous = 0; requestAnimationFrame(frame); } }
+
+    function frame(time: number) {
+      if (!visible) { running = false; return; }
+      const dt = Math.min(previous ? (time - previous) / 1000 : 1 / 60, 1 / 30);
+      previous = time;
+      const k = dt * 60;
+
+      // Canvas at the frame's size (device pixels, capped at 2×) and a field with the same proportions.
+      const rect = root.getBoundingClientRect();
+      const ratio = Math.min(devicePixelRatio || 1, 2);
+      const width = Math.max(1, Math.round(rect.width * ratio)), height = Math.max(1, Math.round(rect.height * ratio));
+      if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+      const aspect = rect.width / Math.max(1, rect.height);
+      const wantW = Math.round(aspect >= 1 ? SETTINGS.field : SETTINGS.field * aspect), wantH = Math.round(aspect >= 1 ? SETTINGS.field / aspect : SETTINGS.field);
+      if (wantW !== fieldW || wantH !== fieldH) { fieldW = wantW; fieldH = wantH; field = { read: makeTarget(), write: makeTarget() }; }
+
+      // Keep the negative on the same frame as the video on top.
+      if (Math.abs(underVideo.currentTime - topVideo.currentTime) > .08 && underVideo.readyState >= 1) underVideo.currentTime = topVideo.currentTime;
+
+      // 1. The brush (the pointer, or the nose with the camera on) opens the hole and hands the liquid its motion.
+      const paint = (point: { x: number; y: number }, previous: { x: number; y: number } | undefined, radius: number) => {
+        const move = previous ? [(point.x - previous.x) / dt, (point.y - previous.y) / dt] : [0, 0];
+        const speed = Math.hypot(move[0], move[1]);
+        const capped = speed > 4 ? [move[0] * 4 / speed, move[1] * 4 / speed] : move;
+        run(programs.splat!, field.write, { uField: field.read.texture }, {
+          uPoint: [point.x, point.y], uDrag: [capped[0] * SETTINGS.drag * .05, capped[1] * SETTINGS.drag * .05],
+          uAmount: SETTINGS.strength * k, uRadius: radius, uAspect: aspect,
+        });
+        swap();
+      };
+      if (pointer) { paint(pointer, last ?? undefined, SETTINGS.radius); last = { ...pointer }; }
+      // 2. It flows, slows down and closes.
+      run(programs.advect!, field.write, { uField: field.read.texture }, {
+        uDt: dt, uKeep: Math.pow(SETTINGS.revealKeep, k), uVelKeep: Math.pow(SETTINGS.velocityKeep, k), uTexel: [1 / fieldW, 1 / fieldH], uDrain: SETTINGS.drain * k,
+      });
+      swap();
+
+      // 3. Both videos through the hole, with the red stroke on its edges.
+      const hasTop = upload(topTexture, topVideo);
+      upload(underTexture, underVideo);
+      if (hasTop) {
+        const videoAspect = (topVideo.videoWidth || 16) / (topVideo.videoHeight || 9);
+        const cover = aspect > videoAspect ? [1, videoAspect / aspect] : [aspect / videoAspect, 1];
+        run(programs.display!, null, { uField: field.read.texture, uTop: topTexture, uUnder: underTexture, uAtlas: atlasTexture }, {
+          uCover: cover, uTime: time / 1000, uWobble: SETTINGS.wobble, uEdgeNoise: SETTINGS.edgeNoise, uGrain: SETTINGS.grain,
+          uStroke: SETTINGS.stroke, uStrokeWidth: SETTINGS.strokeWidth * ratio, uAspect: aspect, uInk: SETTINGS.inkBreak,
+          uGlyphs: SETTINGS.asciiGlyphs.length, uCell: SETTINGS.asciiCell * ratio, uResolution: [canvas.width, canvas.height],
+          uPaper: SETTINGS.paper, uInkColor: SETTINGS.ink, uParticles: SETTINGS.particles, uContrast: SETTINGS.asciiContrast, uTone: SETTINGS.asciiTone,
+        });
+        if (!ready) { ready = true; root.classList.add('is-drawn'); }
+      }
+      requestAnimationFrame(frame);
+    }
+  });
+</script>
+
+<style>
+  .reveal-video { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; }
+  .reveal-video video,
+  .reveal-video canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+  .reveal-video-under { opacity: 0; pointer-events: none; }
+  .reveal-video-canvas { opacity: 0; }
+  /* Once WebGL draws, the canvas replaces the video on top (which keeps playing to feed it). */
+  .reveal-video.is-drawn .reveal-video-canvas { opacity: 1; }
+  .reveal-video.is-drawn .reveal-video-top { opacity: 0; }
+</style>

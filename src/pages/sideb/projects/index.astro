@@ -1,0 +1,53 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectGridItem from '@/components/ProjectGridItem.astro';
+import ProjectsStage from '@/components/ProjectsStage.astro';
+import { imageMetadata } from '@/data/imageMetadata';
+import { sideBHref, sideBProjects } from '@/data/sideBProjects';
+
+// Side B projects (Figma 925:1848): the Side A grid in inverted colours, with the same slots as its first projects.
+// Projects with a case page link to it.
+const slots = [
+  { width: 'calc((97.23vw - 6px) * .49953)', ratio: '47.48 / 47.19', eager: true },
+  { width: 'calc((97.23vw - 6px) * .50047)', ratio: '47.57 / 63.01', eager: true },
+  { width: '100%', ratio: '97.23 / 64.22' },
+  { width: '40.58vw', ratio: '40.58 / 40.07' },
+  { width: '100%', ratio: '97.23 / 64.22' },
+];
+const cards = sideBProjects.map((project, index) => ({
+  project: { slug: project.slug, title: project.title, comingSoon: project.comingSoon, cover: project.gridCover },
+  label: project.label,
+  video: project.gridVideo,
+  href: project.comingSoon ? null : sideBHref(project.slug) ?? null,
+  eager: 'eager' in slots[index] ? slots[index].eager : false,
+  style: `--project-width:${slots[index].width};--project-height:auto;--project-ratio:${slots[index].ratio}`,
+}));
+const [first, second, third, fourth, fifth] = cards;
+if (!fifth) throw new Error('Side B needs five projects for its grid');
+for (const card of cards) if (!imageMetadata[card.project.cover]) throw new Error(`Missing metadata for ${card.project.cover}`);
+---
+
+<BaseLayout
+  title="(Picked projects) — Itsmicki"
+  description="Personal projects by Micaela Galimberti: makeup and hair art direction, photography, styling and concept work."
+  active="projects"
+  side="b"
+  hideFooter
+  customCursor
+  themeColor="#202020"
+  preloadFonts={[
+    '/fonts/OTNeueMontreal-MediumSemiSqueezed.otf',
+    '/fonts/OTNeueMontreal-MediumExtraSqueezed.otf',
+  ]}
+>
+  <ProjectsStage side="b" wordmark="Itsmicki">
+      <div class="projects-row projects-row-primary">
+        <ProjectGridItem {...first} />
+        <ProjectGridItem {...second} />
+      </div>
+
+      <ProjectGridItem {...third} />
+      <ProjectGridItem {...fourth} />
+      <ProjectGridItem {...fifth} />
+  </ProjectsStage>
+</BaseLayout>

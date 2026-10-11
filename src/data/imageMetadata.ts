@@ -1,4 +1,11 @@
 export const imageMetadata: Record<string, { width: number; height: number }> = {
+  '/04_SideB/Projects/01_MkpHair/01_MkpHair.webp': { width: 1546, height: 1910 },
+  '/04_SideB/Projects/01_MkpHair/02_MkpHair.webp': { width: 1546, height: 1909 },
+  '/04_SideB/Projects/01_MkpHair/03_MkpHair.webp': { width: 1546, height: 1910 },
+  '/04_SideB/Projects/01_MkpHair/04_MkpHair.webp': { width: 1546, height: 1909 },
+  '/04_SideB/Projects/01_MkpHair/05_MkpHair.webp': { width: 1546, height: 1910 },
+  '/04_SideB/Projects/01_MkpHair/06_MkpHair.webp': { width: 1546, height: 1910 },
+  '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp': { width: 1520, height: 1510 },
   '/02_Projects/01_Winona/01_Winona_Drag.webp': { width: 790, height: 790 },
   '/02_Projects/01_Winona/02_Winona_Drag.webp': { width: 780, height: 787 },
   '/02_Projects/01_Winona/01_Winona_Cover.webp': { width: 1520, height: 1511 },
@@ -113,7 +120,6 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/04_SideB/18_SideB.webp': { width: 1080, height: 1352 },
   '/04_SideB/19_SideB.webp': { width: 1423, height: 1352 },
   '/04_SideB/20_SideB.webp': { width: 1080, height: 1352 },
-  '/04_SideB/Fashion_SideB.webp': { width: 560, height: 258 },
   '/04_SideB/Film_01a_SideB.webp': { width: 712, height: 676 },
   '/04_SideB/Film_01b_SideB.webp': { width: 541, height: 676 },
   '/04_SideB/Film_02a_SideB.webp': { width: 712, height: 676 },
@@ -126,4 +132,8 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/04_SideB/Film_05b_SideB.webp': { width: 541, height: 676 },
   '/04_SideB/Film_06a_SideB.webp': { width: 712, height: 676 },
   '/04_SideB/Film_06b_SideB.webp': { width: 541, height: 676 },
+  '/04_SideB/Home/02_SideBProjects.webp': { width: 1522, height: 2016 },
+  '/04_SideB/Home/03_SideBProjects.webp': { width: 1556, height: 1028 },
+  '/04_SideB/Home/04_SideBProjects.webp': { width: 1298, height: 1282 },
+  '/04_SideB/Home/05_SideBProjects.webp': { width: 3112, height: 2056 },
 };

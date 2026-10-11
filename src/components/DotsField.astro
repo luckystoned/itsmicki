@@ -1,0 +1,414 @@
+---
+// White printed dots wandering over an editorial grid of word tags in deep wine, burgundy, khaki and pastel blue grey,
+// whose letters flicker and turn into other words (generated, landscape). The same gestures with the pointer, a finger
+// or (camera on) a hand: moving (an open hand) draws the dots along, loosely; a click or tap (closing the hand) gathers
+// them all at once; another click (opening the hand) drops them to the floor; otherwise they keep their own flow.
+// With reduced motion nothing moves.
+type Props = { label: string };
+const { label } = Astro.props;
+---
+
+<div class="dots-field" data-dots-field role="img" aria-label={label}>
+  <canvas class="dots-field-canvas" aria-hidden="true"></canvas>
+</div>
+
+<script>
+  import { loadVision, openCamera } from '@/scripts/camera';
+
+  const SETTINGS = {
+    count: 1600, // Dots on a 1556px-wide frame; scales with the frame's area.
+    clusters: 8, // Groups the dots gather in, like the reference.
+    size: [5, 9], // Dot radius range on a 1556px-wide frame (scales with it).
+    wander: 26, // How far each dot drifts around its place on its own, in CSS pixels.
+    huddle: [14, 110], // Each dot keeps its own distance from the pointer (CSS pixels): a loose cloud, not a ball.
+    follow: { reach: .45, pull: 9, spread: 2 }, // Following the pointer: how far it reaches (share of the width), how hard it
+    // pulls (loosely) and how wide the cloud around it is (times each dot's distance).
+    gather: { pull: 140, drag: 12, tight: .3, swirl: 2200, jitter: 1400, breathe: .45 }, // Gathered: how fast all the
+    // dots come together and how tight; and how they keep moving in there: swirling round, jittering and breathing.
+    settle: 3500, // ms the dropped dots get to bounce before they may go back to their flow.
+    bounce: [.65, .85], // Dropped: how much of its speed each dot keeps on every bounce (a lot: they bounce and bounce).
+    gravity: 4200, // Dropped dots: CSS px/s² (heavy).
+    burst: [900, 2400], // Dropping them bursts the cloud: each dot flies off, in every direction, this fast (CSS px/s).
+    still: { pointer: 1.5, hand: 14 }, // How far (CSS px) the pointer or the hand has to move to count as moving.
+    stillAfter: 5000, // ms without moving before the dots go back to their own flow.
+    returnAfter: 2000, // ms after the pointer leaves (or after they drop) before they do.
+    home: 9, // Spring back home.
+    damping: 3.2, // Per second.
+    paper: '#1c1110', // Between the tags.
+    fills: ['#452928', '#74362d', '#9dbcd1', '#a49250'], // Tags: deep wine (the ground), burgundy and pastel blue grey
+    // (abstract shapes drifting behind the grid) and khaki (a few smaller ones),
+    texts: ['#a49250', '#c9d6e0', '#452928', '#74362d'], // and the words on each, as in the palette.
+    blobs: [7, 5, 3], // How many burgundy, blue grey and khaki shapes.
+    shapeSpeed: 3.5, // How fast the shapes (and so the colour zones) drift.
+    words: ['BOOM', 'SOFT', 'HARD', 'OPEN', 'CLOSE', 'FLOW'], // Written on the tags, in this order, running on.
+    tag: { height: 30, gap: 6, pad: 16, radius: 8, font: 11.5 }, // Tag size, spacing, padding, corner and type, in CSS
+    // px on a 1556px-wide frame.
+    change: [700, 3200], // Each single-word tag turns into another word every this many ms (random in the range),
+    scramble: 450, // its letters scrambling and flickering for this long;
+    blink: .002, // and now and then (chance per tag per frame) a tag's letters blink.
+    dot: '#fbf8f1', stroke: '#141010', // White dots, with a washed black outline.
+  };
+
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-dots-field]').forEach((root) => {
+    const canvas = root.querySelector<HTMLCanvasElement>('.dots-field-canvas')!;
+    const context = canvas.getContext('2d')!;
+    let width = 0, height = 0, ratio = 1;
+    let background: HTMLCanvasElement | null = null;
+
+    // A seeded random, so the layout is the same on every visit.
+    let seed = 7;
+    const random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    const gauss = () => { let u = 0, v = 0; while (!u) u = random(); while (!v) v = random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+
+    // The background: an editorial grid of rounded tags, like bricks, the words running on from tag to tag and row to
+    // row. Each tag is one flat colour from the palette: deep wine, or burgundy, blue grey or khaki where slow abstract
+    // shapes pass behind the grid. The grid stays put; the colours move, and the words flicker and change.
+    type Tag = { x: number; y: number; w: number; text: string; from: string; changeAt: number; nextChange: number; blinkUntil: number };
+    let tags: Tag[] = [];
+    let unit = 1, charWidth = 7;
+    let layer: HTMLCanvasElement | null = null, layerContext: CanvasRenderingContext2D | null = null;
+    const font = () => `600 ${(SETTINGS.tag.font * unit).toFixed(1)}px ui-monospace, "SF Mono", Menlo, Consolas, monospace`;
+    const letters = [...new Set(SETTINGS.words.join(''))].join('');
+    type Blob = { x: number; y: number; r: number; ax: number; ay: number; fx: number; fy: number; p: number };
+    let shapeSets: Blob[][] = [];
+    const makeBlobs = (count: number, size: number) => Array.from({ length: count }, () => ({ x: random(), y: random(), r: size * (.6 + random()), ax: .12 + random() * .25, ay: .1 + random() * .2, fx: .03 + random() * .05, fy: .025 + random() * .05, p: random() * Math.PI * 2 }));
+    // How strongly a set of shapes covers a point (u, v in 0–1) at time t (s).
+    const cover = (blobs: Blob[], u: number, v: number, t: number) => {
+      const aspect = width / Math.max(1, height);
+      let value = 0;
+      for (const b of blobs) {
+        const bx = b.x + Math.sin(t * b.fx * 2 * Math.PI + b.p) * b.ax, by = b.y + Math.cos(t * b.fy * 2 * Math.PI + b.p * 1.7) * b.ay;
+        const dx = (u - bx) * aspect, dy = v - by;
+        value += (b.r * b.r) / (dx * dx + dy * dy + .002);
+      }
+      return value;
+    };
+    const paint = () => {
+      seed = 11;
+      unit = Math.min(1.2, Math.max(.75, width / 1556));
+      const { height: tagH, gap, pad } = SETTINGS.tag;
+      layer = document.createElement('canvas');
+      layer.width = canvas.width; layer.height = canvas.height;
+      layerContext = layer.getContext('2d')!;
+      layerContext.font = font();
+      // The words run on like text; every so often a long tag holds three or four of them.
+      tags = [];
+      let next = 0;
+      const word = () => SETTINGS.words[next++ % SETTINGS.words.length];
+      for (let y = gap * unit; y < height; y += (tagH + gap) * unit) {
+        next += Math.floor(random() * 4);
+        for (let x = -random() * 70 * unit; x < width;) {
+          const text = random() < .1 ? Array.from({ length: 3 + Math.floor(random() * 2) }, word).join('  ') : word();
+          const w = layerContext.measureText(text).width + pad * 2 * unit;
+          tags.push({ x, y, w, text, from: text, changeAt: -1e9, nextChange: performance.now() + SETTINGS.change[0] + random() * SETTINGS.change[1], blinkUntil: 0 });
+          x += w + gap * unit;
+        }
+      }
+      charWidth = layerContext.measureText('M').width;
+      shapeSets = [makeBlobs(SETTINGS.blobs[0], .17), makeBlobs(SETTINGS.blobs[1], .13), makeBlobs(SETTINGS.blobs[2], .07)];
+      background = layer;
+    };
+    const drift = (time: number) => {
+      if (!layer || !layerContext) return;
+      const t = calm ? 0 : time / 1000 * SETTINGS.shapeSpeed;
+      const g = layerContext, tagH = SETTINGS.tag.height * unit, radius = SETTINGS.tag.radius * unit;
+      // Every tag takes one flat colour (the smaller shapes on top); tags of a colour are filled together.
+      const shapes = SETTINGS.fills.map(() => new Path2D()), levels = new Uint8Array(tags.length);
+      tags.forEach((tag, i) => {
+        const u = (tag.x + tag.w / 2) / width, v = (tag.y + tagH / 2) / height;
+        const level = cover(shapeSets[2], u, v, t * 1.3) > 1 ? 3 : cover(shapeSets[1], u, v, t * .9) > 1 ? 2 : cover(shapeSets[0], u, v, t) > .9 ? 1 : 0;
+        levels[i] = level;
+        shapes[level].roundRect(tag.x, tag.y, tag.w, tagH, radius);
+      });
+      g.setTransform(ratio, 0, 0, ratio, 0, 0);
+      g.fillStyle = SETTINGS.paper;
+      g.fillRect(0, 0, width, height);
+      shapes.forEach((shape, level) => { g.fillStyle = SETTINGS.fills[level]; g.fill(shape); });
+      g.font = font();
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      const now = performance.now();
+      tags.forEach((tag, i) => {
+        const cx = tag.x + tag.w / 2, cy = tag.y + tagH / 2 + .5;
+        g.fillStyle = SETTINGS.texts[levels[i]];
+        if (!calm) {
+          // Single words turn into another word that fits; any tag blinks now and then.
+          if (now > tag.nextChange) {
+            tag.nextChange = now + SETTINGS.change[0] + Math.random() * SETTINGS.change[1];
+            if (!tag.text.includes(' ')) {
+              const options = SETTINGS.words.filter((word) => word !== tag.text && word.length <= tag.from.length + 1);
+              tag.text = options[Math.floor(Math.random() * options.length)] ?? tag.text;
+              tag.changeAt = now;
+            }
+          }
+          if (now > tag.blinkUntil && Math.random() < SETTINGS.blink) tag.blinkUntil = now + 380;
+        }
+        const scrambling = now - tag.changeAt < SETTINGS.scramble;
+        if (now < tag.blinkUntil) g.globalAlpha = Math.floor(now / 70) % 2 ? .2 : 1;
+        if (!scrambling) { g.fillText(tag.text, cx, cy); g.globalAlpha = 1; return; }
+        // Mid-change, letter by letter: each settles at its own moment, flickering through other letters until then.
+        const progress = (now - tag.changeAt) / SETTINGS.scramble, n = tag.text.length;
+        for (let c = 0; c < n; c++) {
+          const settled = progress > .25 + .6 * (c / n) + Math.random() * .1;
+          g.globalAlpha = settled ? 1 : .35 + Math.random() * .65;
+          g.fillText(settled ? tag.text[c] : letters[Math.floor(Math.random() * letters.length)], cx + (c - (n - 1) / 2) * charWidth, cy);
+        }
+        g.globalAlpha = 1;
+      });
+      g.setTransform(1, 0, 0, 1, 0, 0);
+    };
+
+    // A few dot sprites: irregular, slightly squared white blobs with a washed black outline and grain, like print.
+    const sprites = Array.from({ length: 6 }, (_, index) => {
+      const size = 32;
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const g = c.getContext('2d')!;
+      seed = 101 + index * 13;
+      g.beginPath();
+      const sides = 9;
+      for (let i = 0; i <= sides; i++) {
+        const a = (i / sides) * Math.PI * 2, r = size * (.34 + random() * .08);
+        const x = size / 2 + Math.cos(a) * r, y = size / 2 + Math.sin(a) * r;
+        if (i) g.lineTo(x, y); else g.moveTo(x, y);
+      }
+      g.closePath();
+      g.fillStyle = SETTINGS.dot;
+      g.fill();
+      g.lineWidth = 3.4;
+      g.lineJoin = 'round';
+      g.strokeStyle = SETTINGS.stroke;
+      g.stroke();
+      // Washed: the outline thins and breaks in places, and the white takes a little grain.
+      const img = g.getImageData(0, 0, size, size);
+      for (let i = 0; i < img.data.length; i += 4) {
+        if (!img.data[i + 3]) continue;
+        const n = random(), dark = img.data[i] < 128;
+        if (dark) img.data[i + 3] *= n > .8 ? .25 : .55 + n * .45;
+        else if (n > .93) { img.data[i] -= 22; img.data[i + 1] -= 22; img.data[i + 2] -= 22; }
+      }
+      g.putImageData(img, 0, 0);
+      return c;
+    });
+
+    type Dot = { hx: number; hy: number; x: number; y: number; vx: number; vy: number; r: number; sprite: number; phase: number; spin: number; huddle: number };
+    let dots: Dot[] = [];
+    const layout = () => {
+      seed = 3;
+      const count = Math.round(SETTINGS.count * (width * height) / (1556 * 870));
+      const centers = Array.from({ length: SETTINGS.clusters }, () => ({ x: random(), y: random(), sx: .03 + random() * .09, sy: .04 + random() * .14, weight: .3 + random() }));
+      const total = centers.reduce((sum, c) => sum + c.weight, 0);
+      dots = Array.from({ length: count }, () => {
+        // Most dots in clusters, a few scattered.
+        let hx: number, hy: number;
+        if (random() < .12) { hx = random(); hy = random(); } else {
+          let pick = random() * total, c = centers[0];
+          for (const center of centers) { pick -= center.weight; if (pick <= 0) { c = center; break; } }
+          do { hx = c.x + gauss() * c.sx; hy = c.y + gauss() * c.sy; } while (hx < .01 || hx > .99 || hy < .03 || hy > .97);
+        }
+        hx *= width; hy *= height;
+        return { hx, hy, x: hx, y: hy, vx: 0, vy: 0, r: (SETTINGS.size[0] + random() * (SETTINGS.size[1] - SETTINGS.size[0])) * Math.max(.45, width / 1556), sprite: Math.floor(random() * sprites.length), phase: random() * Math.PI * 2, spin: random() * Math.PI * 2, huddle: SETTINGS.huddle[0] + Math.pow(random(), 1.6) * (SETTINGS.huddle[1] - SETTINGS.huddle[0]) };
+      });
+    };
+
+    const resize = () => {
+      const rect = root.getBoundingClientRect();
+      ratio = Math.min(devicePixelRatio || 1, 2);
+      if (Math.round(rect.width) === width && Math.round(rect.height) === height) return;
+      width = Math.round(rect.width); height = Math.round(rect.height);
+      canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
+      paint();
+      dots = [];
+      layout();
+    };
+
+    // Input, the same for every way in: the pointer (mouse, finger) or, with the camera on, a hand. Moving draws the dots
+    // along; a click or tap (a fist) gathers them all; the next one (opening the hand) drops them.
+    let pointer: { x: number; y: number } | null = null;
+    let mode: 'free' | 'gathered' | 'falling' = 'free', modeAt = 0;
+    let anchor = { x: 0, y: 0 }; // Where they gather.
+    let lastMove = -1e9, lastInteraction = -1e9;
+    const at = (clientX: number, clientY: number) => { const r = root.getBoundingClientRect(); return { x: clientX - r.left, y: clientY - r.top }; };
+    const move = (point: { x: number; y: number }, still = SETTINGS.still.pointer) => {
+      const now = performance.now();
+      if (!pointer || Math.hypot(point.x - pointer.x, point.y - pointer.y) > still) {
+        lastMove = now;
+        // Moving again a moment after they dropped picks them up again.
+        if (mode === 'falling' && now - modeAt > 1200) mode = 'free';
+      }
+      pointer = point;
+      if (mode === 'gathered') anchor = point;
+      lastInteraction = now;
+      start();
+    };
+    const gather = (point: { x: number; y: number }) => { mode = 'gathered'; modeAt = lastMove = lastInteraction = performance.now(); anchor = point; start(); };
+    const drop = () => { mode = 'falling'; modeAt = lastInteraction = performance.now(); dots.forEach((d) => {
+      // Out from the middle of the cloud, every which way, a little more upward; then gravity pulls them down hard.
+      const a = Math.atan2(d.y - anchor.y, d.x - anchor.x) + (random() - .5) * 1.2, speed = SETTINGS.burst[0] + random() * (SETTINGS.burst[1] - SETTINGS.burst[0]);
+      d.vx = Math.cos(a) * speed; d.vy = Math.sin(a) * speed - speed * .35;
+    }); start(); };
+    const tap = (point: { x: number; y: number }) => (mode === 'gathered' ? drop() : gather(point));
+    const leave = () => { if (pointer) lastInteraction = performance.now(); pointer = null; };
+
+    root.addEventListener('pointermove', (event) => { if (event.pointerType !== 'touch') move(at(event.clientX, event.clientY)); });
+    root.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') leave(); });
+    root.addEventListener('click', (event) => tap(at(event.clientX, event.clientY)));
+    // Touch: dragging draws them along (the page still scrolls); a tap fires `click`.
+    root.addEventListener('touchstart', (event) => { const t = event.touches[0]; if (t) move(at(t.clientX, t.clientY)); }, { passive: true });
+    root.addEventListener('touchmove', (event) => { const t = event.touches[0]; if (t) move(at(t.clientX, t.clientY)); }, { passive: true });
+
+    // Camera: an open hand is the pointer; closing it gathers the dots, opening it again drops them.
+    const caption = root.closest('section') ?? document;
+    const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-dots-camera]')];
+    const cameraHelp = caption.querySelector<HTMLElement>('[data-dots-camera-help]');
+    const cameraStatus = caption.querySelector<HTMLElement>('[data-dots-camera-status]');
+    let camera: Awaited<ReturnType<typeof openCamera>> | null = null;
+    let hands: { detectForVideo: (video: HTMLVideoElement, time: number) => { landmarks: Array<Array<{ x: number; y: number }>> } } | null = null;
+    let handPoint: { x: number; y: number } | null = null;
+    let closed = false, lostSince = 0;
+    const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
+    const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; };
+    const cameraOff = () => { camera?.stop(); camera = null; handPoint = null; closed = false; leave(); if (cameraHelp) cameraHelp.hidden = true; setLabel('turn the camera on', false); };
+    const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+    const track = () => {
+      if (!camera) return;
+      if (hands && camera.video.readyState >= 2) {
+        const hand = hands.detectForVideo(camera.video, performance.now()).landmarks[0];
+        if (hand) {
+          lostSince = 0;
+          // Open or closed: how far the fingertips reach from the wrist, against the size of the palm.
+          const palm = distance(hand[0], hand[9]) || 1e-3;
+          const reach = [8, 12, 16, 20].reduce((sum, tip) => sum + distance(hand[tip], hand[0]), 0) / 4 / palm;
+          const isClosed = closed ? reach < 1.35 : reach < 1.05;
+          // The middle of the palm, mirrored like a selfie and stretched a little to reach the edges.
+          const target = { x: Math.min(1, Math.max(0, .5 - (hand[9].x - .5) * 1.3)) * width, y: Math.min(1, Math.max(0, .5 + (hand[9].y - .5) * 1.3)) * height };
+          handPoint = handPoint ? { x: handPoint.x + (target.x - handPoint.x) * .3, y: handPoint.y + (target.y - handPoint.y) * .3 } : target;
+          if (isClosed && !closed) gather(handPoint);
+          else if (!isClosed && closed && mode === 'gathered') drop();
+          closed = isClosed;
+          move(handPoint, SETTINGS.still.hand);
+          setStatus(closed ? 'Closed — the dots gather. Open your hand to drop them.' : 'Open — move your hand, or close it.');
+        } else {
+          if (handPoint) { handPoint = null; leave(); }
+          lostSince ||= performance.now();
+          if (performance.now() - lostSince > 600) setStatus('Looking for your hand… show it open, in good light.');
+        }
+      }
+      requestAnimationFrame(track);
+    };
+    const cameraOn = async () => {
+      setLabel('starting the camera…', true);
+      try {
+        camera = await openCamera();
+        if (!hands) {
+          const { module, files } = await loadVision();
+          hands = await module.HandLandmarker.createFromOptions(files, {
+            baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', delegate: 'GPU' },
+            runningMode: 'VIDEO',
+            numHands: 1,
+          });
+        }
+        if (!camera) return;
+        setLabel('turn the camera off', true);
+        if (cameraHelp) cameraHelp.hidden = false;
+        setStatus('Looking for your hand…');
+        requestAnimationFrame(track);
+      } catch {
+        cameraOff();
+        setLabel('camera unavailable', false);
+      }
+    };
+    cameraButtons.forEach((button) => button.addEventListener('click', () => (camera ? cameraOff() : cameraOn())));
+    if (!calm && 'mediaDevices' in navigator) caption.querySelectorAll<HTMLElement>('[data-dots-camera-option]').forEach((option) => { option.hidden = false; });
+    addEventListener('pagehide', cameraOff);
+
+    // Simulation and drawing.
+    let visible = false, running = false, previous = 0;
+    function start() { if (!calm && !running && visible) { running = true; previous = 0; requestAnimationFrame(frame); } }
+    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) start(); }, { rootMargin: '10%' }).observe(root);
+    new ResizeObserver(() => { resize(); drift(performance.now()); draw(performance.now()); }).observe(root);
+
+    const draw = (time: number) => {
+      if (!background) return;
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.imageSmoothingEnabled = false;
+      context.drawImage(background, 0, 0, canvas.width, canvas.height);
+      context.imageSmoothingEnabled = true;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      for (const d of dots) {
+        const angle = d.spin + (calm ? 0 : Math.sin(time / 1700 + d.phase) * .2);
+        const cos = Math.cos(angle) * ratio, sin = Math.sin(angle) * ratio, size = d.r * 2;
+        context.setTransform(cos, sin, -sin, cos, d.x * ratio, d.y * ratio);
+        context.drawImage(sprites[d.sprite], -size / 2, -size / 2, size, size);
+      }
+      context.setTransform(1, 0, 0, 1, 0, 0);
+    };
+
+    function frame(time: number) {
+      if (!visible) { running = false; return; }
+      const dt = Math.min(previous ? (time - previous) / 1000 : 1 / 60, 1 / 30);
+      previous = time;
+      const now = performance.now();
+      const moving = pointer && now - lastMove < SETTINGS.stillAfter;
+      // Dropped or gathered, they go back to their own flow once left alone for a while.
+      if (mode === 'falling' && now - modeAt > SETTINGS.settle && now - lastInteraction > SETTINGS.returnAfter) mode = 'free';
+      if (mode === 'gathered' && !pointer && now - lastInteraction > SETTINGS.stillAfter) mode = 'free';
+      const following = mode === 'free' && pointer && moving;
+      // Their own flow once the pointer has held still for a while, or a little after it left.
+      const goHome = mode === 'free' && !following && (!!pointer || now - lastInteraction > SETTINGS.returnAfter);
+      const damping = Math.exp(-SETTINGS.damping * dt);
+      for (const d of dots) {
+        let ax = 0, ay = 0;
+        if (mode === 'falling') {
+          ay += SETTINGS.gravity;
+        } else if (mode === 'gathered') {
+          // All of them, at once, into a tight cloud where the click was (following the pointer from there).
+          // Once there they keep moving: swirling round it (each its own way), jittering, the cloud breathing.
+          const { pull, drag, tight, swirl, jitter, breathe } = SETTINGS.gather;
+          const dx = d.x - anchor.x, dy = d.y - anchor.y, dist = Math.hypot(dx, dy) || 1;
+          const spot = d.huddle * tight * (1 + breathe * Math.sin(time / 380 + d.phase)), turn = d.phase < Math.PI ? 1 : -1;
+          ax += (anchor.x + dx / dist * spot - d.x) * pull - d.vx * drag - dy / dist * swirl * turn + Math.sin(time / 90 + d.spin * 7) * jitter;
+          ay += (anchor.y + dy / dist * spot - d.y) * pull - d.vy * drag + dx / dist * swirl * turn + Math.cos(time / 110 + d.spin * 5) * jitter;
+        } else if (following && pointer) {
+          // Loosely: nearby dots drift after the pointer into a wide cloud around it, gliding (extra drag, no overshoot).
+          const dx = d.x - pointer.x, dy = d.y - pointer.y, dist = Math.hypot(dx, dy) || 1;
+          const weight = Math.max(0, 1 - dist / (SETTINGS.follow.reach * width)) ** .5, spot = d.huddle * SETTINGS.follow.spread;
+          ax += (pointer.x + dx / dist * spot - d.x) * SETTINGS.follow.pull * weight - d.vx * 3 * weight;
+          ay += (pointer.y + dy / dist * spot - d.y) * SETTINGS.follow.pull * weight - d.vy * 3 * weight;
+        }
+        if (goHome || following) {
+          // On their own they wander around home: two slow swings and a quicker one, different for every dot. Those the
+          // pointer is drawing along only partly (the further from it, the more they keep to their flow).
+          const own = goHome ? 1 : 1 - Math.max(0, 1 - Math.hypot(d.x - pointer!.x, d.y - pointer!.y) / (SETTINGS.follow.reach * width)) ** .5;
+          const tx = d.hx + (Math.sin(time / 1700 + d.phase) + .5 * Math.sin(time / 610 + d.spin * 3)) * SETTINGS.wander;
+          const ty = d.hy + (Math.cos(time / 1450 + d.phase * 1.3) + .5 * Math.cos(time / 530 + d.spin * 2)) * SETTINGS.wander * .8;
+          ax += (tx - d.x) * SETTINGS.home * SETTINGS.home * .5 * own; ay += (ty - d.y) * SETTINGS.home * SETTINGS.home * .5 * own;
+        }
+        d.vx = (d.vx + ax * dt) * damping;
+        d.vy = (d.vy + ay * dt) * (mode === 'falling' ? Math.exp(-.4 * dt) : damping);
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        // The floor and walls: dropped dots bounce and bounce, then settle in a loose pile.
+        const floor = height - d.r - (d.phase / (Math.PI * 2)) * 6;
+        const bounce = SETTINGS.bounce[0] + (SETTINGS.bounce[1] - SETTINGS.bounce[0]) * d.phase / (Math.PI * 2);
+        if (d.y > floor) { d.y = floor; d.vy *= mode === 'falling' ? -bounce : -.4; d.vx *= .9; }
+        if (d.x < d.r) { d.x = d.r; d.vx *= -.7; } else if (d.x > width - d.r) { d.x = width - d.r; d.vx *= -.7; }
+        if (d.y < d.r) { d.y = d.r; d.vy *= -.4; }
+      }
+      drift(time);
+      draw(time);
+      requestAnimationFrame(frame);
+    }
+
+    resize();
+    drift(performance.now());
+    draw(performance.now());
+  });
+</script>
+
+<style>
+  .dots-field { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; cursor: crosshair; }
+  .dots-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+</style>

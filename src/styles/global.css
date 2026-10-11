@@ -84,6 +84,8 @@ p, h1, h2, figure, dl, dd { margin: 0; }
   position: static !important;
   pointer-events: auto !important;
 }
+/* Side B mirrors the bar: its pages on the left, "(SIDE B)" on the right. */
+.site-header--b { flex-direction: row-reverse !important; }
 @media (max-width: 800px) {
   .site-header[data-header] {
     min-height: 54px !important;
@@ -107,6 +109,8 @@ body:not(:has(.home-stage)) .site-header[data-header] { will-change: transform; 
     background: #fafafa;
     will-change: transform;
   }
+  /* Side B is dark. */
+  html.is-side-b [data-scroll-bar] { background: #202020; }
 }
 
 /* Text links retain their underline offset and gain weight on interaction. */
