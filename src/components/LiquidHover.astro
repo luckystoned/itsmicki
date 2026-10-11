@@ -1,7 +1,7 @@
 ---
-// Oil-like hover on the project covers (desktop only). The pointer pushes the photo as if it were a thin layer of
-// oil: the image flows with the pointer, tears open into holes that show the page white behind it, can spill past
-// the card edges, and then slowly flows back into place. The cover is redrawn on a fixed WebGL2 canvas a bit larger
+// Oil-like hover on the project covers (desktop only). One frosted-glass lens follows the pointer, and the pointer
+// pushes the photo as if it were a thin layer of oil: the image flows, tears open into holes that show the page white
+// behind it, can spill past the card edges, and then flows back into place. The cover is redrawn on a fixed WebGL2 canvas a bit larger
 // than the card (so the oil can leave the card) while the original image is hidden. Video cards use their still
 // frame for the effect, since Vimeo frames cannot be read. Off for touch, reduced motion and browsers without WebGL2.
 ---
@@ -18,9 +18,13 @@
     radius: .0035, // Pointer footprint, in squared canvas units.
     drag: .55, // How much the pointer's motion drags the oil.
     push: .55, // How much the pointer pushes the oil outward around itself (opens the holes).
-    velocityDissipation: .9,
-    relax: .955, // How fast the oil flows back into place (closer to 1 = slower).
+    velocityDissipation: .82, // Short trail, so the effect stays one point under the cursor.
+    relax: .9, // How fast the oil flows back into place (closer to 1 = slower).
     tear: .42, // Stretch above which the oil splits open (lower = fewer holes).
+    lens: .11, // Frosted-glass lens radius, as a share of the canvas height.
+    frost: 3.2, // Lens blur (mipmap level).
+    milk: .12, // Milky whitening inside the lens.
+    ease: .18, // How quickly the lens catches up with the pointer.
   };
 
   const canvas = document.createElement('canvas');
@@ -49,6 +53,15 @@
         outColor = vec4((texture(uSource, coord).xy + v * uDt * uGrow) * uKeep, 0., 1.); }`,
     // The photo, carried by the displacement; where the oil is stretched too thin it tears and the page shows.
     display: `${HEAD}uniform sampler2D uOffset; uniform sampler2D uImage; uniform vec4 uCard; uniform vec4 uRect; uniform vec2 uCover; uniform vec2 uStep; uniform float uTear;
+      uniform vec2 uLens; uniform float uLensRadius; uniform float uLensOn; uniform float uAspect; uniform float uFrost; uniform float uMilk;
+      vec3 frosted(vec2 uv, float lod, vec2 spread) {
+        vec3 c = textureLod(uImage, uv, lod).rgb * .4;
+        c += textureLod(uImage, uv + vec2(spread.x, 0.), lod).rgb * .15;
+        c += textureLod(uImage, uv - vec2(spread.x, 0.), lod).rgb * .15;
+        c += textureLod(uImage, uv + vec2(0., spread.y), lod).rgb * .15;
+        c += textureLod(uImage, uv - vec2(0., spread.y), lod).rgb * .15;
+        return c;
+      }
       void main() {
         vec2 d = texture(uOffset, vUv).xy;
         vec2 dx = (texture(uOffset, vUv + vec2(uStep.x, 0.)).xy - texture(uOffset, vUv - vec2(uStep.x, 0.)).xy) / (2. * uStep.x);
@@ -60,7 +73,12 @@
         vec2 local = (card - uRect.xy) / uRect.zw;
         vec2 uv = clamp((local - .5) * uCover + .5, 0., 1.);
         float alpha = inside * smoothstep(uTear, uTear + .06, stretch);
-        outColor = vec4(texture(uImage, uv).rgb, alpha);
+        // One frosted-glass lens under the pointer: blurred and slightly milky, with a soft round edge.
+        float dist = length((vUv - uLens) * vec2(uAspect, 1.));
+        float lens = uLensOn * (1. - smoothstep(uLensRadius * .82, uLensRadius, dist));
+        vec3 sharp = texture(uImage, uv).rgb;
+        vec3 glass = mix(frosted(uv, uFrost, vec2(.012) * uCover), vec3(1.), uMilk);
+        outColor = vec4(mix(sharp, glass, lens), alpha);
       }`,
   };
 
@@ -160,6 +178,8 @@
     let pointer = { x: -1, y: -1 }; // Viewport px.
     let last = { x: -1, y: -1 };
     let previous = 0;
+    let lens = { x: .5, y: .5 };
+    let lensOn = 0;
 
     const stop = () => {
       running = false;
@@ -208,6 +228,12 @@
       run(P.advect, offset.write, { uVelocity: velocity.read.texture, uSource: offset.read.texture }, { uDt: dt, uKeep: SETTINGS.relax, uGrow: 1 });
       offset.swap();
 
+      // The lens glides after the pointer and fades in and out with the hover.
+      const [px, py] = at(pointer.x, pointer.y);
+      lens.x += (px - lens.x) * SETTINGS.ease;
+      lens.y += (py - lens.y) * SETTINGS.ease;
+      lensOn += ((hovering ? 1 : 0) - lensOn) * .14;
+
       // 3. Draw the photo through the displacement, exactly where the <img> sits inside the card.
       const rect = image.getBoundingClientRect();
       const boxAspect = rect.width / rect.height;
@@ -221,6 +247,7 @@
         uCard: [pad / area.width, pad / area.height, box.width / area.width, box.height / area.height],
         uRect: [(rect.left - box.left) / box.width, (rect.top - box.top) / box.height, rect.width / box.width, rect.height / box.height],
         uCover: cover, uStep: [1 / N, 1 / N], uTear: SETTINGS.tear,
+        uLens: [lens.x, lens.y], uLensRadius: SETTINGS.lens, uLensOn: lensOn, uAspect: aspect, uFrost: SETTINGS.frost, uMilk: SETTINGS.milk,
       });
 
       // The canvas now shows the cover, so the real image (or video) underneath can hide without a flash.
@@ -228,7 +255,7 @@
 
       // Once the pointer has left and the oil has settled, hand the card back to the real image or video.
       quiet = hovering ? 0 : quiet + 1;
-      if (quiet > 150) { stop(); return; }
+      if (quiet > 90) { stop(); return; }
       requestAnimationFrame(frame);
     };
 
@@ -249,6 +276,12 @@
       hovering = true;
       pointer = { x: event.clientX, y: event.clientY };
       last = { ...pointer };
+      if (!running) {
+        const box = nextVisual.getBoundingClientRect();
+        const pad = Math.max(box.width, box.height) * SETTINGS.pad;
+        lens = { x: (pointer.x - box.left + pad) / (box.width + pad * 2), y: (pointer.y - box.top + pad) / (box.height + pad * 2) };
+        lensOn = 0;
+      }
       if (!running) { running = true; requestAnimationFrame(frame); }
     };
 
