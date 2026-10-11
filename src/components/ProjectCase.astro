@@ -976,6 +976,20 @@ const vimeoUrl = (id: string) =>
     margin-top: 2.72vw;
   }
 
+  /* Side B cases breathe between frames, as in Figma (930:2032): 56px from frame to frame on a 1600px frame, or 27px
+     from a frame's caption (8px under it) to the next frame. */
+  .project-case-page-b .case-media-block + .case-media-block {
+    margin-top: 3.5vw;
+  }
+
+  .project-case-page-b .case-media-block:has(.case-reveal-caption) + .case-media-block {
+    margin-top: 1.69vw;
+  }
+
+  .project-case-page-b .case-reveal-caption {
+    margin-top: .5vw;
+  }
+
   .case-media-single {
     width: 100%;
   }
@@ -1696,6 +1710,14 @@ const vimeoUrl = (id: string) =>
     .case-intro + .case-flow > .case-media-block:first-child,
     .case-text + .case-media-block {
       margin-top: 32px;
+    }
+
+    .project-case-page-b .case-media-block + .case-media-block {
+      margin-top: 40px;
+    }
+
+    .project-case-page-b .case-media-block:has(.case-reveal-caption) + .case-media-block {
+      margin-top: 24px;
     }
 
     .case-flow,
