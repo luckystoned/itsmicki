@@ -2,6 +2,7 @@
 import { imageMetadata } from '@/data/imageMetadata';
 import { projectCases } from '@/data/projectCases';
 import { carouselProjects, desktopLength, vimeoBackground } from '@/data/carousel';
+import LiquidHover from '@/components/LiquidHover.astro';
 
 const { currentSlug } = Astro.props;
 const publishedCaseSlugs = new Set(Object.keys(projectCases));
@@ -19,7 +20,7 @@ const loops = [0, 1, 2];
   <section class="more-carousel" aria-label="More selected projects" data-more-carousel data-case-text-reveal>
     <div class="more-carousel-track" data-more-carousel-track>
       {loops.map((loop) => carouselProjects.map((project) => {
-        const dimensions = imageMetadata[project.caseCarouselCover] ?? (project.slug === 'amazon' ? { width: 640, height: 360 } : undefined);
+        const dimensions = imageMetadata[project.caseCarouselCover];
         const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${desktopLength(project.carouselLayout.width)}`;
         const content = (
           <>
@@ -58,6 +59,8 @@ const loops = [0, 1, 2];
     </span>
   </div>
 </footer>
+
+<LiquidHover />
 
 <style>
   .case-more {

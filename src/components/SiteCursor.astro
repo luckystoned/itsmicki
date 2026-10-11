@@ -7,6 +7,9 @@
   const linkable = 'a[href], button, summary, label[for], [role="button"], [data-carousel], [data-project-preview]';
   if (pointer && pointerShape) {
     const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Resting size and hover size (the hover grows 15% over the resting size).
+    const REST = 1.5;
+    const HOVER = REST * 1.15;
     let x = -100, y = -100, lastX = -100, tilt = 0, hovering = false, visible = false;
     const morph = (frames: Keyframe[], duration: number) => pointerShape.animate(frames, { duration: calm ? 0 : duration, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'forwards' });
     const setVisible = (value: boolean) => {
@@ -18,8 +21,8 @@
       if (value === hovering) return;
       hovering = value;
       morph(value
-        ? [{ transform: 'scale(1)' }, { transform: 'scale(1.56, 1.45)', offset: .45 }, { transform: 'scale(1.47, 1.53)', offset: .75 }, { transform: 'scale(1.5)' }]
-        : [{ transform: 'scale(1.5)' }, { transform: 'scale(1)' }], value ? 380 : 220);
+        ? [{ transform: `scale(${REST})` }, { transform: `scale(${HOVER * 1.04}, ${HOVER * .967})`, offset: .45 }, { transform: `scale(${HOVER * .98}, ${HOVER * 1.02})`, offset: .75 }, { transform: `scale(${HOVER})` }]
+        : [{ transform: `scale(${HOVER})` }, { transform: `scale(${REST})` }], value ? 380 : 220);
     };
     // Over a draggable sticker (or while holding one) the arrow becomes the pixel hand.
     const refresh = (target: Element | null) => {
@@ -43,8 +46,9 @@
     document.addEventListener('project-preview-refresh', recheck);
     window.addEventListener('scroll', recheck, { passive: true });
     document.addEventListener('pointerup', () => requestAnimationFrame(recheck));
-    document.addEventListener('pointerdown', () => { if (visible) morph([{ transform: `scale(${hovering ? 1.5 : 1})` }, { transform: `scale(${hovering ? 1.36 : .9})`, offset: .4 }, { transform: `scale(${hovering ? 1.5 : 1})` }], 300); });
-    document.addEventListener('pointerout', (event) => { if (!event.relatedTarget) setVisible(false); });
+    document.addEventListener('pointerdown', () => { if (visible) { const size = hovering ? HOVER : REST; morph([{ transform: `scale(${size})` }, { transform: `scale(${size * .9})`, offset: .4 }, { transform: `scale(${size})` }], 300); } });
+    // Pointer capture on a dragged sticker fires a pointerout with no relatedTarget; that is not leaving the window.
+    document.addEventListener('pointerout', (event) => { if (!event.relatedTarget && !document.querySelector('[data-case-drag].is-dragging')) setVisible(false); });
     window.addEventListener('blur', () => setVisible(false));
     finePointer.addEventListener('change', () => setVisible(false));
   }
@@ -53,10 +57,10 @@
 <style>
   .site-pointer { position: fixed; top: 0; left: 0; z-index: 2147483647; width: 26px; height: 48px; pointer-events: none; will-change: transform; transform-origin: 1px 1px; }
   .site-pointer[hidden] { display: none; }
-  .site-pointer-shape { display: block; transform-origin: 1px 1px; }
+  .site-pointer-shape { display: block; transform-origin: 1px 1px; transform: scale(1.5); /* REST in the script. */ }
   .site-pointer img { display: block; width: 26px; height: 48px; max-width: none; }
   .site-pointer .site-pointer-hand { display: none; position: absolute; top: -17px; left: -17px; width: 34px; height: 34px; }
   .site-pointer.is-grab .site-pointer-arrow { visibility: hidden; }
   .site-pointer.is-grab .site-pointer-hand { display: block; }
-  :global(html.site-pointer-on), :global(html.site-pointer-on *) { cursor: none !important; }
+  :global(html.site-pointer-on), :global(html.site-pointer-on *), :global(html.site-pointer-on [data-case-drag].is-dragging) { cursor: none !important; }
 </style>
