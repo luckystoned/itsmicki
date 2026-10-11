@@ -1756,6 +1756,11 @@ const vimeoUrl = (id: string) =>
       aspect-ratio: 9 / 15;
     }
 
+    /* General's two pieces (the microscope reveal and the dots) take a 4:5 portrait frame on phones (1080 × 1350). */
+    .case-media-single .case-media-surface:has(.reveal-video, .dots-field) {
+      aspect-ratio: 1080 / 1350;
+    }
+
     .project-case-page-b .case-media-block:has(.case-reveal-caption) + .case-media-block {
       margin-top: 24px;
     }

@@ -18,6 +18,8 @@ const CAP = 42; // Souls the place holds; then it is full, for good.
 const PREFIX = 'souls/';
 const LOOK = /^[cd][012][012][0-9]_[0-9a-f]{18}_[0-9a-f]{2,40}_[0-9a-f]{2,40}$/; // Look (with build 0–9), name, owner.
 const MAX_PHOTO = 600_000; // Bytes of JPEG.
+// Souls taken out of the place (by their stem), without deleting their files: Lexie, who is alive.
+const HIDDEN = new Set(['mv41f4ng-3a584adb']);
 
 const json = (body: unknown, status = 200, cache = 'no-store') =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': cache } });
@@ -33,9 +35,10 @@ const everything = async () => {
   return blobs;
 };
 const stemOf = (pathname: string) => pathname.replace(/^souls\//, '').split('_')[0].replace(/\.jpg$/, '');
+const shown = (pathname: string) => !HIDDEN.has(stemOf(pathname));
 
 export async function GET() {
-  const blobs = await everything();
+  const blobs = (await everything()).filter((blob) => shown(blob.pathname));
   const photos = new Map(blobs.filter((blob) => blob.pathname.endsWith('.jpg')).map((blob) => [stemOf(blob.pathname), blob.url]));
   const souls = blobs.filter((blob) => blob.pathname.endsWith('.json')).sort((a, b) => +a.uploadedAt - +b.uploadedAt)
     .map((blob) => ({ id: blob.pathname, photo: photos.get(stemOf(blob.pathname)) }));
@@ -54,7 +57,7 @@ export async function POST(request: Request) {
   // A JPEG (it starts FF D8 FF) of a sensible size.
   if (!photo || photo.length > MAX_PHOTO || photo[0] !== 0xff || photo[1] !== 0xd8 || photo[2] !== 0xff) return json({ error: 'Not a photo' }, 400);
 
-  const souls = (await everything()).filter((blob) => blob.pathname.endsWith('.json'));
+  const souls = (await everything()).filter((blob) => blob.pathname.endsWith('.json') && shown(blob.pathname));
   if (souls.length >= CAP) return json({ full: true, cap: CAP }, 409);
   const stem = `${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
   const picture = await put(`${PREFIX}${stem}.jpg`, photo, { access: 'public', contentType: 'image/jpeg', addRandomSuffix: false, cacheControlMaxAge: 31536000 });
