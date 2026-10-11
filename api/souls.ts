@@ -39,8 +39,9 @@ export async function GET() {
   const photos = new Map(blobs.filter((blob) => blob.pathname.endsWith('.jpg')).map((blob) => [stemOf(blob.pathname), blob.url]));
   const souls = blobs.filter((blob) => blob.pathname.endsWith('.json')).sort((a, b) => +a.uploadedAt - +b.uploadedAt)
     .map((blob) => ({ id: blob.pathname, photo: photos.get(stemOf(blob.pathname)) }));
-  // Cached at the edge for 5 minutes: listing counts against Blob's monthly operations (2,000 on Hobby).
-  return json({ souls, cap: CAP }, 200, 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
+  // Cached at the edge for 30 seconds: listing counts against Blob's monthly operations (2,000 on Hobby). Whoever just
+  // added a soul sees it right away anyway (their browser adds it until the list catches up).
+  return json({ souls, cap: CAP }, 200, 'public, max-age=0, s-maxage=30, stale-while-revalidate=120');
 }
 
 export async function POST(request: Request) {

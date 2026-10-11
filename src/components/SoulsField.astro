@@ -178,6 +178,11 @@ const { label } = Astro.props;
       return Array.isArray(list) ? list.map((item) => (typeof item === 'string' ? { id: item } : item)).filter((item) => typeof item?.id === 'string') : [];
     } catch { return []; }
   };
+  // Souls this visitor added to the shared place: the shared list is cached for a little while, so until it shows them
+  // they are added from here (and then forgotten).
+  const MINE = 'missing-souls-mine';
+  const mine = (): Entry[] => { try { const list = JSON.parse(localStorage.getItem(MINE) ?? '[]'); return Array.isArray(list) ? list.filter((item) => typeof item?.id === 'string') : []; } catch { return []; } };
+  const rememberMine = (entry: Entry) => { try { localStorage.setItem(MINE, JSON.stringify([...mine(), entry])); } catch { /* Blocked: the shared list will show it soon. */ } };
   const keepLocally = (entry: Entry) => {
     try { localStorage.setItem(STORE, JSON.stringify([...localSouls(), entry])); } catch {
       // Storage full (photos are big): keep it without its photo.
@@ -986,6 +991,10 @@ const { label } = Astro.props;
         if (!response.ok || !(response.headers.get('content-type') ?? '').includes('json')) throw new Error('No shared place');
         const data = await response.json() as { souls: Entry[]; cap: number };
         entries = data.souls; cap = data.cap;
+        // Their own newest ones, if the shared list doesn't have them yet; those it has are forgotten here.
+        const listed = new Set(entries.map((entry) => entry.id)), pending = mine().filter((entry) => !listed.has(entry.id));
+        try { localStorage.setItem(MINE, JSON.stringify(pending)); } catch { /* Blocked. */ }
+        entries = [...entries, ...pending];
       } catch {
         shared = false;
         entries = localSouls();
@@ -1090,7 +1099,7 @@ const { label } = Astro.props;
         if (shared) {
           const response = await fetch('/api/souls', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ look: code, photo }) }).catch(() => null);
           if (response?.status === 409) { cap = souls.length; showFull(); return; }
-          if (response?.ok) ({ id, photo } = (await response.json()) as { id: string; photo: string });
+          if (response?.ok) { ({ id, photo } = (await response.json()) as { id: string; photo: string }); rememberMine({ id, photo }); }
           else { shared = false; keepLocally({ id, photo }); }
         } else keepLocally({ id, photo });
         // A newcomer is welcomed under her hand, and she strokes it for a few seconds before it goes to its place.
