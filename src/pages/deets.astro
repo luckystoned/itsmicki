@@ -1000,14 +1000,16 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
       overflow: hidden;
     }
 
+    /* Sitting on the bottom edge: the line height leaves the baseline (plus the overshoot of round letters) just above
+       it, so the letters are never clipped, whatever the phone width. */
     .deets-footer-wordmark {
-      top: min(2px, .512821cqw);
+      top: auto;
       right: auto;
-      bottom: auto;
-      left: -1.538462cqw; /* Same position and size as the home wordmark. */
+      bottom: 0;
+      left: -1.538462cqw; /* Same size as the home wordmark. */
       justify-content: flex-start;
       font-size: 46.202051cqw;
-      line-height: normal;
+      line-height: .74;
       text-box-trim: none;
       width: max-content;
     }
