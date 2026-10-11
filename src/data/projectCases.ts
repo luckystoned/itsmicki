@@ -482,16 +482,20 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
     role: 'Art Direction &amp;<br>AI Image Generation',
     nutshell: `For makeup inspiration, I use AI as an experimental tool, feeding it textures and color palettes drawn from everyday materials to generate unexpected looks. Familiar surfaces become starting points for expressive, unconventional makeup ideas.`,
     drags: [],
+    // As in Figma (930:2203): three rows of two; the third row repeats the second there too.
     blocks: [
       pair(
-        image('/02_Projects/08_TexturesBody/07_TexturesBody.webp', 'Freckled face partly veiled by a translucent sheet.', '773 / 955'), '48.3125vw', '59.6875vw',
-        image('/02_Projects/08_TexturesBody/08_TexturesBody.webp', 'Close-up of an eye and nose behind a translucent veil.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/01_MkpHair.webp', 'Brown eye with lilac shadow and an iridescent ribbon across freckled skin.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/02_MkpHair.webp', 'Freckled face partly veiled by a translucent sheet.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
       pair(
-        image('/02_Projects/08_TexturesBody/09_TexturesBody.webp', 'Freckled face with drops of milky liquid on the cheek.', '773 / 955'), '48.3125vw', '59.6875vw',
-        image('/02_Projects/08_TexturesBody/10_TexturesBody.webp', 'Glossy, wet skin around an eye.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/03_MkpHair.webp', 'Freckled face with milky drops on the cheek and deep red lips.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/04_MkpHair.webp', 'Face with lilac eyeshadow and a wash of yellow blush.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
-      single(image('/02_Projects/08_TexturesBody/06_TexturesBody.webp', 'Deep red gel with a cluster of small bubbles.', '1556 / 870')),
+      pair(
+        image('/04_SideB/Projects/01_MkpHair/03_MkpHair.webp', 'Freckled face with milky drops on the cheek and deep red lips.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/04_MkpHair.webp', 'Face with lilac eyeshadow and a wash of yellow blush.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
     ],
     credits: [],
   },

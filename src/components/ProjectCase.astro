@@ -976,10 +976,18 @@ const vimeoUrl = (id: string) =>
     margin-top: 2.72vw;
   }
 
-  /* Side B cases breathe between frames, as in Figma (930:2032): 56px from frame to frame on a 1600px frame, or 27px
-     from a frame's caption (8px under it) to the next frame. */
+  /* Side B cases, as in Figma (930:2032, 930:2203) on a 1600px frame: 10px between frames side by side and 9px from
+     row to row; 27px from a frame's caption (8px under it) to the next frame; the year 19px from the title. */
   .project-case-page-b .case-media-block + .case-media-block {
-    margin-top: 3.5vw;
+    margin-top: .5625vw;
+  }
+
+  .project-case-page-b .case-media-pair {
+    gap: .625vw;
+  }
+
+  .project-case-page-b .case-year {
+    margin-left: 1.45vw;
   }
 
   .project-case-page-b .case-media-block:has(.case-reveal-caption) + .case-media-block {
@@ -1713,7 +1721,15 @@ const vimeoUrl = (id: string) =>
     }
 
     .project-case-page-b .case-media-block + .case-media-block {
-      margin-top: 40px;
+      margin-top: 6px;
+    }
+
+    .project-case-page-b .case-media-pair {
+      gap: 6px;
+    }
+
+    .project-case-page-b .case-year {
+      margin-left: 2.2vw;
     }
 
     .project-case-page-b .case-media-block:has(.case-reveal-caption) + .case-media-block {
