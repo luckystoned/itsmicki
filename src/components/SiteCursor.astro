@@ -7,9 +7,9 @@
   const linkable = 'a[href], button, summary, label[for], [role="button"], [data-carousel], [data-project-preview]';
   if (pointer && pointerShape) {
     const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // Resting size and hover size (the hover keeps the same 1.5× grow over the resting size).
+    // Resting size and hover size (the hover grows 15% over the resting size).
     const REST = 1.5;
-    const HOVER = REST * 1.5;
+    const HOVER = REST * 1.15;
     let x = -100, y = -100, lastX = -100, tilt = 0, hovering = false, visible = false;
     const morph = (frames: Keyframe[], duration: number) => pointerShape.animate(frames, { duration: calm ? 0 : duration, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'forwards' });
     const setVisible = (value: boolean) => {
@@ -46,7 +46,7 @@
     document.addEventListener('project-preview-refresh', recheck);
     window.addEventListener('scroll', recheck, { passive: true });
     document.addEventListener('pointerup', () => requestAnimationFrame(recheck));
-    document.addEventListener('pointerdown', () => { if (visible) { const size = hovering ? HOVER : REST; morph([{ transform: `scale(${size})` }, { transform: `scale(${size * (hovering ? .907 : .9)})`, offset: .4 }, { transform: `scale(${size})` }], 300); } });
+    document.addEventListener('pointerdown', () => { if (visible) { const size = hovering ? HOVER : REST; morph([{ transform: `scale(${size})` }, { transform: `scale(${size * .9})`, offset: .4 }, { transform: `scale(${size})` }], 300); } });
     // Pointer capture on a dragged sticker fires a pointerout with no relatedTarget; that is not leaving the window.
     document.addEventListener('pointerout', (event) => { if (!event.relatedTarget && !document.querySelector('[data-case-drag].is-dragging')) setVisible(false); });
     window.addEventListener('blur', () => setVisible(false));

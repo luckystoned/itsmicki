@@ -1,8 +1,8 @@
 ---
 // Hover on the project covers (desktop only). One small, soft spot follows the pointer: the photo is frosted
-// (blurred, never lightened) and dragged along the pointer's motion like oil, leaving a fluid trail that keeps flowing,
+// (blurred with a fine grain, never lightened) and dragged along the pointer's motion like oil, leaving a fluid trail that keeps flowing,
 // spills past the card edges and then flows back into place. The head of the trail, the blur and the drag all share one
-// point, so it never reads as two spots. The cover is redrawn on a fixed WebGL2 canvas a bit larger than the card
+// point, so it never reads as two spots; the trail diffuses as it ages. The cover is redrawn on a fixed WebGL2 canvas a bit larger than the card
 // (room for the spill) while the original image is hidden; inside the card the photo always covers it, and outside
 // only what the oil carried out is drawn, so no page white shows. Video cards use their still frame for the effect,
 // since Vimeo frames cannot be read. Off for touch, reduced motion and browsers without WebGL2.
@@ -17,11 +17,14 @@
   const SETTINGS = {
     field: 160, // Simulation grid over the canvas.
     pad: .3, // Room around the card for the oil to spill into, as a share of the card's longer side.
-    radius: .085, // Spot radius, as a share of the card height (gaussian falloff, so its edge is very soft).
+    radius: .055, // Spot radius, as a share of the card height (gaussian falloff, so its edge is very soft).
     drag: .22, // How much of the spot's motion is handed to the oil per frame.
     velocityKeep: .95, // How long the oil keeps flowing after each move (closer to 1 = longer trail).
     relax: .975, // How slowly the oil flows back into place (closer to 1 = slower).
-    frostKeep: .955, // How long the trail stays frosted.
+    frostKeep: .982, // How long the trail stays frosted.
+    diffuse: .15, // How quickly the frosted trail spreads and softens as it ages.
+    trail: 1.6, // Width of the frosted trail relative to the spot, so the trail is wider and softer than the spot.
+    grain: .06, // Fine grain inside the frost (zero-mean, so it never lightens).
     frost: .012, // Blur spread at full frost, as a share of the card height.
     soften: 1.6, // Extra mipmap blur at full frost, so it is smooth rather than grainy.
     swell: .08, // A slight lens bulge at the spot, so it is visible when the pointer is still.
@@ -47,17 +50,23 @@
   `;
   const SOURCES = {
     // At the spot: the oil gets the spot's motion (xy, added) and is frosted (z, up to the spot strength).
-    splat: `${HEAD}uniform sampler2D uTarget; uniform vec2 uPoint; uniform vec2 uDrag; uniform float uFrost; uniform float uRadius; uniform float uAspect;
+    splat: `${HEAD}uniform sampler2D uTarget; uniform vec2 uPoint; uniform vec2 uDrag; uniform float uFrost; uniform float uRadius; uniform float uTrail; uniform float uAspect;
       void main() { vec2 p = (vUv - uPoint) * vec2(uAspect, 1.); float g = exp(-dot(p, p) / (uRadius * uRadius));
+        float wide = exp(-dot(p, p) / (uRadius * uRadius * uTrail * uTrail));
         vec3 old = texture(uTarget, vUv).xyz;
-        outColor = vec4(old.xy + uDrag * g, max(old.z, uFrost * g), 1.); }`,
+        outColor = vec4(old.xy + uDrag * g, max(old.z, uFrost * wide), 1.); }`,
     // Carries a field along the velocity: velocity fades, displacement grows with it and relaxes, frost fades.
-    advect: `${HEAD}uniform sampler2D uVelocity; uniform sampler2D uSource; uniform float uDt; uniform vec3 uKeep; uniform float uGrow;
-      void main() { vec2 v = texture(uVelocity, vUv).xy; vec3 s = texture(uSource, vUv - uDt * v).xyz;
+    advect: `${HEAD}uniform sampler2D uVelocity; uniform sampler2D uSource; uniform float uDt; uniform vec3 uKeep; uniform float uGrow; uniform float uDiffuse;
+      void main() { vec2 v = texture(uVelocity, vUv).xy; vec2 c = vUv - uDt * v; vec3 s = texture(uSource, c).xyz;
+        // The frost (z) spreads to its neighbours, so the trail turns diffuse as it ages.
+        vec2 t = 1.5 / vec2(textureSize(uSource, 0));
+        float around = (texture(uSource, c + vec2(t.x, 0.)).z + texture(uSource, c - vec2(t.x, 0.)).z + texture(uSource, c + vec2(0., t.y)).z + texture(uSource, c - vec2(0., t.y)).z) * .25;
+        s.z = mix(s.z, around, uDiffuse);
         outColor = vec4((s + vec3(v * uDt * uGrow, 0.)) * uKeep, 1.); }`,
     // The photo carried by the displacement, frosted where the trail is, with a slight bulge at the spot.
     display: `${HEAD}uniform sampler2D uOffset; uniform sampler2D uImage; uniform vec4 uCard; uniform vec2 uCardPx; uniform vec4 uRect; uniform vec2 uCover;
-      uniform vec2 uSpot; uniform float uRadius; uniform float uOn; uniform float uAspect; uniform float uFrost; uniform float uSoften; uniform float uSwell;
+      uniform vec2 uSpot; uniform float uRadius; uniform float uOn; uniform float uAspect; uniform float uFrost; uniform float uSoften; uniform float uSwell; uniform float uGrain; uniform float uTime;
+      float hash(vec2 p) { vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
       vec2 coverUv(vec2 card) { vec2 local = (clamp(card, 0., 1.) - uRect.xy) / uRect.zw; return clamp((local - .5) * uCover + .5, 0., 1.); }
       void main() {
         vec2 scale = vec2(uAspect, 1.);
@@ -76,13 +85,17 @@
         float frost = clamp(field.z, 0., 1.);
         vec3 color = vec3(0.);
         float spread = uFrost * frost;
+        // A per-pixel random turn of the taps gives the frost a fine, frosted-glass grain.
+        vec2 pixel = floor(gl_FragCoord.xy) + floor(uTime * 24.) * 17.;
+        float turn = hash(pixel) * 6.2832;
         for (int i = 0; i < 12; i++) {
-          float a = float(i) * 2.39996;
+          float a = float(i) * 2.39996 + turn;
           float r = sqrt((float(i) + .5) / 12.);
           vec2 tap = (source + vec2(cos(a), sin(a)) * r * spread / scale - uCard.xy) / uCard.zw;
           color += texture(uImage, coverUv(tap), uSoften * frost).rgb;
         }
-        outColor = vec4(color / 12., alpha);
+        color = color / 12. + (hash(pixel + 91.7) - .5) * 2. * uGrain * sqrt(frost);
+        outColor = vec4(clamp(color, 0., 1.), alpha);
       }`,
   };
 
@@ -228,17 +241,17 @@
       const speed = Math.hypot(vx, vy);
       if (speed > 3) { vx *= 3 / speed; vy *= 3 / speed; }
       const drag = SETTINGS.drag * on * dt * 60;
-      run(P.splat, velocity.write, { uTarget: velocity.read.texture }, { uPoint: [sx, sy], uDrag: [vx * drag, vy * drag], uFrost: 0, uRadius: radius, uAspect: aspect });
+      run(P.splat, velocity.write, { uTarget: velocity.read.texture }, { uPoint: [sx, sy], uDrag: [vx * drag, vy * drag], uFrost: 0, uRadius: radius, uTrail: 1, uAspect: aspect });
       velocity.swap();
-      run(P.splat, offset.write, { uTarget: offset.read.texture }, { uPoint: [sx, sy], uDrag: [0, 0], uFrost: on, uRadius: radius, uAspect: aspect });
+      run(P.splat, offset.write, { uTarget: offset.read.texture }, { uPoint: [sx, sy], uDrag: [0, 0], uFrost: on, uRadius: radius, uTrail: SETTINGS.trail, uAspect: aspect });
       offset.swap();
 
       // 2. The oil flows and fades; the displacement is carried by it, grows with it and relaxes; the frost fades.
       const vk = keep(SETTINGS.velocityKeep);
-      run(P.advect, velocity.write, { uVelocity: velocity.read.texture, uSource: velocity.read.texture }, { uDt: dt, uKeep: [vk, vk, 0], uGrow: 0 });
+      run(P.advect, velocity.write, { uVelocity: velocity.read.texture, uSource: velocity.read.texture }, { uDt: dt, uKeep: [vk, vk, 0], uGrow: 0, uDiffuse: 0 });
       velocity.swap();
       const rk = keep(SETTINGS.relax);
-      run(P.advect, offset.write, { uVelocity: velocity.read.texture, uSource: offset.read.texture }, { uDt: dt, uKeep: [rk, rk, keep(SETTINGS.frostKeep)], uGrow: 1 });
+      run(P.advect, offset.write, { uVelocity: velocity.read.texture, uSource: offset.read.texture }, { uDt: dt, uKeep: [rk, rk, keep(SETTINGS.frostKeep)], uGrow: 1, uDiffuse: step(SETTINGS.diffuse) });
       offset.swap();
 
       // 3. Draw the photo through the displacement, exactly where the <img> sits inside the card.
@@ -256,7 +269,7 @@
         uRect: [(rect.left - box.left) / box.width, (rect.top - box.top) / box.height, rect.width / box.width, rect.height / box.height],
         uCover: cover,
         uSpot: [sx, sy], uRadius: radius, uOn: on, uAspect: aspect,
-        uFrost: SETTINGS.frost * box.height / area.height, uSoften: SETTINGS.soften, uSwell: SETTINGS.swell,
+        uFrost: SETTINGS.frost * box.height / area.height, uSoften: SETTINGS.soften, uSwell: SETTINGS.swell, uGrain: SETTINGS.grain, uTime: time / 1000,
       });
 
       // The canvas now shows the cover, so the real image (or video) underneath can hide without a flash.
