@@ -68,7 +68,13 @@ const { label } = Astro.props;
     people: .2, // Photos are shown in the list: a crop where people fill more than this share is turned down.
     photoSide: 1000, // The photo kept: cropped around the animal, at most this many pixels on its longer side.
     // The place, after the reference: a coral sky melting into a lavender-blue ground, a warm glow on the floor.
-    sky: [[0, '#e46a55'], [.3, '#ec7d60'], [.45, '#f19a7c'], [.56, '#a198e2'], [.8, '#8380d8'], [1, '#716ecb']] as Array<[number, string]>,
+    sky: [[0, '#e46a55'], [.3, '#ec8064'], [.45, '#ec9a86'], [.53, '#cf9cb4'], [.62, '#a99ae0'], [.82, '#8582d8'], [1, '#716ecb']] as Array<[number, string]>,
+    // Slow clouds of colour drifting like nebulae, lilac into the sky and orange into the ground, so the two melt into
+    // each other: [colour, x, y, radius (shares of the frame), opacity, seconds per drift].
+    nebulae: [
+      ['#a59cf0', .2, .3, .55, .42, 70], ['#b9a6f2', .78, .22, .5, .36, 90], ['#ff9470', .3, .78, .55, .34, 80],
+      ['#ff8a66', .82, .7, .5, .3, 65], ['#f3a6c4', .55, .5, .6, .3, 100], ['#9c96ea', .5, .62, .45, .3, 75],
+    ] as Array<[string, number, number, number, number, number]>,
     horizon: .5, // Where the ground starts, as a share of the height.
     plants: { back: '#98a3ee', stem: '#6f8f63', front: '#5f8456' }, // Flowers on the horizon, their stems, leaves in front.
     eyes: '#ff4a2a', // Eyes are little arches (∩), smiling shut.
@@ -514,8 +520,9 @@ const { label } = Astro.props;
       g.imageSmoothingQuality = 'high';
       // Ethereal: no edge anywhere. Her halo fades out in layers, wider and fainter each time, then her body, itself
       // mostly glow; all of it in her colours: warm white into a pale lime, a warm orange glow in her chest.
-      for (const [blur, grow, alpha] of [[72, 1.7, .16], [52, 1.48, .2], [36, 1.3, .24], [22, 1.15, .3], [12, 1.05, .38]] as Array<[number, number, number]>) {
-        g.globalAlpha = alpha; g.drawImage(soften(shape, blur), W * (1 - grow) / 2, H * (1 - grow) / 2.6, W * grow, H * grow);
+      // (The blur itself spreads it into the room around her; it is never scaled past her canvas, or its edge would show.)
+      for (const [blur, alpha] of [[90, .2], [64, .22], [40, .26], [24, .3], [12, .38]] as Array<[number, number]>) {
+        g.globalAlpha = alpha; g.drawImage(soften(shape, blur), 0, 0, W, H);
       }
       g.globalAlpha = .95; g.drawImage(soften(shape, 7), 0, 0, W, H);
       g.drawImage(soften(shape, 4.5), 0, 0, W, H);
@@ -528,11 +535,6 @@ const { label } = Astro.props;
       const heart = g.createRadialGradient(cx, top + .4 * u, 0, cx, top + .4 * u, .24 * u);
       heart.addColorStop(0, 'rgba(255, 130, 80, .55)'); heart.addColorStop(.55, 'rgba(255, 175, 140, .18)'); heart.addColorStop(1, 'rgba(255, 175, 140, 0)');
       g.fillStyle = heart; g.fillRect(0, 0, W, H);
-      // Her feet melt softly into the floor.
-      g.globalCompositeOperation = 'destination-out';
-      const floor = g.createLinearGradient(0, top + .9 * u, 0, top + 1.04 * u);
-      floor.addColorStop(0, 'rgba(0, 0, 0, 0)'); floor.addColorStop(1, 'rgba(0, 0, 0, 1)');
-      g.fillStyle = floor; g.fillRect(0, top + .9 * u, W, size);
       // Her face, a warm peach glow.
       g.globalCompositeOperation = 'source-over';
       const face = g.createRadialGradient(cx, top + .13 * u, 0, cx, top + .13 * u, .075 * u);
@@ -655,7 +657,8 @@ const { label } = Astro.props;
         back.push({ ...v, x, y: horizon + height * (random() * .06 - .01), phase: random() * 6.28, sway: .04 + random() * .04 });
       }
       for (const [x, lean] of [[.03, 1], [.1, 1], [.18, 1], [.84, -1], [.92, -1], [.98, -1]] as Array<[number, number]>) {
-        const h = base * (.32 + random() * .22), w = h * .5;
+        // Never so tall that their tips poke up near the horizon.
+        const h = Math.min(base * (.32 + random() * .22), height * .4), w = h * .5;
         front.push({ sprite: paintPlant('leaves', w, h, 101 + Math.round(x * 100), 7), x: width * x + lean * random() * width * .02, y: height * 1.04, w, h, phase: random() * 6.28, sway: .05 + random() * .03 });
       }
       plants = { back, front };
@@ -741,6 +744,17 @@ const { label } = Astro.props;
       const sky = context.createLinearGradient(0, 0, 0, height);
       SETTINGS.sky.forEach(([at, color]) => sky.addColorStop(at, color));
       context.fillStyle = sky; context.fillRect(0, 0, width, height);
+      // The nebulae, each a soft round cloud stretched wide, wandering in a slow loop.
+      SETTINGS.nebulae.forEach(([colour, nx, ny, nr, alpha, period], i) => {
+        const a = t / period * Math.PI * 2 + i * 1.7;
+        const x = (nx + Math.sin(a) * .12) * width, y = (ny + Math.cos(a * .8 + i) * .08) * height, r = nr * Math.max(width, height);
+        const [cr, cg, cb] = rgbOf(colour);
+        const cloud = context.createRadialGradient(x, y, 0, x, y, r);
+        cloud.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${alpha})`); cloud.addColorStop(.55, `rgba(${cr}, ${cg}, ${cb}, ${alpha * .4})`); cloud.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+        context.save(); context.translate(x, y); context.scale(1.5, .75); context.translate(-x, -y);
+        context.fillStyle = cloud; context.fillRect(x - r, y - r, r * 2, r * 2);
+        context.restore();
+      });
       const pool = context.createRadialGradient(width * .5, height * .9, 0, width * .5, height * .9, width * .3);
       pool.addColorStop(0, `rgba(240, 120, 96, ${.6 + .08 * Math.sin(t * .6)})`); pool.addColorStop(1, 'rgba(240, 120, 96, 0)');
       context.save(); context.translate(0, height * .9); context.scale(1, .4); context.translate(0, -height * .9);
