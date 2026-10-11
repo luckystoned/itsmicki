@@ -512,7 +512,7 @@ const { label } = Astro.props;
       const W = w + pad * 2, H = size + pad * 2;
       const tint = (source: HTMLCanvasElement, colour: string) => { const c = canvasOf(source.width, source.height), t = c.getContext('2d')!; t.drawImage(source, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = colour; t.fillRect(0, 0, c.width, c.height); return c; };
       // Her colours, painted onto the crisp figure: white hair and shoulders, the dress glowing orange from within, pale
-      // legs; a little green light on her face.
+      // legs; a touch of the flowers' lilac on her face.
       const coloured = canvasOf(W, H), c = coloured.getContext('2d')!;
       c.drawImage(shape, 0, 0);
       c.globalCompositeOperation = 'source-in';
@@ -523,20 +523,20 @@ const { label } = Astro.props;
       const glow = c.createRadialGradient(cx, top + .45 * u, 0, cx, top + .45 * u, .2 * u);
       glow.addColorStop(0, 'rgba(255, 196, 140, .55)'); glow.addColorStop(1, 'rgba(255, 196, 140, 0)');
       c.fillStyle = glow; c.fillRect(0, 0, W, H);
-      const cheek = c.createRadialGradient(cx + .02 * u, top + .14 * u, 0, cx + .02 * u, top + .14 * u, .08 * u);
-      cheek.addColorStop(0, 'rgba(150, 226, 160, .6)'); cheek.addColorStop(1, 'rgba(150, 226, 160, 0)');
+      const cheek = c.createRadialGradient(cx + .02 * u, top + .14 * u, 0, cx + .02 * u, top + .14 * u, .06 * u);
+      cheek.addColorStop(0, 'rgba(152, 163, 238, .2)'); cheek.addColorStop(1, 'rgba(152, 163, 238, 0)');
       c.fillStyle = cheek; c.fillRect(0, 0, W, H);
       const out = canvasOf(W * ratio, H * ratio), g = out.getContext('2d')!;
       g.scale(ratio, ratio);
       g.imageSmoothingQuality = 'high';
-      // Her halo fades out in layers, wider and fainter each time, warm near her and green further out, so it has no
+      // Her halo fades out in layers, wider and fainter each time, warm near her and lilac further out, so it has no
       // edge of its own; then her colours fringing off her outline, then herself, soft.
-      for (const [blur, grow, alpha, colour] of [[72, 1.7, .14, '#8ad8b4'], [52, 1.48, .16, '#b5d89a'], [36, 1.3, .2, '#fff4e2'], [22, 1.15, .24, '#ffb48a'], [12, 1.05, .26, '#ffd2b4']] as Array<[number, number, number, string]>) {
+      for (const [blur, grow, alpha, colour] of [[72, 1.7, .14, '#98a3ee'], [52, 1.48, .16, '#bcbdf2'], [36, 1.3, .2, '#fff4e2'], [22, 1.15, .24, '#ffb48a'], [12, 1.05, .26, '#ffd2b4']] as Array<[number, number, number, string]>) {
         g.globalAlpha = alpha; g.drawImage(tint(soften(shape, blur), colour), W * (1 - grow) / 2, H * (1 - grow) / 2.6, W * grow, H * grow);
       }
       const soft = soften(coloured, 4), shift = .012 * u;
       g.globalCompositeOperation = 'screen';
-      g.globalAlpha = .6; g.drawImage(tint(soft, '#7fe0a0'), -shift, 0, W, H);
+      g.globalAlpha = .6; g.drawImage(tint(soft, '#98a3ee'), -shift, 0, W, H);
       g.globalAlpha = .55; g.drawImage(tint(soft, '#ff8a5c'), shift, 0, W, H);
       g.globalCompositeOperation = 'source-over';
       g.globalAlpha = 1; g.drawImage(soft, 0, 0, W, H);
