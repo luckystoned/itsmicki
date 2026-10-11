@@ -39,7 +39,8 @@ export async function GET() {
   const photos = new Map(blobs.filter((blob) => blob.pathname.endsWith('.jpg')).map((blob) => [stemOf(blob.pathname), blob.url]));
   const souls = blobs.filter((blob) => blob.pathname.endsWith('.json')).sort((a, b) => +a.uploadedAt - +b.uploadedAt)
     .map((blob) => ({ id: blob.pathname, photo: photos.get(stemOf(blob.pathname)) }));
-  return json({ souls, cap: CAP }, 200, 'public, max-age=0, s-maxage=5, stale-while-revalidate=60');
+  // Cached at the edge for 5 minutes: listing counts against Blob's monthly operations (2,000 on Hobby).
+  return json({ souls, cap: CAP }, 200, 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
 }
 
 export async function POST(request: Request) {
