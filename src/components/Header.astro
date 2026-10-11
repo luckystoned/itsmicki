@@ -1,6 +1,6 @@
 ---
 // Side A: "(SIDE A)" on the left and its pages on the right. Side B mirrors it: "(SIDE B)" on the right and, on the
-// left, the way back to Side A plus Side B's own pages (its projects live on the Side B home until they have a page).
+// left, the way back to Side A plus Side B's own pages.
 const { active = '', side = 'a' } = Astro.props;
 ---
 {side === 'b' ? (
@@ -8,7 +8,7 @@ const { active = '', side = 'a' } = Astro.props;
     <a class="wordmark" href="/sideb" aria-label="Side B home">(SIDE B)</a>
     <nav aria-label="Main navigation">
       <a href="/">(SIDE A)</a>
-      <a class:list={{ active: active === 'projects' }} href="/sideb">(projects)</a>
+      <a class:list={{ active: active === 'projects' }} href="/sideb/projects">(projects)</a>
       <a class:list={{ active: active === 'deets' }} href="/sideb/deets">(deets)</a>
     </nav>
   </header>

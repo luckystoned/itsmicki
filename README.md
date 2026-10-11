@@ -66,8 +66,9 @@ El resultado estático se genera en `dist/`. No se debe versionar esa carpeta.
 - `/projects`: archivo de proyectos.
 - `/projects/[slug]`: detalle dinámico de cada caso.
 - `/deets`: perfil e información profesional.
-- `/sideb`: home de Side B, el mismo home en colores invertidos (`src/components/HomeStage.astro`), con sus proyectos todavía como “coming soon”.
+- `/sideb`: home de Side B, el mismo home en colores invertidos (`src/components/HomeStage.astro`), con los nombres de sus proyectos (todavía sin página de caso).
 - `/sideb/deets`: fashion, música y fotografía analógica de Side B, en oscuro.
+- `/sideb/projects`: grilla de proyectos de Side B (`src/data/sideBProjects.ts`), con el mismo marco que `/projects` (`src/components/ProjectsStage.astro`) en colores invertidos.
 
 ## Editar o agregar proyectos
 
