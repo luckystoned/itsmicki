@@ -1,12 +1,13 @@
 ---
 // Missing souls: a warm, glowing place (coral sky, lavender ground, blurred plants swaying) where a caregiver looks
-// after the animals people leave with her. Anyone can add their cat or dog from a full-body photo: the photo is read on
-// their device (MediaPipe finds the animal and cuts it out) and only the animal is kept (its silhouette and its own light
-// and shade, never the background), painted as a soft, ethereal figure with an aura: its own shape and breed, its light
-// and shade only as a hint of volume and markings. Once here, each animal lives its own little life: it sits, walks
-// about, hops, stretches, grooms, naps and blinks. The souls are shared by every visitor (api/souls.ts, Vercel Blob) and
-// stay for good, until the place is full; without the shared store (local dev, or before it is connected) they are kept
-// on the visitor's device. With reduced motion nothing moves.
+// after the animals people leave with her. Anyone can add their cat or dog from a full-body photo. The photo is read on
+// their device (MediaPipe finds the animal and cuts it out) and only a description of it is kept: cat or dog, its
+// size (asked, for dogs), its colours and its markings (plain, tabby stripes or patches). Each one becomes a soft,
+// ethereal illustrated cat or dog in its own colours, with an aura. Once here, it lives its own little life: it stands,
+// walks about on its paws, hops, stretches, grooms, lies down to nap and blinks; and a newcomer is first stroked by the
+// caregiver. The souls are shared by every visitor (api/souls.ts, Vercel Blob) and stay for good, until the place is
+// full; without the shared store (local dev, or before it is connected) they are kept on the visitor's device. With
+// reduced motion nothing moves.
 type Props = { label: string };
 const { label } = Astro.props;
 ---
@@ -30,7 +31,6 @@ const { label } = Astro.props;
 
   const SETTINGS = {
     cap: 42, // Souls the place holds (the server has the final word).
-    maxSide: 240, // Largest silhouette side kept, in pixels (the server accepts up to this).
     minPet: .008, // Share of the photo the animal has to cover to count as found.
     margin: .012, // Whole body: the animal must not touch the photo's sides or bottom (share of the photo).
     model: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite',
@@ -41,31 +41,31 @@ const { label } = Astro.props;
     sky: [[0, '#e46a55'], [.3, '#ec7d60'], [.45, '#f19a7c'], [.56, '#a198e2'], [.8, '#8380d8'], [1, '#716ecb']] as Array<[number, string]>,
     horizon: .5, // Where the ground starts, as a share of the height.
     plants: { back: '#98a3ee', stem: '#6f8f63', front: '#5f8456' }, // Flowers on the horizon, their stems, leaves in front.
-    // Each soul's coat: light → mid → shadow. Pale mint and ink, like the two cats of the reference, and warm pastels.
-    // Soft, glowing gradients like the references: pink into violet into blue, pale mint, ink, coral, green into blue.
-    coats: [
-      ['#ff9ec6', '#a487f0', '#4d5fd6'],
-      ['#f6f8e4', '#cdeec0', '#8fd2b0'],
-      ['#3a3290', '#1d1a58', '#3f6fa0'],
-      ['#ffb3a0', '#ff7f8a', '#9b7be6'],
-      ['#c9f0a8', '#7fd6a0', '#5b6ad8'],
-      ['#ffd6e6', '#e7a3d6', '#8c8ff0'],
-      ['#fff1e0', '#ffc9b0', '#b8a6f2'],
-      ['#8e7cf2', '#5a4fc8', '#70c9a8'],
-    ],
-    eyes: '#ff4a2a', // Eyes are little arches (∩), smiling shut, not round glowing dots.
+    eyes: '#ff4a2a', // Eyes are little arches (∩), smiling shut.
     grain: .17, // Strength of the film grain over everything.
+    // How big each kind is next to the others (a medium dog is 1).
+    scale: { cat: .78, dog: [.66, .92, 1.2] },
     // What they do, and how often; lengths in seconds.
     acts: { sit: [.32, 3, 8], walk: [.3, 0, 0], hop: [.06, 1.1, 1.1], stretch: [.1, 1.8, 1.8], groom: [.08, 2.4, 3.4], sleep: [.12, 7, 13] } as Record<string, [number, number, number]>,
     walkSpeed: .045, // Share of the width per second.
   };
 
+  /** What is kept of each pet: cat or dog, size (dogs: 0 small, 1 medium, 2 big), markings (0 plain, 1 tabby,
+      2 patches) and its colours (light, mid, dark). It travels as a short code, e.g. "c12_f2d9b0b98a5e4a3326". */
+  type Look = { kind: 'cat' | 'dog'; size: 0 | 1 | 2; pattern: 0 | 1 | 2; colours: [string, string, string] };
+  const lookCode = (look: Look) => `${look.kind[0]}${look.size}${look.pattern}_${look.colours.map((c) => c.slice(1)).join('')}`;
+  const readLook = (id: string): Look | null => {
+    const m = /([cd])([012])([012])_([0-9a-f]{6})([0-9a-f]{6})([0-9a-f]{6})(?:\.json)?$/.exec(id);
+    if (!m) return null;
+    return { kind: m[1] === 'c' ? 'cat' : 'dog', size: Number(m[2]) as 0 | 1 | 2, pattern: Number(m[3]) as 0 | 1 | 2, colours: [`#${m[4]}`, `#${m[5]}`, `#${m[6]}`] };
+  };
+
   type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep' | 'pet';
+  type Layer = { canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number };
+  type Leg = Layer & { pivotX: number; pivotY: number; near: boolean; front: boolean };
+  type Figure = { body: Layer; legs: Leg[]; eyes: Array<{ x: number; y: number }>; eyeR: number; legLength: number; unit: number };
   type Soul = {
-    id: string; width: number; height: number; mask: Uint8Array; light?: Uint8Array; born: number;
-    sprite?: HTMLCanvasElement; spriteFor?: number; eyes?: Array<{ x: number; y: number }>; eyeR?: number; facing?: number;
-    // Walking: the sprite without its legs, and each leg on its own, to swing from the hip (sprite units, CSS px).
-    body?: HTMLCanvasElement; legs?: Array<{ canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number }>;
+    id: string; look: Look; born: number; figure?: Figure;
     // Life: its home, where it is (feet; shares of the frame), what it is doing and until when.
     hx: number; hy: number; x: number; y: number; fromX: number; fromY: number; toX: number; toY: number;
     act: Act; actStart: number; actEnd: number; face: number; faceShown: number; blink: number; phase: number; drawn: number;
@@ -77,23 +77,10 @@ const { label } = Astro.props;
 
   const hash = (text: string) => { let h = 2166136261; for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619); return h >>> 0; };
   const canvasOf = (width: number, height: number) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(width)); c.height = Math.max(1, Math.round(height)); return c; };
-  // A soul on the wire: width and height, its silhouette (one byte per pixel) and, after it, its light and shade (the
-  // animal's own, from the photo, one grey byte per pixel; older souls have none).
-  const encode = (width: number, height: number, mask: Uint8Array, light?: Uint8Array) => {
-    const out = new Uint8Array(4 + mask.length + (light?.length ?? 0));
-    out.set([width & 255, width >> 8, height & 255, height >> 8]); out.set(mask, 4);
-    if (light) out.set(light, 4 + mask.length);
-    return out;
-  };
-  const decode = (bytes: Uint8Array) => {
-    if (bytes.length < 4) return null;
-    const width = bytes[0] | (bytes[1] << 8), height = bytes[2] | (bytes[3] << 8), n = width * height;
-    if (!width || !height || (bytes.length !== 4 + n && bytes.length !== 4 + n * 2)) return null;
-    return { width, height, mask: bytes.slice(4, 4 + n), light: bytes.length === 4 + n * 2 ? bytes.slice(4 + n) : undefined };
-  };
-  const toBase64 = (bytes: Uint8Array) => { let s = ''; bytes.forEach((b) => { s += String.fromCharCode(b); }); return btoa(s); };
-  const fromBase64 = (text: string) => Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
   const ease = (p: number) => p * p * (3 - 2 * p);
+  const hex = (rgb: number[]) => `#${rgb.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')}`;
+  const rgbOf = (colour: string) => [1, 3, 5].map((i) => parseInt(colour.slice(i, i + 2), 16));
+  const mix = (a: string, b: string, t: number) => { const x = rgbOf(a), y = rgbOf(b); return hex(x.map((v, i) => v + (y[i] - v) * t)); };
   /** An eye: a little arch (∩) with a soft glow; asleep, it turns into a closed curve (∪). */
   const drawEye = (g: CanvasRenderingContext2D, x: number, y: number, r: number, asleep = false) => {
     g.save();
@@ -109,18 +96,17 @@ const { label } = Astro.props;
     g.restore();
   };
 
-  // Souls kept on this device, when the shared place cannot be reached.
-  // `?souls=reset` in the address clears the souls kept on this device (they never reach anyone else).
-  try { if (new URLSearchParams(location.search).get('souls') === 'reset') localStorage.removeItem('missing-souls'); } catch { /* No storage. */ }
-  const localSouls = (): Array<{ id: string; data: string }> => { try { return JSON.parse(localStorage.getItem(STORE) ?? '[]'); } catch { return []; } };
-  const keepLocally = (id: string, bytes: Uint8Array) => { try { localStorage.setItem(STORE, JSON.stringify([...localSouls(), { id, data: toBase64(bytes) }])); } catch { /* Storage full or blocked: it stays for this visit. */ } };
+  // Souls kept on this device, when the shared place cannot be reached. `?souls=reset` in the address clears them.
+  try { if (new URLSearchParams(location.search).get('souls') === 'reset') localStorage.removeItem(STORE); } catch { /* No storage. */ }
+  const localSouls = (): string[] => { try { const list = JSON.parse(localStorage.getItem(STORE) ?? '[]'); return Array.isArray(list) ? list.filter((id) => typeof id === 'string') : []; } catch { return []; } };
+  const keepLocally = (id: string) => { try { localStorage.setItem(STORE, JSON.stringify([...localSouls(), id])); } catch { /* Storage full or blocked: it stays for this visit. */ } };
 
-  /** Finds the cat or dog in a photo and returns its silhouette, or why it can't. */
+  /** Reads a pet from a photo: cat or dog, its colours and its markings; or why it can't. */
   type Masks = { confidenceMasks?: Array<{ width: number; height: number; getAsFloat32Array: () => Float32Array }>; close: () => void };
   type Point = { x: number; y: number };
   let segmenter: Promise<{ segment: (image: HTMLCanvasElement) => Masks }> | null = null;
   let cutter: Promise<{ segment: (image: HTMLCanvasElement, roi: { scribble: Point[] }) => Masks } | null> | null = null;
-  const silhouette = async (file: File): Promise<{ width: number; height: number; mask: Uint8Array; light: Uint8Array } | 'none' | 'cut'> => {
+  const readPet = async (file: File): Promise<Omit<Look, 'size'> | 'none' | 'cut'> => {
     segmenter ??= (async () => {
       const { module, files } = await loadVision();
       return module.ImageSegmenter.createFromOptions(files, { baseOptions: { modelAssetPath: SETTINGS.model }, runningMode: 'IMAGE', outputCategoryMask: false, outputConfidenceMasks: true });
@@ -143,20 +129,19 @@ const { label } = Astro.props;
     const cat = masks[SETTINGS.classes.cat].getAsFloat32Array(), dog = masks[SETTINGS.classes.dog].getAsFloat32Array();
     const { width, height } = masks[SETTINGS.classes.cat];
     result.close();
-    // The animal: wherever the model sees a cat or a dog.
+    // The animal: wherever the model sees a cat or a dog; which of the two, by how much it sees of each.
     const pet = new Float32Array(width * height);
-    let found = 0, x0 = width, y0 = height, x1 = -1, y1 = -1;
+    let found = 0, cats = 0, dogs = 0, x0 = width, y0 = height, x1 = -1, y1 = -1;
     for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
       const i = y * width + x, p = Math.max(cat[i], dog[i]);
-      pet[i] = p;
+      pet[i] = p; cats += cat[i]; dogs += dog[i];
       if (p > .5) { found++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     }
     if (found / (width * height) < SETTINGS.minPet) return 'none';
     // Whole body only: an animal running off the sides or the bottom of the photo is cut (a close-up of a face, say).
     const m = SETTINGS.margin;
     if (x0 < width * m || x1 > width * (1 - m) || y1 > height * (1 - m) || y0 < height * m * .5) return 'cut';
-    // Crisp edges: points spread over where the model is surest it is the animal, for Magic Touch to cut it out. Its
-    // cut is kept only around the animal, so it cannot take the sofa along.
+    // Crisp edges (Magic Touch, from points the model is surest of), so the colours are read from the animal only.
     const sure: Point[] = [];
     const step = Math.max(4, Math.round(Math.sqrt(found / 24)));
     for (let y = y0; y <= y1; y += step) for (let x = x0; x <= x1; x += step) if (pet[y * width + x] > .8) sure.push({ x: x / width, y: y / height });
@@ -171,37 +156,36 @@ const { label } = Astro.props;
           for (let i = 0; i < pet.length; i++) pet[i] = pet[i] > .08 ? crisp[i] : 0;
         }
         cut.close();
-      } catch { /* Keep the coarse silhouette. */ }
+      } catch { /* Keep the coarse cut. */ }
     }
-    const pad = Math.round(Math.max(x1 - x0, y1 - y0) * .04);
-    x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(width - 1, x1 + pad); y1 = Math.min(height - 1, y1 + pad);
-    const boxW = x1 - x0 + 1, boxH = y1 - y0 + 1;
-    const full = canvasOf(boxW, boxH), fullContext = full.getContext('2d')!, image = fullContext.createImageData(boxW, boxH);
-    for (let y = 0; y < boxH; y++) for (let x = 0; x < boxW; x++) {
-      const k = (y * boxW + x) * 4;
-      image.data[k] = image.data[k + 1] = image.data[k + 2] = 255;
-      image.data[k + 3] = Math.round(Math.min(1, Math.max(0, (pet[(y + y0) * width + x + x0] - .4) / .2)) * 255);
+    // Its colours: the lightest, middle and darkest fifths of its fur.
+    const rgb = photo.getContext('2d')!.getImageData(0, 0, width, height).data;
+    const luma = new Float32Array(width * height), inside: number[] = [];
+    for (let i = 0; i < luma.length; i++) { luma[i] = .299 * rgb[i * 4] + .587 * rgb[i * 4 + 1] + .114 * rgb[i * 4 + 2]; if (pet[i] > .6) inside.push(i); }
+    if (inside.length < 50) return 'none';
+    inside.sort((a, b) => luma[a] - luma[b]);
+    const average = (from: number, to: number) => {
+      const slice = inside.slice(Math.floor(inside.length * from), Math.max(Math.floor(inside.length * from) + 1, Math.floor(inside.length * to)));
+      const sum = [0, 0, 0];
+      slice.forEach((i) => { sum[0] += rgb[i * 4]; sum[1] += rgb[i * 4 + 1]; sum[2] += rgb[i * 4 + 2]; });
+      return sum.map((v) => v / slice.length);
+    };
+    // A little lifted and glowing, but its own colours.
+    const glow = (c: number[], lift: number) => c.map((v) => v + (255 - v) * lift);
+    const colours: [string, string, string] = [hex(glow(average(.8, 1), .25)), hex(glow(average(.4, .6), .15)), hex(glow(average(0, .2), .1))];
+    // Its markings: little contrast is plain fur; contrast in fine detail is tabby stripes; contrast in big areas is patches.
+    const contrast = luma[inside[Math.floor(inside.length * .85)]] - luma[inside[Math.floor(inside.length * .15)]];
+    let fine = 0, counted = 0;
+    for (const i of inside) {
+      const x = i % width, y = (i - x) / width;
+      if (x < 3 || y < 3 || x > width - 4 || y > height - 4) continue;
+      let sum = 0, n = 0;
+      for (let dy = -3; dy <= 3; dy += 3) for (let dx = -3; dx <= 3; dx += 3) { const j = i + dy * width + dx; if (pet[j] > .6) { sum += luma[j]; n++; } }
+      if (n > 6) { fine += Math.abs(luma[i] - sum / n); counted++; }
     }
-    fullContext.putImageData(image, 0, 0);
-    const fit = Math.min(1, SETTINGS.maxSide / Math.max(boxW, boxH));
-    const small = canvasOf(boxW * fit, boxH * fit), smallContext = small.getContext('2d')!;
-    smallContext.imageSmoothingQuality = 'high';
-    smallContext.drawImage(full, 0, 0, small.width, small.height);
-    const pixels = smallContext.getImageData(0, 0, small.width, small.height).data;
-    const mask = new Uint8Array(small.width * small.height);
-    for (let i = 0; i < mask.length; i++) mask[i] = pixels[i * 4 + 3];
-    // Its light and shade (fur, face, eyes, nose), from the photo but only where the animal is, in grey and stretched
-    // to its own range, so the figure keeps its real look under the colour.
-    const shade = canvasOf(small.width, small.height), shadeContext = shade.getContext('2d')!;
-    shadeContext.imageSmoothingQuality = 'high';
-    shadeContext.drawImage(photo, x0, y0, boxW, boxH, 0, 0, small.width, small.height);
-    const rgb = shadeContext.getImageData(0, 0, small.width, small.height).data;
-    const light = new Uint8Array(mask.length), seen: number[] = [];
-    for (let i = 0; i < mask.length; i++) { const l = .299 * rgb[i * 4] + .587 * rgb[i * 4 + 1] + .114 * rgb[i * 4 + 2]; light[i] = l; if (mask[i] > 160) seen.push(l); }
-    seen.sort((a, b) => a - b);
-    const lo = seen[Math.floor(seen.length * .03)] ?? 0, hi = seen[Math.floor(seen.length * .97)] ?? 255, span = Math.max(24, hi - lo);
-    for (let i = 0; i < light.length; i++) light[i] = mask[i] > 8 ? Math.round(Math.min(255, Math.max(0, (light[i] - lo) / span * 255))) : 128;
-    return { width: small.width, height: small.height, mask, light };
+    fine = counted ? fine / counted : 0;
+    const pattern: 0 | 1 | 2 = contrast < 50 ? 0 : fine / contrast > .14 ? 1 : 2;
+    return { kind: dogs > cats ? 'dog' : 'cat', pattern, colours };
   };
 
   document.querySelectorAll<HTMLElement>('[data-souls-field]').forEach((root) => {
@@ -255,109 +239,140 @@ const { label } = Astro.props;
       return up;
     };
 
-    // Each sprite has room around the figure for its glow: this share of its height on every side.
-    const ROOM = .2;
+    /** A pet as a soft illustrated figure, facing right, in its own colours and markings: a body, a head with ears
+        (pointed for a cat, floppy with a snout for a dog), a tail, and four legs on their own so they can walk and fold.
+        Everything is drawn crisp in unit space (feet at y = 1, about one unit tall), then blurred into a glow. */
+    const paintFigure = (soul: Soul, unit: number): Figure => {
+      const { look } = soul, dog = look.kind === 'dog';
+      let n = hash(soul.id) || 1;
+      const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
+      const [light, mid, dark] = look.colours;
+      // Proportions, a little different for every one; small dogs have shorter legs and bigger heads, big dogs longer.
+      const legScale = dog ? [.72, 1, 1.12][look.size] : 1;
+      const legTop = 1 - (dog ? .38 : .36) * legScale * (.94 + random() * .12);
+      const bodyLength = (dog ? .66 : .6) * (.93 + random() * .14), bodyDepth = (dog ? .3 : .26) * (.94 + random() * .12);
+      const bodyCx = .56, bodyCy = legTop - bodyDepth * .3;
+      const headR = (dog ? [.17, .145, .135][look.size] : .14) * (.95 + random() * .1);
+      const headX = bodyCx + bodyLength / 2 + headR * .55, headY = bodyCy - bodyDepth * .55 - headR * .45;
+      const legW = (dog ? [.075, .08, .085][look.size] : .062);
+      const pad = .3; // Room around the figure for its glow, in units.
+      const W = (1.45 + pad * 2) * unit, H = (1.15 + pad * 2) * unit, ox = pad * unit, oy = (pad + .15) * unit; // Unit (0,0) → canvas (ox,oy).
+      const X = (u: number) => ox + u * unit, Y = (u: number) => oy + u * unit;
 
-    /** A soul as a luminous figure: its silhouette, defined but soft at the edge, filled with its coat. Its eyes are
-        found here (in the head, the top of the silhouette) and drawn live, so they can blink and close. */
-    const paintSoul = (soul: Soul, size: number) => {
-      const coat = SETTINGS.coats[hash(soul.id) % SETTINGS.coats.length];
-      const scale = size / soul.height, w = soul.width * scale, h = size, pad = size * ROOM;
-      const m = Math.round(Math.max(soul.width, soul.height) * .15);
-      const shape = canvasOf(soul.width + m * 2, soul.height + m * 2), s = shape.getContext('2d')!, img = s.createImageData(soul.width, soul.height);
-      for (let i = 0; i < soul.mask.length; i++) { img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = 255; img.data[i * 4 + 3] = soul.mask[i]; }
-      s.putImageData(img, m, m);
-      const sx = pad - m * scale, sw = shape.width * scale, sh = shape.height * scale;
-      const out = canvasOf((w + pad * 2) * ratio, (h + pad * 2) * ratio), g = out.getContext('2d')!;
-      g.scale(ratio, ratio);
-      g.imageSmoothingQuality = 'high';
-      // Its aura: a wide, soft halo in the lightest colour of its coat.
-      const aura = soften(shape, 10), auraContext = aura.getContext('2d')!;
-      auraContext.globalCompositeOperation = 'source-in'; auraContext.fillStyle = coat[0]; auraContext.fillRect(0, 0, aura.width, aura.height);
-      g.globalAlpha = .6; g.drawImage(aura, sx - sw * .1, sx - sh * .1, sw * 1.2, sh * 1.2);
-      g.globalAlpha = .45; g.drawImage(aura, sx - sw * .03, sx - sh * .03, sw * 1.06, sh * 1.06);
-      g.globalAlpha = 1;
-      // The body: its coat, light at the top into shadow at the bottom, then its own light and shade from the photo on
-      // top (overlay keeps the colour, multiply deepens eyes, nose and folds), so it still looks like itself.
-      const body = canvasOf(shape.width * 4, shape.height * 4), b = body.getContext('2d')!;
-      b.imageSmoothingQuality = 'high';
-      b.drawImage(soften(shape, 3), 0, 0, body.width, body.height);
-      b.drawImage(soften(shape, 1.8), 0, 0, body.width, body.height);
-      b.globalCompositeOperation = 'source-in';
-      const fill = b.createLinearGradient(0, body.height * .1, body.width * .3, body.height * .9);
-      fill.addColorStop(0, coat[0]); fill.addColorStop(.6, coat[1]); fill.addColorStop(1, coat[2]);
-      b.fillStyle = fill; b.fillRect(0, 0, body.width, body.height);
-      if (soul.light) {
-        const lit = canvasOf(soul.width + m * 2, soul.height + m * 2), l = lit.getContext('2d')!, li = l.createImageData(soul.width, soul.height);
-        for (let i = 0; i < soul.light.length; i++) { const v = soul.light[i]; li.data[i * 4] = li.data[i * 4 + 1] = li.data[i * 4 + 2] = v; li.data[i * 4 + 3] = 255; }
-        l.putImageData(li, m, m);
-        // Only its volume, not its details: the photo's light, blurred far, gently models the colour (pale chest,
-        // darker patches), so it reads as a soft illustrated form, not a photo.
-        b.globalCompositeOperation = 'overlay'; b.globalAlpha = .5;
-        b.drawImage(soften(lit, 10), 0, 0, body.width, body.height);
-        b.globalAlpha = 1;
-        b.globalCompositeOperation = 'destination-in';
-        b.drawImage(soften(shape, 3), 0, 0, body.width, body.height);
-      }
-      b.globalCompositeOperation = 'source-atop';
-      const glow = b.createRadialGradient(body.width * .45, body.height * .4, 0, body.width * .45, body.height * .4, Math.max(body.width, body.height) * .5);
-      glow.addColorStop(0, 'rgba(255, 246, 228, .42)'); glow.addColorStop(1, 'rgba(255, 246, 228, 0)');
-      b.fillStyle = glow; b.fillRect(0, 0, body.width, body.height);
-      g.drawImage(body, sx, sx, sw, sh);
-      // Where its eyes are, and which way it faces in the photo (its head left or right of its body).
-      let top = -1;
-      for (let y = 0; y < soul.height && top < 0; y++) for (let x = 0; x < soul.width; x++) if (soul.mask[y * soul.width + x] > 160) { top = y; break; }
-      soul.eyes = [];
-      soul.facing = 1;
-      if (top >= 0) {
-        const bandEnd = Math.min(soul.height, top + Math.round(soul.height * .3));
-        let headX = 0, headN = 0, bodyX = 0, bodyN = 0, left = soul.width, right = 0;
-        const eyeRow = Math.min(soul.height - 1, top + Math.round(soul.height * .14));
-        for (let y = 0; y < soul.height; y++) for (let x = 0; x < soul.width; x++) if (soul.mask[y * soul.width + x] > 160) {
-          bodyX += x; bodyN++;
-          if (y >= top && y < bandEnd) { headX += x; headN++; }
-        }
-        for (let x = 0; x < soul.width; x++) if (soul.mask[eyeRow * soul.width + x] > 160) { left = Math.min(left, x); right = Math.max(right, x); }
-        if (headN && bodyN && right > left) {
-          const cx = headX / headN, apart = Math.min((right - left) * .2, soul.width * .1);
-          soul.facing = cx < bodyX / bodyN - soul.width * .04 ? -1 : 1;
-          soul.eyes = [cx - apart, cx + apart].map((ex) => ({ x: pad + ex * scale, y: pad + (eyeRow + soul.height * .03) * scale }));
-          soul.eyeR = Math.max(1.1, soul.width * .02 * scale);
+      // Its coat: light on the back and face, into its colour, into shadow towards the belly and paws.
+      const coat = (g: CanvasRenderingContext2D, w: number, h: number) => {
+        const fill = g.createLinearGradient(0, Y(headY - headR * 1.6), 0, Y(1));
+        fill.addColorStop(0, light); fill.addColorStop(.45, mid); fill.addColorStop(1, dark);
+        g.fillStyle = fill; g.fillRect(0, 0, w, h);
+      };
+      const finish = (shape: HTMLCanvasElement, colour: (g: CanvasRenderingContext2D) => void) => {
+        const c = shape.getContext('2d')!;
+        c.globalCompositeOperation = 'source-atop';
+        colour(c);
+        // The glow: a wide soft halo in its lightest colour, then the figure itself, soft at the edges.
+        const out = canvasOf(shape.width, shape.height), g = out.getContext('2d')!;
+        g.imageSmoothingQuality = 'high';
+        const halo = soften(shape, 14), h = halo.getContext('2d')!;
+        h.globalCompositeOperation = 'source-atop'; h.fillStyle = mix(light, '#fff8ee', .35); h.fillRect(0, 0, halo.width, halo.height);
+        g.globalAlpha = .55; g.drawImage(halo, 0, 0);
+        g.globalAlpha = 1; g.drawImage(soften(shape, 3.2), 0, 0);
+        g.globalAlpha = .7; g.drawImage(soften(shape, 1.6), 0, 0);
+        return out;
+      };
+
+      // The body, head, ears, tail (and a dog's snout).
+      const shape = canvasOf(W * ratio, H * ratio), s = shape.getContext('2d')!;
+      s.scale(ratio, ratio); s.fillStyle = '#fff'; s.strokeStyle = '#fff'; s.lineCap = 'round';
+      s.beginPath(); s.ellipse(X(bodyCx), Y(bodyCy), bodyLength / 2 * unit, bodyDepth / 2 * unit, 0, 0, Math.PI * 2); s.fill();
+      // Neck, from the shoulders up to the head.
+      s.beginPath(); s.moveTo(X(bodyCx + bodyLength * .28), Y(bodyCy - bodyDepth * .35)); s.lineTo(X(headX - headR * .3), Y(headY)); s.lineWidth = headR * 1.3 * unit; s.stroke();
+      s.beginPath(); s.arc(X(headX), Y(headY), headR * unit, 0, Math.PI * 2); s.fill();
+      if (dog) {
+        s.beginPath(); s.ellipse(X(headX + headR * .85), Y(headY + headR * .35), headR * .62 * unit, headR * .45 * unit, .1, 0, Math.PI * 2); s.fill();
+        // Floppy ears, hanging by the cheeks.
+        s.beginPath(); s.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .32 * unit, headR * .7 * unit, .35, 0, Math.PI * 2); s.fill();
+      } else {
+        // Pointed ears.
+        for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
+          s.beginPath();
+          s.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .55));
+          s.lineTo(X(headX + headR * tip), Y(headY - headR * 1.55));
+          s.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .75));
+          s.closePath(); s.fill();
         }
       }
-      // Legs: where the silhouette touches the ground in separate patches (paws), each patch is a leg, from its hip
-      // (a little over two thirds down) to the floor. With two to five of them, they can walk.
-      soul.legs = undefined; soul.body = undefined;
-      const footFrom = Math.round(soul.height * .88), hip = Math.round(soul.height * .66), minLeg = Math.max(2, soul.width * .025);
-      const runs: Array<[number, number]> = [];
-      let open = -1;
-      for (let x = 0; x <= soul.width; x++) {
-        let solid = false;
-        if (x < soul.width) for (let y = footFrom; y < soul.height && !solid; y++) solid = soul.mask[y * soul.width + x] > 128;
-        if (solid && open < 0) open = x;
-        if (!solid && open >= 0) { if (x - open >= minLeg) runs.push([open, x - 1]); open = -1; }
-      }
-      if (runs.length >= 2 && runs.length <= 5) {
-        const body = canvasOf(out.width, out.height), b = body.getContext('2d')!;
-        b.drawImage(out, 0, 0);
-        soul.legs = runs.map(([a, z]) => {
-          const x = pad + (a - 1.5) * scale, y = pad + hip * scale, lw = (z - a + 3) * scale, lh = (soul.height - hip) * scale + pad;
-          const leg = canvasOf(lw * ratio, lh * ratio);
-          leg.getContext('2d')!.drawImage(out, x * ratio, y * ratio, lw * ratio, lh * ratio, 0, 0, leg.width, leg.height);
-          b.clearRect(x * ratio, y * ratio, lw * ratio, lh * ratio);
-          return { canvas: leg, x, y, w: lw, h: lh };
+      // Tail: a cat's rises in a soft curve; a dog's is shorter and wags up.
+      const tailBaseX = bodyCx - bodyLength / 2 + .03, tailBaseY = bodyCy - bodyDepth * .2;
+      s.lineWidth = (dog ? .05 : .045) * unit;
+      s.beginPath(); s.moveTo(X(tailBaseX), Y(tailBaseY));
+      if (dog) s.quadraticCurveTo(X(tailBaseX - .12), Y(tailBaseY - .02), X(tailBaseX - .14), Y(tailBaseY - .2));
+      else s.quadraticCurveTo(X(tailBaseX - .2), Y(tailBaseY - .02), X(tailBaseX - .16), Y(tailBaseY - .34 - random() * .06));
+      s.stroke();
+      const body = finish(shape, (c) => {
+        c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
+        coat(c, W, H);
+        // Markings.
+        if (look.pattern === 1) {
+          // Tabby: soft curved stripes across the back, a few on the forehead, rings on the tail.
+          c.strokeStyle = dark; c.globalAlpha = .55; c.lineCap = 'round'; c.lineWidth = .028 * unit;
+          for (let i = 0; i < 6; i++) {
+            const x = bodyCx - bodyLength * .38 + i * bodyLength * .15;
+            c.beginPath(); c.moveTo(X(x - .02), Y(bodyCy - bodyDepth * .55)); c.quadraticCurveTo(X(x + .03), Y(bodyCy), X(x - .01), Y(bodyCy + bodyDepth * .3)); c.stroke();
+          }
+          for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(X(headX + i * headR * .3), Y(headY - headR * .85)); c.lineTo(X(headX + i * headR * .25), Y(headY - headR * .4)); c.stroke(); }
+          for (let i = 1; i <= 3; i++) { c.beginPath(); c.arc(X(tailBaseX - .05 - i * .035), Y(tailBaseY - i * .08), .03 * unit, 0, Math.PI * 2); c.stroke(); }
+          c.globalAlpha = 1;
+        } else if (look.pattern === 2) {
+          // Patches: the darkest colour on the back and head, the lightest on the chest, belly and muzzle.
+          c.fillStyle = dark; c.globalAlpha = .7;
+          c.beginPath(); c.ellipse(X(bodyCx - bodyLength * .05), Y(bodyCy - bodyDepth * .2), bodyLength * .38 * unit, bodyDepth * .35 * unit, 0, 0, Math.PI * 2); c.fill();
+          c.beginPath(); c.arc(X(headX), Y(headY - headR * .3), headR * .85 * unit, 0, Math.PI * 2); c.fill();
+          c.fillStyle = mix(light, '#ffffff', .4); c.globalAlpha = .9;
+          c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .1), Y(bodyCy + bodyDepth * .3), bodyLength * .3 * unit, bodyDepth * .22 * unit, 0, 0, Math.PI * 2); c.fill();
+          c.beginPath(); c.ellipse(X(headX + headR * .3), Y(headY + headR * .45), headR * .5 * unit, headR * .4 * unit, 0, 0, Math.PI * 2); c.fill();
+          c.globalAlpha = 1;
+        }
+        // A lighter glow on the face and chest.
+        const face = c.createRadialGradient(X(headX), Y(headY), 0, X(headX), Y(headY), headR * 1.6 * unit);
+        face.addColorStop(0, 'rgba(255, 248, 236, .35)'); face.addColorStop(1, 'rgba(255, 248, 236, 0)');
+        c.fillStyle = face; c.fillRect(0, 0, W, H);
+      });
+
+      // The legs: back pair and front pair, the far one of each a little darker.
+      const legs: Leg[] = [];
+      const legLength = 1 - legTop;
+      for (const [lx, near, front] of [[bodyCx - bodyLength * .32, false, false], [bodyCx - bodyLength * .2, true, false], [bodyCx + bodyLength * .26, false, true], [bodyCx + bodyLength * .38, true, true]] as Array<[number, boolean, boolean]>) {
+        const lw = (legW + .3) * unit, lh = (legLength + .3) * unit;
+        const leg = canvasOf(lw * ratio, lh * ratio), l = leg.getContext('2d')!;
+        l.scale(ratio, ratio); l.fillStyle = '#fff';
+        const cx = lw / 2, top = .12 * unit;
+        l.beginPath(); l.roundRect(cx - legW / 2 * unit, top, legW * unit, legLength * unit, legW / 2 * unit); l.fill();
+        l.beginPath(); l.ellipse(cx + legW * .2 * unit, top + legLength * unit - legW * .25 * unit, legW * .62 * unit, legW * .42 * unit, 0, 0, Math.PI * 2); l.fill();
+        const painted = finish(leg, (c) => {
+          c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
+          const fill = c.createLinearGradient(0, top, 0, top + legLength * unit);
+          fill.addColorStop(0, mid); fill.addColorStop(1, near ? dark : mix(dark, '#1a1530', .3));
+          c.fillStyle = fill; c.fillRect(0, 0, lw, lh);
+          if (look.pattern === 2) { c.fillStyle = mix(light, '#ffffff', .4); c.globalAlpha = .85; c.fillRect(0, top + legLength * unit * .72, lw, lh); c.globalAlpha = 1; }
+          if (look.pattern === 1) { c.strokeStyle = dark; c.globalAlpha = .45; c.lineWidth = .022 * unit; for (let i = 1; i <= 2; i++) { c.beginPath(); c.moveTo(cx - legW * unit, top + legLength * unit * i * .3); c.lineTo(cx + legW * unit, top + legLength * unit * i * .3 + .01 * unit); c.stroke(); } c.globalAlpha = 1; }
         });
-        soul.body = body;
+        // In figure space (origin at the middle of its feet): where the leg hangs from.
+        legs.push({ canvas: painted, x: (lx - bodyCx) * unit, y: (legTop - 1) * unit, w: lw, h: lh, pivotX: cx, pivotY: top, near, front });
       }
-      soul.sprite = out;
-      soul.spriteFor = size;
-      return out;
+      const eyeY = headY - headR * .1, eyes = (dog ? [headX + headR * .05, headX + headR * .55] : [headX - headR * .15, headX + headR * .45]).map((ex) => ({ x: (ex - bodyCx) * unit, y: (eyeY - 1) * unit }));
+      return {
+        body: { canvas: body, x: -X(bodyCx), y: -Y(1), w: W, h: H },
+        legs, eyes, eyeR: headR * .16 * unit, legLength: legLength * unit, unit,
+      };
     };
 
-    /** The caregiver: a soft, luminous girl with long hair and a long dress, glowing from her chest, one hand reaching
-        down to the animals. Her feet fade into the floor. */
+    /** The caregiver: a soft, luminous girl with long hair and a long dress, glowing from her chest, both arms soft
+        and drawn on their own so they can move. Her feet fade into the floor. */
     let keeper: HTMLCanvasElement | null = null;
     const KEEPER = .78; // Her height, as a share of the frame's.
+    type Limb = { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number; length: number };
+    let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
+    const UPPER = .14, FOREARM = .13; // Her upper arm and forearm, as shares of her height.
     const paintKeeper = (size: number) => {
       const w = size * .56, pad = size * .2;
       const shape = canvasOf(w + pad * 2, size + pad * 2), s = shape.getContext('2d')!;
@@ -372,8 +387,6 @@ const { label } = Astro.props;
       s.lineTo(cx - .25 * u, top + 1 * u);
       s.quadraticCurveTo(cx - .17 * u, top + .6 * u, cx - .11 * u, top + .22 * u);
       s.fill();
-      s.lineCap = 'round'; s.strokeStyle = '#fff'; s.lineWidth = .055 * u;
-      s.beginPath(); s.moveTo(cx + .12 * u, top + .26 * u); s.quadraticCurveTo(cx + .17 * u, top + .42 * u, cx + .15 * u, top + .55 * u); s.stroke();
       const out = canvasOf((w + pad * 2) * ratio, (size + pad * 2) * ratio), g = out.getContext('2d')!;
       g.scale(ratio, ratio);
       g.imageSmoothingQuality = 'high';
@@ -401,51 +414,59 @@ const { label } = Astro.props;
       g.fillStyle = face; g.fillRect(cx - .1 * u, top + .04 * u, .2 * u, .2 * u);
       for (const ex of [-.028, .028]) drawEye(g, cx + ex * u, top + .13 * u, .009 * u);
       keeper = out;
-      // Her reaching arm, on its own so it can move like an arm: an upper arm from the shoulder and a forearm with the
-      // hand from the elbow, each tapering, soft and glowing like her. The shoulder melts into her body; the forearm turns
-      // lilac towards the hand, like the reference.
-      const limb = (length: number, from: number, to: number, colours: string[], hand: boolean, fadeTop: boolean) => {
-        const pad = .07 * u, shape = canvasOf(pad * 2 + from * 2, length + pad * 2 + (hand ? .05 * u : 0)), a = shape.getContext('2d')!;
-        const ax = shape.width / 2, y0 = pad, y1 = pad + length;
+      // Her arms, each an upper arm from the shoulder and a forearm with the hand from the elbow, tapering, soft and
+      // glowing like her. The shoulder melts into her body; the forearm turns lilac towards the hand.
+      const limb = (length: number, from: number, to: number, colours: string[], hand: boolean, fadeTop: boolean): Limb => {
+        const lp = .07 * u, form = canvasOf(lp * 2 + from * 2, length + lp * 2 + (hand ? .05 * u : 0)), a = form.getContext('2d')!;
+        const ax = form.width / 2, y0 = lp, y1 = lp + length;
         a.fillStyle = '#fff';
         a.beginPath(); a.arc(ax, y0, from, 0, Math.PI * 2); a.fill();
         a.beginPath(); a.arc(ax, y1, to, 0, Math.PI * 2); a.fill();
         a.beginPath(); a.moveTo(ax - from, y0); a.quadraticCurveTo(ax - (from + to) * .45, (y0 + y1) / 2, ax - to, y1); a.lineTo(ax + to, y1); a.quadraticCurveTo(ax + (from + to) * .5, (y0 + y1) / 2, ax + from, y0); a.fill();
         if (hand) { a.beginPath(); a.ellipse(ax - to * .2, y1 + .02 * u, to * 1.1, .03 * u, -.25, 0, Math.PI * 2); a.fill(); }
-        const out = canvasOf(shape.width * ratio, shape.height * ratio), g = out.getContext('2d')!;
-        g.scale(ratio, ratio); g.imageSmoothingQuality = 'high';
-        g.globalAlpha = .45; g.drawImage(soften(shape, 12), 0, 0, shape.width, shape.height);
-        g.globalAlpha = .85; g.drawImage(soften(shape, 6), 0, 0, shape.width, shape.height);
-        g.globalCompositeOperation = 'source-in';
-        const tint = g.createLinearGradient(0, y0, 0, shape.height - pad);
+        const done = canvasOf(form.width * ratio, form.height * ratio), d = done.getContext('2d')!;
+        d.scale(ratio, ratio); d.imageSmoothingQuality = 'high';
+        d.globalAlpha = .45; d.drawImage(soften(form, 12), 0, 0, form.width, form.height);
+        d.globalAlpha = .85; d.drawImage(soften(form, 6), 0, 0, form.width, form.height);
+        d.globalCompositeOperation = 'source-in';
+        const tint = d.createLinearGradient(0, y0, 0, form.height - lp);
         colours.forEach((colour, i) => tint.addColorStop(i / (colours.length - 1), colour));
-        g.fillStyle = tint; g.fillRect(0, 0, shape.width, shape.height);
+        d.fillStyle = tint; d.fillRect(0, 0, form.width, form.height);
         if (fadeTop) {
-          g.globalCompositeOperation = 'destination-out';
-          const fade = g.createLinearGradient(0, 0, 0, y0 + length * .45);
+          d.globalCompositeOperation = 'destination-out';
+          const fade = d.createLinearGradient(0, 0, 0, y0 + length * .45);
           fade.addColorStop(0, 'rgba(0, 0, 0, 1)'); fade.addColorStop(.45, 'rgba(0, 0, 0, .55)'); fade.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          g.fillStyle = fade; g.fillRect(0, 0, shape.width, y0 + length * .45);
+          d.fillStyle = fade; d.fillRect(0, 0, form.width, y0 + length * .45);
         }
-        return { canvas: out, w: shape.width, h: shape.height, pivotX: ax, pivotY: y0, length };
+        return { canvas: done, w: form.width, h: form.height, pivotX: ax, pivotY: y0, length };
       };
-      keeperArm = {
-        upper: limb(UPPER * u, .024 * u, .018 * u, ['#fbf7ea', '#f1f2dc'], false, true),
-        lower: limb(FOREARM * u, .018 * u, .013 * u, ['#f1f2dc', '#ddd8f4', '#b7aef0'], true, false),
+      keeperArms = {
+        reachUpper: limb(UPPER * u, .024 * u, .018 * u, ['#fbf7ea', '#f1f2dc'], false, true),
+        reachLower: limb(FOREARM * u, .018 * u, .013 * u, ['#f1f2dc', '#ddd8f4', '#b7aef0'], true, false),
+        restUpper: limb(UPPER * u, .024 * u, .018 * u, ['#fbf7ea', '#eef3d4'], false, true),
+        restLower: limb(FOREARM * u, .018 * u, .013 * u, ['#eef3d4', '#e4efc8', '#cfe6b4'], true, false),
       };
     };
-    type Limb = { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number; length: number };
-    let keeperArm: { upper: Limb; lower: Limb } | null = null;
-    const UPPER = .14, FOREARM = .13; // Her upper arm and forearm, as shares of her height.
     let petting = 0; // Until when she is stroking a newcomer.
-    // Her shoulder and her resting hand, in the frame (shares of width and height).
-    const shoulder = () => ({ x: .5 - (.12 * KEEPER * height) / width, y: 1.02 - KEEPER + .26 * KEEPER });
-    // At rest (angles from straight down): the upper arm hangs a little out, the forearm reaches further towards the
-    // animals, the elbow softly bent.
-    const UPPER_ANGLE = .3, FOREARM_ANGLE = .72;
+    // Her shoulders and her reaching hand, in the frame (shares of width and height).
+    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.12 * KEEPER * height) / width, y: 1.02 - KEEPER + .26 * KEEPER });
+    // At rest (angles from straight down; positive swings to her right, our left): the reaching arm hangs a little out
+    // with the elbow softly bent towards the animals; the other one hangs along her side.
+    const UPPER_ANGLE = .3, FOREARM_ANGLE = .72, REST_UPPER = -.16, REST_FOREARM = -.06;
     const handAt = () => {
-      const sh = shoulder();
+      const sh = shoulder(-1);
       const dx = -(Math.sin(UPPER_ANGLE) * UPPER + Math.sin(FOREARM_ANGLE) * FOREARM) * KEEPER, dy = (Math.cos(UPPER_ANGLE) * UPPER + Math.cos(FOREARM_ANGLE) * FOREARM) * KEEPER;
       return { x: sh.x + dx * height / width, y: sh.y + dy };
+    };
+    const drawArm = (from: { x: number; y: number }, upperAngle: number, lowerAngle: number, upperLimb: Limb, lowerLimb: Limb, sway: number) => {
+      context.save();
+      context.translate(from.x * width, from.y * height + sway);
+      context.rotate(upperAngle);
+      context.drawImage(upperLimb.canvas, -upperLimb.pivotX, -upperLimb.pivotY, upperLimb.w, upperLimb.h);
+      context.translate(0, upperLimb.length);
+      context.rotate(lowerAngle - upperAngle);
+      context.drawImage(lowerLimb.canvas, -lowerLimb.pivotX, -lowerLimb.pivotY, lowerLimb.w, lowerLimb.h);
+      context.restore();
     };
 
     /** Plants, blurred like they are out of focus: flowers on round heads along the horizon, and tall leafy stems in
@@ -529,13 +550,14 @@ const { label } = Astro.props;
       });
     };
     layout();
-    // How big a soul is where it stands: smaller far away (up near the horizon), larger up close.
-    const sizeAt = (y: number) => height * (.13 + Math.min(1, Math.max(0, (y - SETTINGS.horizon) / (1 - SETTINGS.horizon))) * .27);
-    const SPRITE_FOR = .42; // Sprites are painted at the largest size a soul can have, then drawn smaller.
+    // How big a soul is where it stands: smaller far away (up near the horizon), larger up close; and by its kind/size.
+    const kindScale = (look: Look) => (look.kind === 'cat' ? SETTINGS.scale.cat : SETTINGS.scale.dog[look.size]);
+    const unitAt = (soul: Soul) => height * (.11 + Math.min(1, Math.max(0, (soul.y - SETTINGS.horizon) / (1 - SETTINGS.horizon))) * .2) * kindScale(soul.look);
+    const PAINT_AT = .32; // Figures are painted at the largest size they can have (share of the height), then drawn smaller.
 
-    const meet = (id: string, mask: { width: number; height: number; mask: Uint8Array }, index: number, born: number): Soul => {
+    const meet = (id: string, look: Look, index: number, born: number): Soul => {
       const home = homes[index % homes.length], h = hash(id);
-      return { id, ...mask, born, hx: home.x, hy: home.y, x: home.x, y: home.y, fromX: home.x, fromY: home.y, toX: home.x, toY: home.y, act: 'sit', actStart: 0, actEnd: 0, face: home.x < .5 ? 1 : -1, faceShown: home.x < .5 ? 1 : -1, blink: 0, phase: (h % 1000) / 1000 * 6.28, drawn: 0 };
+      return { id, look, born, hx: home.x, hy: home.y, x: home.x, y: home.y, fromX: home.x, fromY: home.y, toX: home.x, toY: home.y, act: 'sit', actStart: 0, actEnd: 0, face: home.x < .5 ? 1 : -1, faceShown: home.x < .5 ? 1 : -1, blink: 0, phase: (h % 1000) / 1000 * 6.28, drawn: 0 };
     };
 
     /** What a soul does next. */
@@ -558,7 +580,7 @@ const { label } = Astro.props;
       } else {
         const [, min, max] = SETTINGS.acts[act];
         length = min + Math.random() * (max - min);
-        // Sitting, it turns towards her now and then.
+        // Standing, it turns towards her now and then.
         if (act === 'sit' && Math.random() < .5) soul.face = soul.x < .5 ? 1 : -1;
       }
       soul.act = act; soul.actStart = now; soul.actEnd = now + length * 1000;
@@ -572,7 +594,7 @@ const { label } = Astro.props;
       canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
       paintKeeper(height * KEEPER);
       growPlants();
-      souls.forEach((soul) => { soul.sprite = undefined; });
+      souls.forEach((soul) => { soul.figure = undefined; });
     };
 
     const draw = (time: number) => {
@@ -599,33 +621,35 @@ const { label } = Astro.props;
         soul.drawn = now;
         const p = soul.actEnd > soul.actStart ? Math.min(1, (now - soul.actStart) / (soul.actEnd - soul.actStart)) : 1;
         if (soul.act === 'walk') { soul.x = soul.fromX + (soul.toX - soul.fromX) * ease(p); soul.y = soul.fromY + (soul.toY - soul.fromY) * ease(p); }
-        const size = sizeAt(soul.y);
-        if (!soul.sprite || soul.spriteFor !== Math.round(height * SPRITE_FOR)) paintSoul(soul, Math.round(height * SPRITE_FOR));
-        const sprite = soul.sprite!, k = size / soul.spriteFor!, w = sprite.width / ratio * k, h = sprite.height / ratio * k;
+        const unit = unitAt(soul), paintUnit = Math.round(height * PAINT_AT * kindScale(soul.look));
+        if (!soul.figure || soul.figure.unit !== paintUnit) soul.figure = paintFigure(soul, paintUnit);
+        const figure = soul.figure, k = unit / figure.unit;
         // Its pose for what it is doing, eased in and out so one thing flows into the next.
         const into = ease(Math.min(1, (now - soul.actStart) / 700)) * ease(Math.min(1, Math.max(0, (soul.actEnd - now) / 700)));
         const breath = Math.sin(t * 1.5 + soul.phase);
-        let lift = 0, sx = 1, sy = 1 + breath * .01, tilt = 0, eyesOpen = 1, stride = 0, pace = 0;
+        let lift = 0, sx = 1, sy = 1 + breath * .008, tilt = 0, eyesOpen = 1, stride = 0, pace = 0, fold = 0;
         if (!calm) {
           if (soul.act === 'walk') {
             // Steps follow the ground actually covered, so the legs slow down as it starts and stops.
             const covered = Math.hypot((soul.x - soul.fromX) * width, (soul.y - soul.fromY) * height);
-            stride = covered / (size * .32) * Math.PI;
+            stride = covered / (unit * .3) * Math.PI;
             pace = Math.sin(p * Math.PI); // 0 standing, 1 at full pace.
-            lift = (1 - Math.cos(stride * 2)) / 2 * size * .012 * pace;
-            tilt = Math.sin(stride) * .008 * pace;
+            lift = (1 - Math.cos(stride * 2)) / 2 * unit * .012 * pace;
+            tilt = Math.sin(stride) * .006 * pace;
           }
           if (soul.act === 'hop') {
             // Crouch, spring, land soft.
             const air = p > .2 && p < .8 ? Math.sin((p - .2) / .6 * Math.PI) : 0;
             const crouch = Math.max(0, 1 - Math.abs(p - .14) / .14) + Math.max(0, 1 - Math.abs(p - .88) / .12);
-            lift = Math.pow(air, 1.3) * size * .16;
-            sy = 1 - crouch * .07 + air * .03; sx = 1 + crouch * .05 - air * .02;
+            lift = Math.pow(air, 1.3) * unit * .16;
+            fold = crouch * .25;
+            sy = 1 + air * .02;
           }
-          if (soul.act === 'stretch') { const e = ease(Math.sin(p * Math.PI)); sx = 1 + e * .07; sy = 1 - e * .05; }
+          if (soul.act === 'stretch') { const e = ease(Math.sin(p * Math.PI)); sx = 1 + e * .06; sy = 1 - e * .03; fold = e * .15; }
           if (soul.act === 'groom') tilt = Math.sin((now - soul.actStart) / 1000 * 3.2) * .02 * into;
-          if (soul.act === 'sleep') { sy = 1 - .13 * into + Math.sin(t * .8 + soul.phase) * .01; sx = 1 + .05 * into; }
-          if (soul.act === 'pet') { tilt = -soul.face * .03 * into; sy = 1 + Math.sin(t * 1.2) * .012; }
+          // Lying down to nap: the legs fold under it and it settles low, breathing slowly.
+          if (soul.act === 'sleep') { fold = .75 * into; sy = 1 + Math.sin(t * .8 + soul.phase) * .012; }
+          if (soul.act === 'pet') { tilt = -soul.face * .025 * into; fold = .15 * into; }
           // Blinks.
           if (now > soul.blink + 4200 + (soul.phase * 600)) soul.blink = now;
           if (now - soul.blink < 140) eyesOpen = 0;
@@ -634,62 +658,55 @@ const { label } = Astro.props;
         soul.faceShown += (soul.face - soul.faceShown) * Math.min(1, dt * 5);
         if (calm) soul.faceShown = soul.face;
         const fade = soul.born ? Math.min(1, (now - soul.born) / 1600) : 1;
-        const flip = soul.faceShown * (soul.facing ?? 1);
         context.save();
         context.globalAlpha = fade;
         context.translate(soul.x * width, soul.y * height - lift);
-        context.rotate(tilt);
-        context.scale(flip * sx, sy);
-        // Its feet on the spot (the sprite has room for the glow around the figure).
-        const top = -h * (1 + ROOM) / (1 + ROOM * 2);
         // A soft shadow on the floor.
-        context.save(); context.globalAlpha = fade * .22 * (1 - Math.min(1, lift / size)); context.scale(1, .18);
-        const shade = context.createRadialGradient(0, 0, 0, 0, 0, w * .32); shade.addColorStop(0, '#2b2166'); shade.addColorStop(1, 'rgba(43, 33, 102, 0)');
-        context.fillStyle = shade; context.fillRect(-w / 2, -w / 2, w, w); context.restore();
-        if (soul.act === 'walk' && soul.legs && soul.body && !calm) {
-          // Walking on its paws: each leg swings gently from its hip, neighbours in opposite step.
-          context.drawImage(soul.body, -w / 2, top, w, h);
-          soul.legs.forEach((leg, i) => {
-            context.save();
-            context.translate(-w / 2 + (leg.x + leg.w / 2) * k, top + leg.y * k);
-            context.rotate(Math.sin(stride + (i % 2) * Math.PI) * .2 * pace);
-            context.drawImage(leg.canvas, -leg.w / 2 * k, 0, leg.w * k, leg.h * k);
-            context.restore();
-          });
-        } else context.drawImage(sprite, -w / 2, top, w, h);
-        if (soul.eyes?.length && (eyesOpen > .5 || soul.act === 'sleep') && Math.abs(soul.faceShown) > .3) {
-          const r = (soul.eyeR ?? 1.5) * k * 1.1;
-          for (const eye of soul.eyes) drawEye(context, -w / 2 + eye.x * k, top + eye.y * k, r, soul.act === 'sleep');
-        }
+        context.save(); context.globalAlpha = fade * .22 * (1 - Math.min(1, lift / unit)); context.scale(1, .18);
+        const shade = context.createRadialGradient(0, 0, 0, 0, 0, unit * .55); shade.addColorStop(0, '#2b2166'); shade.addColorStop(1, 'rgba(43, 33, 102, 0)');
+        context.fillStyle = shade; context.fillRect(-unit, -unit, unit * 2, unit * 2); context.restore();
+        context.rotate(tilt);
+        context.scale(soul.faceShown * sx * k, sy * k);
+        // Folded legs lower the body by as much.
+        const drop = figure.legLength * fold;
+        const drawLeg = (leg: Leg) => {
+          // Diagonal pairs step together (back-far with front-near), like a real walk.
+          const together = leg.near === leg.front;
+          const swing = Math.sin(stride + (together ? 0 : Math.PI)) * .28 * pace;
+          context.save();
+          context.translate(leg.x, leg.y + drop);
+          context.rotate(swing);
+          context.scale(1, 1 - fold);
+          context.drawImage(leg.canvas, -leg.pivotX, -leg.pivotY, leg.w, leg.h);
+          context.restore();
+        };
+        figure.legs.filter((leg) => !leg.near).forEach(drawLeg);
+        context.drawImage(figure.body.canvas, figure.body.x, figure.body.y + drop, figure.body.w, figure.body.h);
+        figure.legs.filter((leg) => leg.near).forEach(drawLeg);
+        if (eyesOpen > .5 || soul.act === 'sleep') for (const eye of figure.eyes) drawEye(context, eye.x, eye.y + drop, figure.eyeR, soul.act === 'sleep');
         context.restore();
       };
       // Further away first; those behind her before her, the rest after.
       const order = [...souls].sort((a, b) => a.y - b.y);
       const herLine = .86;
       order.filter((soul) => soul.y < herLine).forEach(drawSoul);
+      const sway = calm ? 0 : Math.sin(t * .5) * height * .003;
+      if (keeperArms) {
+        // The arm along her side, behind her glow, swaying a little.
+        const idle = calm ? 0 : Math.sin(t * .7 + 1) * .02;
+        drawArm(shoulder(1), REST_UPPER + idle, REST_FOREARM + idle * 1.4, keeperArms.restUpper, keeperArms.restLower, sway);
+      }
       if (keeper) {
-        const w = keeper.width / ratio, h = keeper.height / ratio, size = height * KEEPER, sway = calm ? 0 : Math.sin(t * .5) * height * .003;
+        const w = keeper.width / ratio, h = keeper.height / ratio, size = height * KEEPER;
         context.drawImage(keeper, width * .5 - w / 2, height * 1.02 - (size * .2 + size) + sway, w, h);
       }
       order.filter((soul) => soul.y >= herLine).forEach(drawSoul);
-      if (keeperArm) {
-        // Her arm: resting, it sways a little; stroking a newcomer, it goes back and forth along its back.
-        const sh = shoulder(), stroking = !calm && now < petting ? ease(Math.min(1, (petting - now) / 600, (now - petting + 5000) / 600)) : 0;
-        // The stroke comes from the elbow and wrist, the shoulder barely moves: slow, even, like a real caress.
-        const idle = calm ? 0 : Math.sin(t * .8) * .02;
-        const stroke = Math.sin(t * 2 * Math.PI * .65);
-        const upper = UPPER_ANGLE + idle + stroking * (.06 + stroke * .05);
-        const lower = FOREARM_ANGLE + idle * 1.5 + stroking * (.12 + stroke * .2);
-        const { upper: u1, lower: u2 } = keeperArm;
-        context.save();
-        context.translate(sh.x * width, sh.y * height + (calm ? 0 : Math.sin(t * .5) * height * .003));
-        context.rotate(upper);
-        context.drawImage(u1.canvas, -u1.pivotX, -u1.pivotY, u1.w, u1.h);
-        // On to the elbow, then the forearm and hand.
-        context.translate(0, u1.length);
-        context.rotate(lower - upper);
-        context.drawImage(u2.canvas, -u2.pivotX, -u2.pivotY, u2.w, u2.h);
-        context.restore();
+      if (keeperArms) {
+        // Her reaching arm: resting, it sways a little; stroking a newcomer, it goes back and forth along its back. The
+        // stroke comes from the elbow and wrist, the shoulder barely moves: slow, even, like a real caress.
+        const stroking = !calm && now < petting ? ease(Math.min(1, (petting - now) / 600, (now - petting + 5000) / 600)) : 0;
+        const idle = calm ? 0 : Math.sin(t * .8) * .02, stroke = Math.sin(t * 2 * Math.PI * .65);
+        drawArm(shoulder(-1), UPPER_ANGLE + idle + stroking * (.06 + stroke * .05), FOREARM_ANGLE + idle * 1.5 + stroking * (.12 + stroke * .2), keeperArms.reachUpper, keeperArms.reachLower, sway);
       }
       plants.front.forEach((plant) => drawPlant(plant, t, .8));
 
@@ -726,19 +743,30 @@ const { label } = Astro.props;
         ids = data.souls; cap = data.cap;
       } catch {
         shared = false;
+        ids = localSouls();
       }
-      const loaded = shared
-        ? await Promise.all(ids.map(async (id) => { try { const r = await fetch(`/api/souls?id=${encodeURIComponent(id)}`); const m = r.ok ? decode(new Uint8Array(await r.arrayBuffer())) : null; return m && { id, m }; } catch { return null; } }))
-        : localSouls().map(({ id, data }) => { const m = decode(fromBase64(data)); return m && { id, m }; });
-      souls = loaded.filter((entry): entry is { id: string; m: NonNullable<ReturnType<typeof decode>> } => !!entry).map(({ id, m }, i) => meet(id, m, i, 0));
+      souls = ids.map((id) => ({ id, look: readLook(id) })).filter((entry): entry is { id: string; look: Look } => !!entry.look).map(({ id, look }, i) => meet(id, look, i, 0));
       draw(performance.now());
       showFull();
     };
     load();
 
+    // A dog's size can't be told from a photo, so it is asked.
+    const askSize = () => new Promise<0 | 1 | 2>((resolve) => {
+      if (!status) { resolve(1); return; }
+      status.hidden = false;
+      status.textContent = 'Is your dog ';
+      (['small', 'medium', 'big'] as const).forEach((label, i) => {
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = 'case-reveal-camera'; button.textContent = label;
+        button.addEventListener('click', () => resolve(i as 0 | 1 | 2), { once: true });
+        status.append(button, document.createTextNode(i === 0 ? ', ' : i === 1 ? ' or ' : '?'));
+      });
+    });
+
     // Adding a pet.
     addButton?.addEventListener('click', () => {
-      setStatus('Choose a photo of your whole cat or dog, from ears to paws. Only your pet is kept, as a glowing figure: the rest of the photo never leaves your device.');
+      setStatus('Choose a photo of your whole cat or dog, from ears to paws. Only a description is kept (cat or dog, colours, markings); the photo never leaves your device.');
       input?.click();
     });
     input?.addEventListener('change', async () => {
@@ -749,22 +777,26 @@ const { label } = Astro.props;
       if (addButton) addButton.disabled = true;
       setStatus('Looking for your pet…');
       try {
-        const found = await silhouette(file);
+        const found = await readPet(file);
         if (found === 'none') { setStatus('I couldn’t find a cat or a dog in that photo. Try another one.'); return; }
         if (found === 'cut') { setStatus('Only whole bodies, please: a photo where all of your pet fits, from ears to paws, with a little room around.'); return; }
-        const bytes = encode(found.width, found.height, found.mask, found.light);
-        let id = `souls/local-${Date.now().toString(36)}`;
+        const look: Look = { ...found, size: found.kind === 'dog' ? await askSize() : 1 };
+        const code = lookCode(look);
+        let id = `souls/local-${Date.now().toString(36)}_${code}`;
         if (shared) {
-          const response = await fetch('/api/souls', { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: bytes }).catch(() => null);
+          const response = await fetch('/api/souls', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ look: code }) }).catch(() => null);
           if (response?.status === 409) { cap = souls.length; showFull(); return; }
           if (response?.ok) id = ((await response.json()) as { id: string }).id;
-          else { shared = false; keepLocally(id, bytes); }
-        } else keepLocally(id, bytes);
+          else { shared = false; keepLocally(id); }
+        } else keepLocally(id);
         // A newcomer is welcomed under her hand, and she strokes it for a few seconds before it goes to its place.
-        const newcomer = meet(id, found, souls.length, performance.now());
+        const newcomer = meet(id, look, souls.length, performance.now());
         const hand = handAt();
-        newcomer.x = newcomer.fromX = newcomer.toX = Math.max(.06, hand.x - .01);
-        newcomer.y = newcomer.fromY = newcomer.toY = Math.min(.97, Math.max(.87, hand.y + .2));
+        newcomer.x = newcomer.fromX = newcomer.toX = Math.max(.06, hand.x - .03);
+        // Standing where its head comes up to her hand (bigger animals stand a little further down).
+        let y = hand.y + .2;
+        for (let i = 0; i < 4; i++) { newcomer.y = y; y = hand.y + unitAt(newcomer) * .85 / height; }
+        newcomer.y = newcomer.fromY = newcomer.toY = Math.min(.97, y);
         newcomer.face = newcomer.faceShown = 1;
         newcomer.act = 'pet'; newcomer.actStart = performance.now(); newcomer.actEnd = newcomer.actStart + 5000;
         petting = newcomer.actEnd;
@@ -778,7 +810,6 @@ const { label } = Astro.props;
         if (addButton) addButton.disabled = false;
       }
     });
-
   });
 </script>
 
