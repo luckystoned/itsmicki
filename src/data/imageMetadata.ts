@@ -113,7 +113,6 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/04_SideB/18_SideB.webp': { width: 1080, height: 1352 },
   '/04_SideB/19_SideB.webp': { width: 1423, height: 1352 },
   '/04_SideB/20_SideB.webp': { width: 1080, height: 1352 },
-  '/04_SideB/Fashion_SideB.webp': { width: 560, height: 258 },
   '/04_SideB/Film_01a_SideB.webp': { width: 712, height: 676 },
   '/04_SideB/Film_01b_SideB.webp': { width: 541, height: 676 },
   '/04_SideB/Film_02a_SideB.webp': { width: 712, height: 676 },

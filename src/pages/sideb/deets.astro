@@ -39,12 +39,6 @@ const filmPhotos = [
     return { src, alt: alts[sideIndex], ...imageMetadata[src] };
   });
 });
-
-const fashion = {
-  src: '/04_SideB/Fashion_SideB.webp',
-  alt: 'A fashion lookbook collage of four outfits against a blue background.',
-  ...imageMetadata['/04_SideB/Fashion_SideB.webp'],
-};
 ---
 
 <BaseLayout
@@ -119,26 +113,6 @@ const fashion = {
           <h2 class="sideb-section-title" id="fashion-title" data-appear>(fashion &amp;<br />aesthetics)</h2>
           <div class="sideb-section-column">
             <p class="sideb-big" data-appear>I run a <span class="sideb-pseudo-link">digital vintage shop</span> centered on curating designer pieces and extending their life through reuse. I'm fascinated by the way objects can be recontextualized, transformed, and given new meaning over time in a world where trends are fleeting.</p>
-
-            <div class="sideb-fashion-reveal" data-appear>
-              <figure class="sideb-fashion-media" data-parallax>
-                <video
-                  class="sideb-fashion-video"
-                  src="/04_SideB/Fashion_SideB.mp4"
-                  poster={fashion.src}
-                  width={fashion.width}
-                  height={fashion.height}
-                  aria-label="Fashion looks from Micaela's digital vintage shop"
-                  autoplay
-                  muted
-                  loop
-                  playsinline
-                  preload="metadata"
-                  disablepictureinpicture
-                  controlslist="nodownload"
-                ></video>
-              </figure>
-            </div>
 
             <div class="sideb-body-pair">
               <p data-appear>I'm currently pursuing a Bachelor's degree in Design and Aesthetic Management, a multidisciplinary program that explores fashion, graphic, interior, and product design. What fascinates me most is the idea that aesthetics are never superficial. Every visual decision, from the spaces we inhabit to the clothes we wear, communicates identity, values, and culture.</p>
@@ -608,33 +582,6 @@ const fashion = {
     min-width: 0;
   }
 
-  .sideb-fashion-media {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1265 / 572;
-    margin: 0;
-    overflow: hidden;
-  }
-
-  .sideb-fashion-reveal {
-    width: min(100%, 1265px);
-    margin-top: -11px;
-    margin-bottom: 13px;
-    align-self: flex-start;
-  }
-
-  /* Same parallax as /projects and /deets: the video is 25% taller than its frame and slides through it. */
-  .sideb-fashion-media video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: block;
-    width: 100%;
-    height: 125%;
-    object-fit: cover;
-    translate: 0 calc(-20% + 20% * var(--parallax-progress, .5));
-  }
-
   .sideb-body-pair {
     display: flex;
     justify-content: space-between;
@@ -674,10 +621,10 @@ const fashion = {
     transform: translateY(0);
   }
 
-  /* Tall enough for the playlist header and five songs; the rest scroll inside the player. */
+  /* Tall enough for the playlist header and ten songs (each row is 50px); the rest scroll inside the player. */
   .sideb-spotify-frame {
     width: 100%;
-    height: 466px;
+    height: 716px;
   }
 
   .sideb-spotify iframe {
@@ -849,11 +796,6 @@ const fashion = {
     .sideb-section-column {
       gap: 3vw;
       align-items: flex-start;
-    }
-
-    .sideb-fashion-reveal {
-      width: 100%;
-      margin: 0;
     }
 
     .sideb-body-pair {
@@ -1128,28 +1070,6 @@ const fashion = {
 
     .sideb-section:not(.sideb-music-section):not(.sideb-film-section) .sideb-section-title br { display: none; }
 
-    .sideb-fashion-reveal {
-      position: absolute;
-      top: min(718px, 184.102564vw);
-      left: 0;
-      width: 100%;
-      height: min(168.441px, 43.190vw);
-      margin: 0;
-    }
-
-    .sideb-fashion-media {
-      width: 100%;
-      height: 100%;
-      aspect-ratio: auto;
-    }
-
-    .sideb-fashion-media video {
-      top: 0;
-      width: 100%;
-      height: 100%;
-      scale: 1;
-    }
-
     .sideb-section:not(.sideb-music-section):not(.sideb-film-section) .sideb-body-pair p:first-child {
       top: min(918.441px, 235.497692vw);
     }
@@ -1193,13 +1113,14 @@ const fashion = {
       top: min(3239.441px, 830.625897vw);
       left: 0;
       width: 100%;
-      height: min(168.441px, 43.190vw);
+      height: auto;
       margin: 0;
     }
 
+    /* Phones: the playlist header and five songs. */
     .sideb-spotify-frame {
       width: 100%;
-      height: 100%;
+      height: 466px;
       aspect-ratio: auto;
       overflow: hidden;
     }
@@ -1313,14 +1234,12 @@ const fashion = {
     .sideb-section:not(.sideb-music-section):not(.sideb-film-section) .sideb-body-pair p:first-child,
     .sideb-section:not(.sideb-music-section):not(.sideb-film-section) .sideb-body-pair p:last-child,
     .sideb-film-section .sideb-body-pair p:first-child,
-    .sideb-film-section .sideb-body-pair p:last-child,
-    .sideb-fashion-reveal {
+    .sideb-film-section .sideb-body-pair p:last-child {
       position: relative;
       top: auto;
     }
 
     .sideb-section > .sideb-section-column > .sideb-big { margin-top: min(16px, 4.102564vw); }
-    .sideb-fashion-reveal { margin-top: min(32px, 8.205128vw); }
     .sideb-section .sideb-body-pair p:first-child { margin-top: min(32px, 8.205128vw); }
     .sideb-section .sideb-body-pair p:last-child { margin-top: min(16px, 4.102564vw); }
 
@@ -1380,10 +1299,6 @@ const fashion = {
       opacity: 1 !important;
       transform: none !important;
       clip-path: none !important;
-    }
-
-    .sideb-page [data-parallax] {
-      transform: none !important;
     }
   }
 
