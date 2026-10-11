@@ -1,5 +1,5 @@
 ---
-// Loading screen on the first page of each visit: two small dots spinning around each other on the page colour,
+// Loading screen on every page load: two small dots spinning around each other on the page colour,
 // after hedroom.fm. It leaves (fading, blurring and rising slightly) once the page has loaded, or after a few seconds
 // at most. The `is-loading` class is set before the first paint by the inline script in BaseLayout's <head>; if this
 // script never runs, a CSS fallback hides the screen anyway.
@@ -14,21 +14,32 @@
   const loader = document.querySelector<HTMLElement>('[data-page-loader]');
   const MIN = 900; // ms since navigation: at least about one turn of the dots.
   const MAX = 3500; // ms since navigation: never wait longer than this for slow media.
-  if (loader && root.classList.contains('is-loading')) {
+  if (loader) {
+    const motion = loader.querySelector<HTMLElement>('.page-loader-motion');
+    const leave = () => {
+      loader.classList.add('is-done');
+      document.dispatchEvent(new Event('page-loader-done'));
+      setTimeout(() => root.classList.remove('is-loading'), 600);
+    };
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
-      setTimeout(() => {
-        loader.classList.add('is-done');
-        try { sessionStorage.setItem('itsmicki-loaded', '1'); } catch { /* Private mode: the loader simply shows again. */ }
-        document.dispatchEvent(new Event('page-loader-done'));
-        setTimeout(() => root.classList.remove('is-loading'), 600);
-      }, Math.max(0, MIN - performance.now()));
+      setTimeout(leave, Math.max(0, MIN - performance.now()));
     };
     if (document.readyState === 'complete') finish();
     else addEventListener('load', finish, { once: true });
     setTimeout(finish, Math.max(0, MAX - performance.now()));
+    // Pages restored by the back/forward buttons show the loader again, at once, for its minimum time.
+    addEventListener('pageshow', (event) => {
+      if (!event.persisted) return;
+      [loader, motion].forEach((node) => { if (node) node.style.transition = 'none'; });
+      loader.classList.remove('is-done');
+      root.classList.add('is-loading');
+      void loader.offsetWidth;
+      [loader, motion].forEach((node) => { if (node) node.style.transition = ''; });
+      setTimeout(leave, MIN);
+    });
   }
 </script>
 
