@@ -194,6 +194,15 @@ const vimeoUrl = (id: string) =>
                 <p class="case-media-caption case-reveal-caption" data-case-text-reveal>
                   hover, drag<span data-reveal-camera-option hidden> or <button type="button" class="case-reveal-camera" data-reveal-camera aria-pressed="false">turn the camera on</button></span> for this one ↑
                 </p>
+                <div class="case-reveal-help" data-reveal-camera-help hidden>
+                  <p class="case-reveal-status" data-reveal-camera-status aria-live="polite"></p>
+                  <ol>
+                    <li>Sit about an arm’s length from the screen, facing it, in good light.</li>
+                    <li>Your nose is the brush: turn and tilt your head slowly to open the image.</li>
+                    <li>Move out of view to lift the brush; the trail closes on its own.</li>
+                  </ol>
+                  <p>The camera image stays on your device. Turn it off anytime above.</p>
+                </div>
               )}
             </section>
           );
@@ -1029,6 +1038,26 @@ const vimeoUrl = (id: string) =>
     font-size: 1.25vw;
   }
 
+  /* How to use the camera: under the caption while it is on. */
+  .case-reveal-help {
+    max-width: 38vw;
+    margin-top: .8vw;
+    font-size: 1.1vw;
+    line-height: 1.2;
+    letter-spacing: -.01em;
+  }
+
+  .case-reveal-help[hidden] { display: none; }
+
+  .case-reveal-help ol {
+    margin: .5vw 0;
+    padding-left: 1.3em;
+  }
+
+  .case-reveal-help p { margin: 0; }
+
+  .case-reveal-help > p:last-child { opacity: .6; }
+
   /* "turn the camera on" reads as an underlined word in the caption. */
   .case-reveal-camera {
     padding: 0;
@@ -1559,6 +1588,14 @@ const vimeoUrl = (id: string) =>
       margin-top: 8px;
       font-size: min(14px, 3.589744vw);
     }
+
+    .case-reveal-help {
+      max-width: none;
+      margin-top: 8px;
+      font-size: min(13px, 3.333333vw);
+    }
+
+    .case-reveal-help ol { margin: 6px 0; }
 
     /* Winona's synopsis is one paragraph split into two columns on desktop: on phones it reads as one. */
     .project-case-page[data-case='winona'] .case-text-content > .case-text-columns {

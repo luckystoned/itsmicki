@@ -24,7 +24,6 @@ const { top, under, poster, label } = Astro.props;
   const SETTINGS = {
     field: 200, // Simulation grid along the frame's longer side.
     radius: .085, // Brush radius, as a share of the frame height.
-    fingerRadius: .05, // With the camera on, each fingertip is a smaller brush.
     strength: .55, // How much each frame of contact opens the hole.
     drag: .9, // How much of the pointer's motion is handed to the liquid.
     velocityKeep: .93, // How long the liquid keeps flowing after a move.
@@ -37,11 +36,11 @@ const { top, under, poster, label } = Astro.props;
     strokeWidth: 1.3, // Half the line width, in CSS pixels.
     inkBreak: .8, // Printed look: how much the ink thins out and breaks into grain (0 = solid).
     asciiCell: 9, // ASCII cell size, in CSS pixels.
-    asciiGlyphs: ' .:-=+*#%', // From dark to light.
+    asciiGlyphs: ' .:-=+*#%', // From light to dark (more ink where the image is darker).
     asciiContrast: [.04, .52], // Brightness range stretched to the full set of characters, so the video reads clearly.
-    asciiTone: .3, // How much each cell's paper lightens with the image under it.
-    paper: [.075, .075, .07], // The negative is printed in two tones: ivory ink (the stroke's) on black paper.
-    ink: [.96, .94, .88],
+    asciiTone: .3, // How much each cell's paper darkens with the image under it.
+    paper: [.96, .94, .88], // The negative is printed in two tones: dark ink on ivory paper.
+    ink: [.08, .08, .075],
     particles: 1, // How many small islands the fading trail leaves behind (0 = none).
   };
 
@@ -71,7 +70,7 @@ const { top, under, poster, label } = Astro.props;
     display: `${HEAD}${NOISE}uniform sampler2D uField; uniform sampler2D uTop; uniform sampler2D uUnder; uniform vec2 uCover; uniform float uTime;
       uniform float uWobble; uniform float uEdgeNoise; uniform float uGrain; uniform vec3 uStroke; uniform float uStrokeWidth; uniform float uAspect; uniform float uInk;
       uniform sampler2D uAtlas; uniform float uGlyphs; uniform float uCell; uniform vec2 uResolution; uniform vec3 uPaper; uniform vec3 uInkColor; uniform float uParticles; uniform vec2 uContrast; uniform float uTone;
-      // The negative, printed as ASCII: one character per cell, denser where the image is lighter, in ivory ink on black
+      // The negative, printed as ASCII: one character per cell, denser where the image is darker, in dark ink on ivory
       // paper; the ink thins out and breaks into grain like a print.
       vec3 ascii() {
         vec2 cell = floor(gl_FragCoord.xy / uCell);
@@ -79,11 +78,11 @@ const { top, under, poster, label } = Astro.props;
         vec2 center = (cell + .5) * uCell / uResolution;
         vec2 uv = (vec2(center.x, 1. - center.y) - .5) * uCover + .5;
         float lum = smoothstep(uContrast.x, uContrast.y, dot(texture(uUnder, uv).rgb, vec3(.299, .587, .114)));
-        float index = floor(clamp(lum, 0., 1.) * (uGlyphs - 1.) + .5);
+        float index = floor(clamp(1. - lum, 0., 1.) * (uGlyphs - 1.) + .5);
         float glyph = texture(uAtlas, vec2((index + local.x) / uGlyphs, 1. - local.y)).r;
         float density = 1. - uInk * (1. - noise(gl_FragCoord.xy * .09)) * .6;
         float printed = glyph * step(hash(floor(gl_FragCoord.xy) + 17.) * uInk * .8, glyph * density);
-        vec3 paper = uPaper + lum * uTone + (noise(gl_FragCoord.xy * .35) - .5) * .03;
+        vec3 paper = uPaper - (1. - lum) * uTone + (noise(gl_FragCoord.xy * .35) - .5) * .03;
         return mix(paper, uInkColor, printed);
       }
       void main() {
@@ -238,42 +237,49 @@ const { top, under, poster, label } = Astro.props;
     root.addEventListener('touchmove', touchAt, { passive: true });
     root.addEventListener('touchend', () => { pointer = null; last = null; }, { passive: true });
 
-    // Camera: every fingertip becomes a brush. The hand tracker (MediaPipe, loaded only when asked for) runs in the
-    // browser; the camera image never leaves the device. The button lives in the caption under the frame.
-    const cameraButtons = [...(root.closest('section') ?? document).querySelectorAll<HTMLButtonElement>('[data-reveal-camera]')];
+    // Camera: the nose becomes the brush. The face detector (MediaPipe, loaded only when asked for) runs in the
+    // browser; the camera image never leaves the device. The button and the how-to live in the caption under the frame.
+    const caption = root.closest('section') ?? document;
+    const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-reveal-camera]')];
+    const cameraHelp = caption.querySelector<HTMLElement>('[data-reveal-camera-help]');
+    const cameraStatus = caption.querySelector<HTMLElement>('[data-reveal-camera-status]');
     const cameraVideo = document.createElement('video');
     cameraVideo.muted = true;
     cameraVideo.playsInline = true;
     let stream: MediaStream | null = null;
-    let tracker: { detectForVideo: (video: HTMLVideoElement, time: number) => { landmarks: Array<Array<{ x: number; y: number }>> } } | null = null;
-    const fingers = new Map<string, { x: number; y: number }>();
-    const fingersLast = new Map<string, { x: number; y: number }>();
-    const TIPS = [4, 8, 12, 16, 20]; // Thumb, index, middle, ring and little fingertips.
+    let detector: { detectForVideo: (video: HTMLVideoElement, time: number) => { detections: Array<{ keypoints: Array<{ x: number; y: number }> }> } } | null = null;
+    let nose: { x: number; y: number } | null = null;
+    let lostSince = 0;
     const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
+    const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; };
     const cameraOff = () => {
       stream?.getTracks().forEach((track) => track.stop());
       stream = null;
-      fingers.clear();
-      fingersLast.clear();
+      nose = null;
+      pointer = null;
+      last = null;
+      if (cameraHelp) cameraHelp.hidden = true;
       setLabel('turn the camera on', false);
     };
     const track = () => {
       if (!stream) return;
-      if (tracker && cameraVideo.readyState >= 2) {
-        const hands = tracker.detectForVideo(cameraVideo, performance.now()).landmarks;
-        const seen = new Set<string>();
-        hands.forEach((hand, h) => TIPS.forEach((tip) => {
-          const point = hand[tip];
-          if (!point) return;
-          const key = `${h}-${tip}`;
-          // Mirrored like a selfie, and stretched a little so the hands reach the edges of the frame.
-          const target = { x: Math.min(1, Math.max(0, .5 - (point.x - .5) * 1.3)), y: Math.min(1, Math.max(0, .5 + (point.y - .5) * 1.3)) };
-          const current = fingers.get(key);
-          fingers.set(key, current ? { x: current.x + (target.x - current.x) * .5, y: current.y + (target.y - current.y) * .5 } : target);
-          seen.add(key);
-        }));
-        [...fingers.keys()].forEach((key) => { if (!seen.has(key)) { fingers.delete(key); fingersLast.delete(key); } });
-        if (seen.size) { lastContact = performance.now(); start(); }
+      if (detector && cameraVideo.readyState >= 2) {
+        const tip = detector.detectForVideo(cameraVideo, performance.now()).detections[0]?.keypoints[2]; // Nose tip.
+        if (tip) {
+          // Mirrored like a selfie, and stretched so small head moves reach the whole frame.
+          const target = { x: Math.min(1, Math.max(0, .5 - (tip.x - .5) * 1.8)), y: Math.min(1, Math.max(0, .5 + (tip.y - .5) * 1.8)) };
+          nose = nose ? { x: nose.x + (target.x - nose.x) * .35, y: nose.y + (target.y - nose.y) * .35 } : target;
+          pointer = { ...nose };
+          lastContact = performance.now();
+          lostSince = 0;
+          setStatus('Got you — now move your head.');
+          start();
+        } else {
+          // The brush lifts while the face is out of view.
+          if (nose) { nose = null; pointer = null; last = null; }
+          lostSince ||= performance.now();
+          if (performance.now() - lostSince > 600) setStatus('Looking for your face… keep it in view, in good light.');
+        }
       }
       requestAnimationFrame(track);
     };
@@ -283,18 +289,20 @@ const { top, under, poster, label } = Astro.props;
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
         cameraVideo.srcObject = stream;
         await cameraVideo.play();
-        if (!tracker) {
+        if (!detector) {
           const version = '0.10.14';
           const vision = await import(/* @vite-ignore */ `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/vision_bundle.mjs`);
           const files = await vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/wasm`);
-          tracker = await vision.HandLandmarker.createFromOptions(files, {
-            baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', delegate: 'GPU' },
+          detector = await vision.FaceDetector.createFromOptions(files, {
+            baseOptions: { modelAssetPath: '/models/blaze_face_short_range.tflite', delegate: 'GPU' },
             runningMode: 'VIDEO',
-            numHands: 2,
+            minDetectionConfidence: .5,
           });
         }
         if (!stream) return; // Turned off while loading.
         setLabel('turn the camera off', true);
+        if (cameraHelp) cameraHelp.hidden = false;
+        setStatus('Looking for your face…');
         requestAnimationFrame(track);
       } catch {
         cameraOff();
@@ -327,7 +335,7 @@ const { top, under, poster, label } = Astro.props;
       // Keep the negative on the same frame as the video on top.
       if (Math.abs(underVideo.currentTime - topVideo.currentTime) > .08 && underVideo.readyState >= 1) underVideo.currentTime = topVideo.currentTime;
 
-      // 1. Each brush (the pointer, or every fingertip with the camera on) opens the hole and hands the liquid its motion.
+      // 1. The brush (the pointer, or the nose with the camera on) opens the hole and hands the liquid its motion.
       const paint = (point: { x: number; y: number }, previous: { x: number; y: number } | undefined, radius: number) => {
         const move = previous ? [(point.x - previous.x) / dt, (point.y - previous.y) / dt] : [0, 0];
         const speed = Math.hypot(move[0], move[1]);
@@ -339,7 +347,6 @@ const { top, under, poster, label } = Astro.props;
         swap();
       };
       if (pointer) { paint(pointer, last ?? undefined, SETTINGS.radius); last = { ...pointer }; }
-      fingers.forEach((point, key) => { paint(point, fingersLast.get(key), SETTINGS.fingerRadius); fingersLast.set(key, { ...point }); });
       // 2. It flows, slows down and closes.
       run(programs.advect!, field.write, { uField: field.read.texture }, {
         uDt: dt, uKeep: Math.pow(SETTINGS.revealKeep, k), uVelKeep: Math.pow(SETTINGS.velocityKeep, k), uTexel: [1 / fieldW, 1 / fieldH], uDrain: SETTINGS.drain * k,
