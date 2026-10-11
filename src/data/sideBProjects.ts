@@ -14,14 +14,16 @@ export type SideBProject = {
 };
 
 const coming = ' — (Coming soon) !!!!!^*^';
-/** Mkp & Hair's muted 5-second loop (square), on its grid card and its carousel card. */
+/** Mkp & Hair's muted 5-second loop (square), on its carousel card (the larger grid card keeps the sharper photo). */
 const MKP_LOOP = '/04_SideB/Projects/01_MkpHair/00_MkpHair_Loop.mp4';
+/** Missing souls' muted 6-second loop (square): a detail of its lilac flowers swaying, the sky melting from orange into lilac. */
+const SOULS_LOOP = '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Loop.mp4';
 
 export const sideBProjects: SideBProject[] = [
-  { slug: 'mkp-hair', title: 'Mkp & Hair', label: '01_Mkp & Hair_Art Direction+AI Image Generation', gridCover: '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp', gridVideo: MKP_LOOP },
+  { slug: 'mkp-hair', title: 'Mkp & Hair', label: '01_Mkp & Hair_Art Direction+AI Image Generation', gridCover: '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp' },
   { slug: 'ok-computer', title: 'OK Computer', label: '02_OK Computer_Art Direction+Photography+Mkp & Styling', gridCover: '/04_SideB/Home/02_SideBProjects.webp' },
   { slug: 'general-immersive', title: 'General', label: '03_General_Art Direction+Immersive Interaction Design', gridCover: '/04_SideB/Home/03_SideBProjects.webp', gridVideo: '/04_SideB/Home/03_SideBProjects.mp4' },
-  { slug: 'missing-souls', title: 'Missing souls', label: '04_Missing souls_Art Direction+Immersive Design', gridCover: '/04_SideB/Home/04_SideBProjects.webp' },
+  { slug: 'missing-souls', title: 'Missing souls', label: '04_Missing souls_Art Direction+Immersive Design', gridCover: '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Cover.webp', gridVideo: SOULS_LOOP },
   { slug: 'nostalgia-as-agony', title: 'Nostalgia as Agony', label: `05_Nostalgia as Agony_Concept & Art direction${coming}`, comingSoon: true, gridCover: '/04_SideB/Home/05_SideBProjects.webp' },
 ];
 
@@ -34,7 +36,7 @@ const carouselCards: Array<{ width: number; height: number; alt: string; video?:
   { width: 357, height: 355, alt: 'Portrait with moss-green brows, flushed cheeks and spiky tufts tied with pink ribbon.', video: MKP_LOOP, project: 0 },
   { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.', project: 1 },
   { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true, project: 2 },
-  { width: 357, height: 354, alt: 'Three caps embroidered with the Mm logo.', project: 3 },
+  { width: 357, height: 354, alt: 'Lilac flowers on green stems swaying against a coral sky melting into lilac.', video: SOULS_LOOP, project: 3 },
   { width: 358, height: 474, alt: 'A phone with a blue screen resting on a grey ledge.', project: 4 },
 ];
 

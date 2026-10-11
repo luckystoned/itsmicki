@@ -1,4 +1,5 @@
 export const imageMetadata: Record<string, { width: number; height: number }> = {
+  '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Cover.webp': { width: 1300, height: 1300 },
   '/04_SideB/Projects/01_MkpHair/01_MkpHair.webp': { width: 1546, height: 1910 },
   '/04_SideB/Projects/01_MkpHair/02_MkpHair.webp': { width: 1546, height: 1909 },
   '/04_SideB/Projects/01_MkpHair/03_MkpHair.webp': { width: 1546, height: 1910 },
@@ -134,6 +135,5 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/04_SideB/Film_06b_SideB.webp': { width: 541, height: 676 },
   '/04_SideB/Home/02_SideBProjects.webp': { width: 1522, height: 2016 },
   '/04_SideB/Home/03_SideBProjects.webp': { width: 1556, height: 1028 },
-  '/04_SideB/Home/04_SideBProjects.webp': { width: 1298, height: 1282 },
   '/04_SideB/Home/05_SideBProjects.webp': { width: 3112, height: 2056 },
 };
