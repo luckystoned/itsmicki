@@ -18,8 +18,8 @@ const coming = ' — (Coming soon) !!!!!^*^';
 const MKP_LOOP = '/04_SideB/Projects/01_MkpHair/00_MkpHair_Loop.mp4';
 /** Missing souls' muted 6-second loop (square): a detail of its lilac flowers swaying, the sky melting from orange into lilac. */
 const SOULS_LOOP = '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Loop.mp4';
-/** Nostalgia as Agony's muted 4-second loops: the photo pixel-stretched into vertical streaks, with clusters of
-    tracking boxes where it shows clean and, in hits echoed a moment later, thin slices slipping sideways and dashed
+/** Nostalgia as Agony's muted 4-second loops: the photo pixel-stretched into vertical streaks, with two clusters
+    of tracking boxes where it shows clean and, in hits echoed a moment later, thin slices slipping sideways and dashed
     rows of dead pixels (landscape for the grid, portrait for its carousel card). */
 const NOSTALGIA_LOOP = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Loop.mp4';
 const NOSTALGIA_CARD = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Card.mp4';
