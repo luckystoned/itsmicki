@@ -9,8 +9,6 @@ const definitions = [
     slug: 'genova',
     label: '01_Genova_Art Direction+Visual Design — (Coming soon) !!!!!^*^',
     width: 'calc((97.23vw - 6px) * .50047)', height: 'auto', ratio: '47.57 / 63.01', eager: true,
-    // The photo fills its frame (pizza boxes with the logo): a small, centred travel keeps the logo in view.
-    parallaxHeight: '108%', parallaxStart: '-6%', parallaxSpan: '2%',
   },
   {
     slug: 'winona',
@@ -435,7 +433,7 @@ const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody
     object-fit: cover;
     object-position: 50% 50%;
     /* Parallax: the image is 25% taller than its frame and slides through it as the frame crosses the viewport.
-       --parallax-height, --parallax-start and --parallax-span narrow it for a photo that fills its frame (Genova). */
+       --parallax-height, --parallax-start and --parallax-span can narrow it for a photo that must stay whole. */
     height: var(--parallax-height, 125%);
     translate: 0 calc(var(--parallax-start, -20%) + var(--parallax-span, 20%) * var(--parallax-progress, .5));
     transition: transform .6s var(--projects-ease);
@@ -769,14 +767,17 @@ const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody
       background: var(--projects-paper);
     }
 
+    /* Sitting on the bottom edge: the line height leaves the baseline (plus the overshoot of round letters) just above
+       it, so the letters are never clipped, whatever the phone width. */
     .projects-footer-wordmark {
       position: absolute;
-      top: min(2px, .512821cqw);
+      top: auto;
       right: auto;
-      left: -1.538462cqw; /* Same position and size as the home wordmark. */
+      bottom: 0;
+      left: -1.538462cqw; /* Same size as the home wordmark. */
       justify-content: flex-start;
       font-size: 46.202051cqw;
-      line-height: normal;
+      line-height: .74;
       width: max-content;
     }
 
