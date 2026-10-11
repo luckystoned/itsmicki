@@ -2,7 +2,8 @@
 // Two videos of the same scene stacked: `top` plays in view and, under the pointer (or a finger dragging on touch
 // screens), a liquid, grainy hole opens onto `under`. The hole follows the pointer's motion, leaves a trail that
 // slowly closes, and every edge of it (islands included) is drawn with a thin red stroke. Drawn with WebGL2; without
-// it the top video plays on its own, and with reduced motion only the still frame shows.
+// it the top video plays on its own, and with reduced motion only the still frame shows. Through the hole, the video
+// underneath is drawn as coloured ASCII.
 type Props = {
   top: string;
   under: string;
@@ -33,6 +34,9 @@ const { top, under, poster, label } = Astro.props;
     stroke: [.96, .94, .88], // Ivory stroke.
     strokeWidth: 1.3, // Half the line width, in CSS pixels.
     ink: .8, // Printed look: how much the ink thins out and breaks into grain along the line (0 = solid line).
+    asciiCell: 9, // ASCII cell size on the negative, in CSS pixels.
+    asciiGlyphs: ' .,:;-=+*#%@', // From dark to light.
+    asciiBackground: .42, // Each cell's background: its own colour, this much of it (the characters carry the full colour, a little brighter).
   };
 
   const VERT = `#version 300 es
@@ -60,6 +64,19 @@ const { top, under, poster, label } = Astro.props;
         outColor = vec4(mix(f.x, around, .08) * uKeep, f.yz * uVelKeep, 1.); }`,
     display: `${HEAD}${NOISE}uniform sampler2D uField; uniform sampler2D uTop; uniform sampler2D uUnder; uniform vec2 uCover; uniform float uTime;
       uniform float uWobble; uniform float uEdgeNoise; uniform float uGrain; uniform vec3 uStroke; uniform float uStrokeWidth; uniform float uAspect; uniform float uInk;
+      uniform sampler2D uAtlas; uniform float uGlyphs; uniform float uCell; uniform vec2 uResolution; uniform float uAsciiBackground;
+      // The negative as ASCII: one character per cell, chosen by the cell's brightness and drawn in its own colour.
+      vec3 ascii() {
+        vec2 cell = floor(gl_FragCoord.xy / uCell);
+        vec2 local = fract(gl_FragCoord.xy / uCell);
+        vec2 center = (cell + .5) * uCell / uResolution;
+        vec2 uv = (vec2(center.x, 1. - center.y) - .5) * uCover + .5;
+        vec3 c = texture(uUnder, uv).rgb;
+        float lum = dot(c, vec3(.299, .587, .114));
+        float index = floor(clamp(lum, 0., 1.) * (uGlyphs - 1.) + .5);
+        float glyph = texture(uAtlas, vec2((index + local.x) / uGlyphs, 1. - local.y)).r;
+        return mix(c * uAsciiBackground, min(vec3(1.), c * 1.3 + .04), glyph);
+      }
       void main() {
         vec2 video = (vUv - .5) * uCover + .5;
         vec3 top = texture(uTop, video).rgb;
@@ -72,7 +89,7 @@ const { top, under, poster, label } = Astro.props;
         float m = open + shape * smoothstep(0., .18, open);
         float inside = step(.5, m);
         // Film grain over the negative.
-        vec3 under = texture(uUnder, video).rgb + (hash(gl_FragCoord.xy + floor(uTime * 24.) * 13.) - .5) * .09;
+        vec3 under = ascii() + (hash(gl_FragCoord.xy + floor(uTime * 24.) * 13.) - .5) * .05;
         vec3 color = mix(top, under, inside);
         // An ivory line on every contour, printed: its ink density wanders along it and breaks into fine grain.
         float press = .55 + .9 * noise(gl_FragCoord.xy * .045 + 4.2); // Heavier and lighter ink along the line.
@@ -149,6 +166,27 @@ const { top, under, poster, label } = Astro.props;
     };
     const topTexture = videoTexture();
     const underTexture = videoTexture();
+
+    // Glyph atlas for the ASCII negative: the characters side by side, white on black, one square each.
+    const glyphSize = 64;
+    const atlasCanvas = document.createElement('canvas');
+    atlasCanvas.width = glyphSize * SETTINGS.asciiGlyphs.length;
+    atlasCanvas.height = glyphSize;
+    const atlasContext = atlasCanvas.getContext('2d')!;
+    atlasContext.fillStyle = '#000';
+    atlasContext.fillRect(0, 0, atlasCanvas.width, atlasCanvas.height);
+    atlasContext.fillStyle = '#fff';
+    atlasContext.font = `600 ${glyphSize * .82}px ui-monospace, Menlo, Consolas, monospace`;
+    atlasContext.textAlign = 'center';
+    atlasContext.textBaseline = 'middle';
+    [...SETTINGS.asciiGlyphs].forEach((glyph, index) => atlasContext.fillText(glyph, (index + .5) * glyphSize, glyphSize * .54));
+    const atlasTexture = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, atlasTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, atlasCanvas);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
     const upload = (texture: WebGLTexture, video: HTMLVideoElement) => {
       if (video.readyState < 2) return false;
       gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -232,9 +270,10 @@ const { top, under, poster, label } = Astro.props;
       if (hasTop) {
         const videoAspect = (topVideo.videoWidth || 16) / (topVideo.videoHeight || 9);
         const cover = aspect > videoAspect ? [1, videoAspect / aspect] : [aspect / videoAspect, 1];
-        run(programs.display!, null, { uField: field.read.texture, uTop: topTexture, uUnder: underTexture }, {
+        run(programs.display!, null, { uField: field.read.texture, uTop: topTexture, uUnder: underTexture, uAtlas: atlasTexture }, {
           uCover: cover, uTime: time / 1000, uWobble: SETTINGS.wobble, uEdgeNoise: SETTINGS.edgeNoise, uGrain: SETTINGS.grain,
           uStroke: SETTINGS.stroke, uStrokeWidth: SETTINGS.strokeWidth * ratio, uAspect: aspect, uInk: SETTINGS.ink,
+          uGlyphs: SETTINGS.asciiGlyphs.length, uCell: SETTINGS.asciiCell * ratio, uResolution: [canvas.width, canvas.height], uAsciiBackground: SETTINGS.asciiBackground,
         });
         if (!ready) { ready = true; root.classList.add('is-drawn'); }
       }
