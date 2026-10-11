@@ -41,7 +41,7 @@ const { label } = Astro.props;
       ['#e8f5d0', '#bfe3a6', '#86c49e'],
       ['#ffd0c0', '#f39c8a', '#a36fc8'],
     ],
-    eyes: '#ff4a2a',
+    eyes: '#ff4a2a', // Eyes are little arches (∩), smiling shut, not round glowing dots.
     grain: .17, // Strength of the film grain over everything.
     // What they do, and how often; lengths in seconds.
     acts: { sit: [.32, 3, 8], walk: [.3, 0, 0], hop: [.08, .8, .8], stretch: [.1, 1.8, 1.8], groom: [.08, 2.4, 3.4], sleep: [.12, 7, 13] } as Record<string, [number, number, number]>,
@@ -52,6 +52,8 @@ const { label } = Astro.props;
   type Soul = {
     id: string; width: number; height: number; mask: Uint8Array; born: number;
     sprite?: HTMLCanvasElement; spriteFor?: number; eyes?: Array<{ x: number; y: number }>; eyeR?: number; facing?: number;
+    // Walking: the sprite without its legs, and each leg on its own, to swing from the hip (sprite units, CSS px).
+    body?: HTMLCanvasElement; legs?: Array<{ canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number }>;
     // Life: its home, where it is (feet; shares of the frame), what it is doing and until when.
     hx: number; hy: number; x: number; y: number; fromX: number; fromY: number; toX: number; toY: number;
     act: Act; actStart: number; actEnd: number; face: number; blink: number; phase: number;
@@ -73,6 +75,20 @@ const { label } = Astro.props;
   const toBase64 = (bytes: Uint8Array) => { let s = ''; bytes.forEach((b) => { s += String.fromCharCode(b); }); return btoa(s); };
   const fromBase64 = (text: string) => Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
   const ease = (p: number) => p * p * (3 - 2 * p);
+  /** An eye: a little arch (∩) with a soft glow; asleep, it turns into a closed curve (∪). */
+  const drawEye = (g: CanvasRenderingContext2D, x: number, y: number, r: number, asleep = false) => {
+    g.save();
+    g.lineCap = 'round';
+    g.lineWidth = Math.max(.9, r * .75);
+    g.strokeStyle = SETTINGS.eyes;
+    g.shadowColor = 'rgba(255, 74, 42, .7)';
+    g.shadowBlur = r * 2.2;
+    g.beginPath();
+    if (asleep) g.arc(x, y - r * .5, r * 1.05, Math.PI * .15, Math.PI * .85);
+    else g.arc(x, y + r * .55, r * 1.15, Math.PI * 1.12, Math.PI * 1.88);
+    g.stroke();
+    g.restore();
+  };
 
   // Souls kept on this device, when the shared place cannot be reached.
   const localSouls = (): Array<{ id: string; data: string }> => { try { return JSON.parse(localStorage.getItem(STORE) ?? '[]'); } catch { return []; } };
@@ -260,6 +276,30 @@ const { label } = Astro.props;
           soul.eyeR = Math.max(1.1, soul.width * .02 * scale);
         }
       }
+      // Legs: where the silhouette touches the ground in separate patches (paws), each patch is a leg, from its hip
+      // (a little over two thirds down) to the floor. With two to five of them, they can walk.
+      soul.legs = undefined; soul.body = undefined;
+      const footFrom = Math.round(soul.height * .88), hip = Math.round(soul.height * .66), minLeg = Math.max(2, soul.width * .025);
+      const runs: Array<[number, number]> = [];
+      let open = -1;
+      for (let x = 0; x <= soul.width; x++) {
+        let solid = false;
+        if (x < soul.width) for (let y = footFrom; y < soul.height && !solid; y++) solid = soul.mask[y * soul.width + x] > 128;
+        if (solid && open < 0) open = x;
+        if (!solid && open >= 0) { if (x - open >= minLeg) runs.push([open, x - 1]); open = -1; }
+      }
+      if (runs.length >= 2 && runs.length <= 5) {
+        const body = canvasOf(out.width, out.height), b = body.getContext('2d')!;
+        b.drawImage(out, 0, 0);
+        soul.legs = runs.map(([a, z]) => {
+          const x = pad + (a - 1.5) * scale, y = pad + hip * scale, lw = (z - a + 3) * scale, lh = (soul.height - hip) * scale + pad;
+          const leg = canvasOf(lw * ratio, lh * ratio);
+          leg.getContext('2d')!.drawImage(out, x * ratio, y * ratio, lw * ratio, lh * ratio, 0, 0, leg.width, leg.height);
+          b.clearRect(x * ratio, y * ratio, lw * ratio, lh * ratio);
+          return { canvas: leg, x, y, w: lw, h: lh };
+        });
+        soul.body = body;
+      }
       soul.sprite = out;
       soul.spriteFor = size;
       return out;
@@ -314,12 +354,7 @@ const { label } = Astro.props;
       const face = g.createRadialGradient(cx, top + .13 * u, 0, cx, top + .13 * u, .07 * u);
       face.addColorStop(0, 'rgba(255, 150, 112, .95)'); face.addColorStop(.7, 'rgba(255, 170, 130, .5)'); face.addColorStop(1, 'rgba(255, 170, 130, 0)');
       g.fillStyle = face; g.beginPath(); g.ellipse(cx, top + .135 * u, .065 * u, .075 * u, 0, 0, Math.PI * 2); g.fill();
-      for (const ex of [-.028, .028]) {
-        const x = cx + ex * u, y = top + .13 * u, r = .0075 * u;
-        const eye = g.createRadialGradient(x, y, 0, x, y, r * 2.4);
-        eye.addColorStop(0, SETTINGS.eyes); eye.addColorStop(.4, SETTINGS.eyes); eye.addColorStop(1, 'rgba(255, 74, 42, 0)');
-        g.fillStyle = eye; g.fillRect(x - r * 3, y - r * 3, r * 6, r * 6);
-      }
+      for (const ex of [-.028, .028]) drawEye(g, cx + ex * u, top + .13 * u, .009 * u);
       keeper = out;
     };
 
@@ -345,17 +380,22 @@ const { label } = Astro.props;
         const bx = w * .5;
         s.lineWidth = Math.max(1, w * .035);
         s.beginPath(); s.moveTo(bx, h); s.quadraticCurveTo(bx + w * .1, h * .5, bx - w * .05, 0); s.stroke();
-        // Long, narrow leaves rising from the stem, alternating sides.
-        const leaves = 6 + Math.floor(random() * 4);
+        const leaves = 5 + Math.floor(random() * 4);
         for (let i = 0; i < leaves; i++) {
-          const y = h * (.1 + .82 * (i / leaves)), side = i % 2 ? 1 : -1, len = w * (.42 + random() * .12);
-          s.save(); s.translate(bx + w * .03 * (1 - y / h), y); s.rotate(side * (.55 + random() * .35));
-          s.beginPath(); s.moveTo(0, 0); s.quadraticCurveTo(side * len * .5, -len * .16, side * len, -len * .5); s.quadraticCurveTo(side * len * .45, len * .05, 0, 0); s.fill(); s.restore();
+          const y = h * (.12 + .8 * (i / leaves)), side = i % 2 ? 1 : -1, len = w * (.3 + random() * .2);
+          s.save(); s.translate(bx + w * .03 * (1 - y / h), y); s.rotate(side * (.6 + random() * .5));
+          s.beginPath(); s.ellipse(side * len / 2, 0, len / 2, len * .14, side * -.5, 0, Math.PI * 2); s.fill(); s.restore();
         }
       }
       const out = canvasOf(w * ratio, h * ratio), g = out.getContext('2d')!;
       g.imageSmoothingQuality = 'high';
-      g.drawImage(soften(shape, blur), 0, 0, out.width, out.height);
+      if (kind === 'leaves') {
+        // The leaves in front keep a coarser, blotchy blur (one jump down and back up): soft patches, like the reference.
+        const tiny = canvasOf(shape.width / blur, shape.height / blur), t = tiny.getContext('2d')!;
+        t.imageSmoothingQuality = 'high';
+        t.drawImage(shape, 0, 0, tiny.width, tiny.height);
+        g.drawImage(tiny, 0, 0, out.width, out.height);
+      } else g.drawImage(soften(shape, blur), 0, 0, out.width, out.height);
       return out;
     };
     const growPlants = () => {
@@ -370,7 +410,7 @@ const { label } = Astro.props;
       }
       for (const [x, lean] of [[.03, 1], [.1, 1], [.18, 1], [.84, -1], [.92, -1], [.98, -1]] as Array<[number, number]>) {
         const h = height * (.32 + random() * .22), w = h * .5;
-        front.push({ sprite: paintPlant('leaves', w, h, 101 + Math.round(x * 100), 6), x: width * x + lean * random() * width * .02, y: height * 1.04, w, h, phase: random() * 6.28, sway: .05 + random() * .03 });
+        front.push({ sprite: paintPlant('leaves', w, h, 101 + Math.round(x * 100), 7), x: width * x + lean * random() * width * .02, y: height * 1.04, w, h, phase: random() * 6.28, sway: .05 + random() * .03 });
       }
       plants = { back, front };
     };
@@ -493,17 +533,21 @@ const { label } = Astro.props;
         context.save(); context.globalAlpha = fade * .22 * (1 - Math.min(1, lift / size)); context.scale(1, .18);
         const shade = context.createRadialGradient(0, 0, 0, 0, 0, w * .32); shade.addColorStop(0, '#2b2166'); shade.addColorStop(1, 'rgba(43, 33, 102, 0)');
         context.fillStyle = shade; context.fillRect(-w / 2, -w / 2, w, w); context.restore();
-        context.drawImage(sprite, -w / 2, top, w, h);
-        if (soul.eyes?.length && eyesOpen > 0) {
-          const r = (soul.eyeR ?? 1.5) * k;
-          for (const eye of soul.eyes) {
-            const x = -w / 2 + eye.x * k, y = top + eye.y * k;
-            context.save(); context.translate(x, y); context.scale(1, eyesOpen);
-            const glow = context.createRadialGradient(0, 0, 0, 0, 0, r * 2.4);
-            glow.addColorStop(0, SETTINGS.eyes); glow.addColorStop(.4, SETTINGS.eyes); glow.addColorStop(1, 'rgba(255, 74, 42, 0)');
-            context.fillStyle = glow; context.fillRect(-r * 3, -r * 3, r * 6, r * 6);
+        if (soul.act === 'walk' && soul.legs && soul.body && !calm) {
+          // Walking on its paws: each leg swings from its hip, neighbours in opposite step.
+          const steps = (now - soul.actStart) / 1000 * 5 * Math.PI;
+          context.drawImage(soul.body, -w / 2, top, w, h);
+          soul.legs.forEach((leg, i) => {
+            context.save();
+            context.translate(-w / 2 + (leg.x + leg.w / 2) * k, top + leg.y * k);
+            context.rotate(Math.sin(steps + (i % 2) * Math.PI) * .32);
+            context.drawImage(leg.canvas, -leg.w / 2 * k, 0, leg.w * k, leg.h * k);
             context.restore();
-          }
+          });
+        } else context.drawImage(sprite, -w / 2, top, w, h);
+        if (soul.eyes?.length && (eyesOpen > .5 || soul.act === 'sleep')) {
+          const r = (soul.eyeR ?? 1.5) * k * 1.1;
+          for (const eye of soul.eyes) drawEye(context, -w / 2 + eye.x * k, top + eye.y * k, r, soul.act === 'sleep');
         }
         context.restore();
       };
