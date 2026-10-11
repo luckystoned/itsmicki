@@ -30,8 +30,9 @@ const { top, under, poster, label } = Astro.props;
     wobble: .025, // How far the edges drift, as a share of the frame.
     edgeNoise: .95, // Large organic lobes on the edge.
     grain: .5, // Fine, jagged detail on the edge (notches and small islands), continuous so each contour stays one line.
-    stroke: [.89, .14, .18], // Red stroke, as in the reference.
-    strokeWidth: .75, // Half the line width, in CSS pixels.
+    stroke: [.96, .94, .88], // Ivory stroke.
+    strokeWidth: 1.3, // Half the line width, in CSS pixels.
+    ink: .8, // Printed look: how much the ink thins out and breaks into grain along the line (0 = solid line).
   };
 
   const VERT = `#version 300 es
@@ -58,7 +59,7 @@ const { top, under, poster, label } = Astro.props;
         float around = (texture(uField, vUv + vec2(uTexel.x, 0.)).x + texture(uField, vUv - vec2(uTexel.x, 0.)).x + texture(uField, vUv + vec2(0., uTexel.y)).x + texture(uField, vUv - vec2(0., uTexel.y)).x) * .25;
         outColor = vec4(mix(f.x, around, .08) * uKeep, f.yz * uVelKeep, 1.); }`,
     display: `${HEAD}${NOISE}uniform sampler2D uField; uniform sampler2D uTop; uniform sampler2D uUnder; uniform vec2 uCover; uniform float uTime;
-      uniform float uWobble; uniform float uEdgeNoise; uniform float uGrain; uniform vec3 uStroke; uniform float uStrokeWidth; uniform float uAspect;
+      uniform float uWobble; uniform float uEdgeNoise; uniform float uGrain; uniform vec3 uStroke; uniform float uStrokeWidth; uniform float uAspect; uniform float uInk;
       void main() {
         vec2 video = (vUv - .5) * uCover + .5;
         vec3 top = texture(uTop, video).rgb;
@@ -73,9 +74,12 @@ const { top, under, poster, label } = Astro.props;
         // Film grain over the negative.
         vec3 under = texture(uUnder, video).rgb + (hash(gl_FragCoord.xy + floor(uTime * 24.) * 13.) - .5) * .09;
         vec3 color = mix(top, under, inside);
-        // A thin red line on every contour.
-        float edge = 1. - smoothstep(0., max(fwidth(m), 1e-4) * uStrokeWidth, abs(m - .5));
-        outColor = vec4(mix(color, uStroke, edge * step(.02, open)), 1.);
+        // An ivory line on every contour, printed: its ink density wanders along it and breaks into fine grain.
+        float press = .55 + .9 * noise(gl_FragCoord.xy * .045 + 4.2); // Heavier and lighter ink along the line.
+        float edge = 1. - smoothstep(0., max(fwidth(m), 1e-4) * uStrokeWidth * mix(1., press, uInk), abs(m - .5));
+        float density = 1. - uInk * (1. - noise(gl_FragCoord.xy * .11)) * .8;
+        float speck = step(hash(floor(gl_FragCoord.xy)) * uInk * .9, edge * density);
+        outColor = vec4(mix(color, uStroke, edge * speck * step(.02, open)), 1.);
       }`,
   };
 
@@ -230,7 +234,7 @@ const { top, under, poster, label } = Astro.props;
         const cover = aspect > videoAspect ? [1, videoAspect / aspect] : [aspect / videoAspect, 1];
         run(programs.display!, null, { uField: field.read.texture, uTop: topTexture, uUnder: underTexture }, {
           uCover: cover, uTime: time / 1000, uWobble: SETTINGS.wobble, uEdgeNoise: SETTINGS.edgeNoise, uGrain: SETTINGS.grain,
-          uStroke: SETTINGS.stroke, uStrokeWidth: SETTINGS.strokeWidth * ratio, uAspect: aspect,
+          uStroke: SETTINGS.stroke, uStrokeWidth: SETTINGS.strokeWidth * ratio, uAspect: aspect, uInk: SETTINGS.ink,
         });
         if (!ready) { ready = true; root.classList.add('is-drawn'); }
       }
