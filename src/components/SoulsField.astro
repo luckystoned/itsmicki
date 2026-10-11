@@ -127,12 +127,14 @@ const { label } = Astro.props;
     return { colours: colours.map((c) => mix(c, '#ffffff', .1)) as [string, string, string], pattern };
   };
 
-  type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep' | 'pet';
+  type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep' | 'pet' | 'held' | 'fall';
   type Layer = { canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number };
   type Leg = Layer & { pivotX: number; pivotY: number; near: boolean; front: boolean };
   type Figure = { body: Layer; legs: Leg[]; eyes: Array<{ x: number; y: number }>; eyeR: number; legLength: number; unit: number };
   type Soul = {
     id: string; look: Look; born: number; figure?: Figure; photo?: string;
+    // Picked up: where its feet are in the air (px), how fast it falls, its legs' pendulum and its lean; when it landed.
+    air?: number; airV?: number; swing?: number; swingV?: number; hang?: number; landed?: number; heldUnit?: number;
     // Life: its home, where it is (feet; shares of the frame), what it is doing and until when.
     hx: number; hy: number; x: number; y: number; fromX: number; fromY: number; toX: number; toY: number;
     act: Act; actStart: number; actEnd: number; face: number; faceShown: number; blink: number; phase: number; drawn: number;
@@ -657,7 +659,7 @@ const { label } = Astro.props;
     layout();
     // How big a soul is where it stands: smaller far away (up near the horizon), larger up close; and by its kind/size.
     const kindScale = (look: Look) => SETTINGS.scale[look.kind][look.size];
-    const unitAt = (soul: Soul) => height * (.11 + Math.min(1, Math.max(0, (soul.y - SETTINGS.horizon) / (1 - SETTINGS.horizon))) * .2) * kindScale(soul.look);
+    const unitAt = (soul: Soul) => soul.act === 'held' && soul.heldUnit ? soul.heldUnit : height * (.11 + Math.min(1, Math.max(0, (soul.y - SETTINGS.horizon) / (1 - SETTINGS.horizon))) * .2) * kindScale(soul.look);
     const PAINT_AT = .32; // Figures are painted at the largest size they can have (share of the height), then drawn smaller.
 
     const meet = (id: string, look: Look, index: number, born: number): Soul => {
@@ -755,13 +757,39 @@ const { label } = Astro.props;
           // Lying down to nap: the legs fold under it and it settles low, breathing slowly.
           if (soul.act === 'sleep') { fold = .75 * into; sy = 1 + Math.sin(t * .8 + soul.phase) * .012; }
           if (soul.act === 'pet') { tilt = -soul.face * .025 * into; fold = .15 * into; }
+          // Landing after a drop: a little crouch.
+          if (soul.landed && now - soul.landed < 320) { const c = 1 - (now - soul.landed) / 320; fold = Math.max(fold, c * .3); sy *= 1 - c * .04; }
           // Blinks.
           if (now > soul.blink + 4200 + (soul.phase * 600)) soul.blink = now;
           if (now - soul.blink < 140) eyesOpen = 0;
         }
+        // Picked up, or falling back: hanging from where it is held, legs dangling like pendulums that swing with the
+        // hand's moves; let go, it falls, bounces a little and stands again where it landed.
+        const airborne = soul.act === 'held' || soul.act === 'fall';
+        if (airborne) {
+          if (soul.act === 'fall') {
+            soul.airV = (soul.airV ?? 0) + 3200 * dt;
+            soul.air = (soul.air ?? soul.y * height) + soul.airV * dt;
+            if (soul.air >= soul.y * height) {
+              soul.air = soul.y * height;
+              soul.landed = now;
+              if (soul.airV > 260) soul.airV *= -.28;
+              else { soul.act = 'sit'; soul.actStart = now; soul.actEnd = now + 2500; soul.hx = soul.x; soul.hy = soul.y; soul.air = undefined; }
+            }
+          }
+          const shake = soul.act === 'held' && held ? held.ax : 0;
+          soul.swingV = (soul.swingV ?? 0) + (-55 * (soul.swing ?? 0) - 4.5 * (soul.swingV ?? 0) - shake * .0005) * dt;
+          soul.swing = Math.max(-.7, Math.min(.7, (soul.swing ?? 0) + soul.swingV * dt));
+          const lean = soul.act === 'held' && held ? Math.max(-.35, Math.min(.35, held.vx * .0004)) : 0;
+          soul.hang = (soul.hang ?? 0) + (lean - (soul.hang ?? 0)) * Math.min(1, dt * 8);
+          if (soul.air !== undefined) lift = soul.y * height - soul.air;
+          tilt = soul.hang; fold = 0; sx = .98; sy = 1.03; stride = 0; pace = 0;
+        }
+        const dangling = airborne && soul.air !== undefined;
         // Turning round takes a moment: it narrows, then opens the other way.
         soul.faceShown += (soul.face - soul.faceShown) * Math.min(1, dt * 5);
         if (calm) soul.faceShown = soul.face;
+        const facing = Math.sign(soul.faceShown) || 1;
         const fade = soul.born ? Math.min(1, (now - soul.born) / 1600) : 1;
         context.save();
         context.globalAlpha = fade;
@@ -777,7 +805,10 @@ const { label } = Astro.props;
         const drawLeg = (leg: Leg) => {
           // Diagonal pairs step together (back-far with front-near), like a real walk.
           const together = leg.near === leg.front;
-          const swing = Math.sin(stride + (together ? 0 : Math.PI)) * .28 * pace;
+          // Dangling, the legs keep hanging straight down whatever its lean, and swing on their own.
+          const swing = dangling
+            ? facing * ((soul.swing ?? 0) * (leg.front ? 1 : .8) + Math.sin(t * 2.4 + (leg.near ? 1 : 0) + (leg.front ? 2 : 0)) * .05 - tilt)
+            : Math.sin(stride + (together ? 0 : Math.PI)) * .28 * pace;
           context.save();
           context.translate(leg.x, leg.y + drop);
           context.rotate(swing);
@@ -792,7 +823,7 @@ const { label } = Astro.props;
         context.restore();
       };
       // Further away first; those behind her before her, the rest after.
-      const order = [...souls].sort((a, b) => a.y - b.y);
+      const order = souls.filter((soul) => soul.act !== 'held' && soul.act !== 'fall').sort((a, b) => a.y - b.y);
       const herLine = .86;
       order.filter((soul) => soul.y < herLine).forEach(drawSoul);
       const sway = calm ? 0 : Math.sin(t * .5) * height * .003;
@@ -814,6 +845,9 @@ const { label } = Astro.props;
         drawArm(shoulder(-1), UPPER_ANGLE + idle + stroking * (.06 + stroke * .05), FOREARM_ANGLE + idle * 1.5 + stroking * (.12 + stroke * .2), keeperArms.reachUpper, keeperArms.reachLower, sway);
       }
       plants.front.forEach((plant) => drawPlant(plant, t, .8));
+      // Whoever is in the air, over everything.
+      if (held && now - held.lastT > 60) { held.vx *= .85; held.ax = 0; }
+      souls.filter((soul) => soul.act === 'held' || soul.act === 'fall').forEach(drawSoul);
 
       // Its name, softly over its head, while the pointer is near it (or after a tap on it).
       const named = souls.find((soul) => soul.id === nameShown.id);
@@ -827,7 +861,7 @@ const { label } = Astro.props;
         context.fillStyle = '#fffaf0';
         context.shadowColor = 'rgba(80, 60, 140, .6)';
         context.shadowBlur = 8;
-        context.fillText(named.look.name!, named.x * width, named.y * height - unit * 1.05);
+        context.fillText(named.look.name!, named.x * width, (named.air ?? named.y * height) - unit * 1.05);
         context.restore();
       }
 
@@ -853,8 +887,53 @@ const { label } = Astro.props;
       }
       return best;
     };
-    root.addEventListener('pointermove', (event) => { const soul = nearest(event); if (soul) { nameShown.id = soul.id; nameShown.until = performance.now() + 900; } });
-    root.addEventListener('pointerdown', (event) => { const soul = nearest(event); if (soul) { nameShown.id = soul.id; nameShown.until = performance.now() + 2500; } });
+    // Picking them up: press on one (or touch it) and drag; let go and it falls back down.
+    let held: { soul: Soul; offX: number; offY: number; vx: number; ax: number; lastX: number; lastT: number; id: number } | null = null;
+    const local = (event: { clientX: number; clientY: number }) => { const rect = canvas.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };
+    const grabbable = (value: boolean) => { if (root.hasAttribute('data-grab') !== value) { root.toggleAttribute('data-grab', value); document.dispatchEvent(new Event('project-preview-refresh')); } };
+    root.addEventListener('pointerdown', (event) => {
+      const soul = nearest(event);
+      if (!soul) return;
+      nameShown.id = soul.id; nameShown.until = performance.now() + 2500;
+      if (calm) return;
+      const { x, y } = local(event), feet = soul.air ?? soul.y * height;
+      held = { soul, offX: soul.x * width - x, offY: feet - y, vx: 0, ax: 0, lastX: x, lastT: performance.now(), id: event.pointerId };
+      // It keeps its size while held (lifted up close, not sent far away).
+      soul.heldUnit = unitAt(soul);
+      soul.act = 'held'; soul.actStart = performance.now(); soul.actEnd = Infinity; soul.air = feet; soul.airV = 0;
+      root.setPointerCapture(event.pointerId);
+      root.toggleAttribute('data-grab-active', true);
+      event.preventDefault();
+    });
+    root.addEventListener('pointermove', (event) => {
+      if (held && event.pointerId === held.id) {
+        const { x, y } = local(event), now = performance.now(), dt = Math.max(.008, (now - held.lastT) / 1000);
+        const vx = (x - held.lastX) / dt;
+        held.ax = (vx - held.vx) / dt; held.vx = vx; held.lastX = x; held.lastT = now;
+        const soul = held.soul, feet = Math.min(height * .99, y + held.offY);
+        soul.x = Math.min(.97, Math.max(.03, (x + held.offX) / width));
+        soul.air = feet;
+        // The ground under it, for its size and for where it lands.
+        soul.y = Math.min(.98, Math.max(SETTINGS.horizon + .05, feet / height));
+        nameShown.id = soul.id; nameShown.until = now + 900;
+        return;
+      }
+      const soul = nearest(event);
+      grabbable(!!soul);
+      if (soul) { nameShown.id = soul.id; nameShown.until = performance.now() + 900; }
+    });
+    const release = (event: PointerEvent) => {
+      if (!held || event.pointerId !== held.id) return;
+      held.soul.act = 'fall'; held.soul.airV = 0; held.soul.actEnd = Infinity;
+      held = null;
+      root.removeAttribute('data-grab-active');
+      document.dispatchEvent(new Event('project-preview-refresh'));
+    };
+    root.addEventListener('pointerup', release);
+    root.addEventListener('pointercancel', release);
+    root.addEventListener('pointerleave', () => grabbable(false));
+    // A finger on an animal picks it up instead of scrolling the page.
+    root.addEventListener('touchstart', (event) => { const touch = event.touches[0]; if (touch && nearest(touch as unknown as PointerEvent)) event.preventDefault(); }, { passive: false });
 
     let visible = false, running = false;
     const frame = (time: number) => {
