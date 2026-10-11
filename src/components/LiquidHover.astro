@@ -1,7 +1,7 @@
 ---
-// Oil-like hover on the project covers (desktop only). One frosted-glass lens follows the pointer, and the pointer
-// pushes the photo as if it were a thin layer of oil: the image flows, tears open into holes that show the page white
-// behind it, can spill past the card edges, and then flows back into place. The cover is redrawn on a fixed WebGL2 canvas a bit larger
+// Oil-like hover on the project covers (desktop only). One soft frosted-glass lens follows the pointer, and the
+// pointer drags the photo along its motion as if it were a thin layer of oil: the image flows, can spill past the
+// card edges, and then flows back into place. The card is always covered: no gaps or page white show through. The cover is redrawn on a fixed WebGL2 canvas a bit larger
 // than the card (so the oil can leave the card) while the original image is hidden. Video cards use their still
 // frame for the effect, since Vimeo frames cannot be read. Off for touch, reduced motion and browsers without WebGL2.
 ---
@@ -17,12 +17,10 @@
     pad: .22, // Room around the card for the oil to spill into, as a share of the card's longer side.
     radius: .0035, // Pointer footprint, in squared canvas units.
     drag: .55, // How much the pointer's motion drags the oil.
-    push: .55, // How much the pointer pushes the oil outward around itself (opens the holes).
     velocityDissipation: .82, // Short trail, so the effect stays one point under the cursor.
     relax: .9, // How fast the oil flows back into place (closer to 1 = slower).
-    tear: .42, // Stretch above which the oil splits open (lower = fewer holes).
     lens: .11, // Frosted-glass lens radius, as a share of the canvas height.
-    frost: 3.2, // Lens blur (mipmap level).
+    frost: 3.6, // Lens blur at its centre (mipmap level); it fades out smoothly toward the edge.
     milk: .12, // Milky whitening inside the lens.
     ease: .18, // How quickly the lens catches up with the pointer.
   };
@@ -42,7 +40,7 @@
   in vec2 vUv; out vec4 outColor;
   `;
   const SOURCES = {
-    // Velocity: the pointer drags the oil along its motion and pushes it outward around itself.
+    // Velocity: the pointer drags the oil along its motion (uPush adds an outward push, unused now).
     splat: `${HEAD}uniform sampler2D uTarget; uniform vec2 uPoint; uniform vec2 uDrag; uniform float uPush; uniform float uRadius; uniform float uAspect;
       void main() { vec2 p = (vUv - uPoint) * vec2(uAspect, 1.); float g = exp(-dot(p, p) / uRadius);
         vec2 outward = p / (length(p) + .0001) / vec2(uAspect, 1.);
@@ -51,34 +49,27 @@
     advect: `${HEAD}uniform sampler2D uVelocity; uniform sampler2D uSource; uniform float uDt; uniform float uKeep; uniform float uGrow;
       void main() { vec2 v = texture(uVelocity, vUv).xy; vec2 coord = vUv - uDt * v;
         outColor = vec4((texture(uSource, coord).xy + v * uDt * uGrow) * uKeep, 0., 1.); }`,
-    // The photo, carried by the displacement; where the oil is stretched too thin it tears and the page shows.
-    display: `${HEAD}uniform sampler2D uOffset; uniform sampler2D uImage; uniform vec4 uCard; uniform vec4 uRect; uniform vec2 uCover; uniform vec2 uStep; uniform float uTear;
+    // The photo, carried by the displacement, with a soft frosted lens under the pointer.
+    display: `${HEAD}uniform sampler2D uOffset; uniform sampler2D uImage; uniform vec4 uCard; uniform vec4 uRect; uniform vec2 uCover;
       uniform vec2 uLens; uniform float uLensRadius; uniform float uLensOn; uniform float uAspect; uniform float uFrost; uniform float uMilk;
-      vec3 frosted(vec2 uv, float lod, vec2 spread) {
-        vec3 c = textureLod(uImage, uv, lod).rgb * .4;
-        c += textureLod(uImage, uv + vec2(spread.x, 0.), lod).rgb * .15;
-        c += textureLod(uImage, uv - vec2(spread.x, 0.), lod).rgb * .15;
-        c += textureLod(uImage, uv + vec2(0., spread.y), lod).rgb * .15;
-        c += textureLod(uImage, uv - vec2(0., spread.y), lod).rgb * .15;
-        return c;
-      }
+      vec2 coverUv(vec2 card) { vec2 local = (card - uRect.xy) / uRect.zw; return clamp((local - .5) * uCover + .5, 0., 1.); }
       void main() {
-        vec2 d = texture(uOffset, vUv).xy;
-        vec2 dx = (texture(uOffset, vUv + vec2(uStep.x, 0.)).xy - texture(uOffset, vUv - vec2(uStep.x, 0.)).xy) / (2. * uStep.x);
-        vec2 dy = (texture(uOffset, vUv + vec2(0., uStep.y)).xy - texture(uOffset, vUv - vec2(0., uStep.y)).xy) / (2. * uStep.y);
-        float stretch = (1. - dx.x) * (1. - dy.y) - dx.y * dy.x;
-        vec2 source = vUv - d;
+        vec2 source = vUv - texture(uOffset, vUv).xy;
+        vec2 here = (vUv - uCard.xy) / uCard.zw;
         vec2 card = (source - uCard.xy) / uCard.zw;
-        float inside = step(0., card.x) * step(card.x, 1.) * step(0., card.y) * step(card.y, 1.);
-        vec2 local = (card - uRect.xy) / uRect.zw;
-        vec2 uv = clamp((local - .5) * uCover + .5, 0., 1.);
-        float alpha = inside * smoothstep(uTear, uTear + .06, stretch);
-        // One frosted-glass lens under the pointer: blurred and slightly milky, with a soft round edge.
+        bool inCard = all(greaterThanEqual(here, vec2(0.))) && all(lessThanEqual(here, vec2(1.)));
+        bool fromCard = all(greaterThanEqual(card, vec2(0.))) && all(lessThanEqual(card, vec2(1.)));
+        // Inside the card the photo always covers it (edges stretch instead of leaving gaps); outside, only what the
+        // oil carried out of the card is drawn.
+        float alpha = inCard ? 1. : (fromCard ? 1. : 0.);
+        vec2 uv = coverUv(clamp(card, 0., 1.));
+        // One soft frosted-glass lens under the pointer: the blur and the milky tint fade out smoothly to its edge.
         float dist = length((vUv - uLens) * vec2(uAspect, 1.));
-        float lens = uLensOn * (1. - smoothstep(uLensRadius * .82, uLensRadius, dist));
-        vec3 sharp = texture(uImage, uv).rgb;
-        vec3 glass = mix(frosted(uv, uFrost, vec2(.012) * uCover), vec3(1.), uMilk);
-        outColor = vec4(mix(sharp, glass, lens), alpha);
+        float lens = uLensOn * (1. - smoothstep(0., uLensRadius, dist));
+        lens = lens * lens * (3. - 2. * lens);
+        vec3 color = textureLod(uImage, uv, uFrost * lens).rgb;
+        color = mix(color, vec3(1.), uMilk * lens);
+        outColor = vec4(color, alpha);
       }`,
   };
 
@@ -209,14 +200,14 @@
       const aspect = area.width / area.height;
       const at = (x: number, y: number) => [(x - area.left) / area.width, (y - area.top) / area.height];
 
-      // 1. The pointer drags and pushes the oil.
+      // 1. The pointer drags the oil along its motion.
       const moved = Math.hypot(pointer.x - last.x, pointer.y - last.y);
       if (hovering && moved > 0 && last.x >= 0) {
         const [x, y] = at(pointer.x, pointer.y);
         const [lx, ly] = at(last.x, last.y);
         run(P.splat, velocity.write, { uTarget: velocity.read.texture }, {
           uPoint: [x, y], uDrag: [(x - lx) / dt * SETTINGS.drag, (y - ly) / dt * SETTINGS.drag],
-          uPush: Math.min(1.2, moved / area.width / dt) * SETTINGS.push, uRadius: SETTINGS.radius, uAspect: aspect,
+          uPush: 0, uRadius: SETTINGS.radius, uAspect: aspect,
         });
         velocity.swap();
       }
@@ -246,7 +237,7 @@
       run(P.display, null, { uOffset: offset.read.texture, uImage: textureFor(image) }, {
         uCard: [pad / area.width, pad / area.height, box.width / area.width, box.height / area.height],
         uRect: [(rect.left - box.left) / box.width, (rect.top - box.top) / box.height, rect.width / box.width, rect.height / box.height],
-        uCover: cover, uStep: [1 / N, 1 / N], uTear: SETTINGS.tear,
+        uCover: cover,
         uLens: [lens.x, lens.y], uLensRadius: SETTINGS.lens, uLensOn: lensOn, uAspect: aspect, uFrost: SETTINGS.frost, uMilk: SETTINGS.milk,
       });
 
