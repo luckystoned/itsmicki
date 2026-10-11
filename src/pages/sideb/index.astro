@@ -1,0 +1,50 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HomeStage, { type HomeCard } from '@/components/HomeStage.astro';
+
+// Side B home (Figma 922:1494): the Side A home in inverted colours. Its cards are Side B projects still to come, so
+// none of them links anywhere yet. Sizes keep each card's Figma proportion at the Side A card width.
+const figmaCards = [
+  { width: 357, height: 355, alt: 'Red-haired portrait with hair falling over one eye.' },
+  { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.' },
+  { width: 355, height: 234, alt: 'Close-up of a cracked, rust-coloured texture.' },
+  { width: 357, height: 354, alt: 'Three caps embroidered with the Mm logo.' },
+  { width: 357, height: 422, alt: 'Outliant keychain resting on brushed metal.' },
+  { width: 358, height: 474, alt: 'A phone with a blue screen resting on a grey ledge.' },
+];
+const cards: HomeCard[] = figmaCards.map((card, index) => {
+  const number = String(index + 1).padStart(2, '0');
+  const src = `/04_SideB/Home/${number}_SideBHome.webp`;
+  return {
+    title: `Side B project ${number}`,
+    label: `${number}_(Coming soon) !!!!!^*^`,
+    src,
+    alt: card.alt,
+    width: 430,
+    height: (430 * card.height) / card.width,
+    imageWidth: card.width * 2,
+    imageHeight: card.height * 2,
+  };
+});
+---
+<BaseLayout
+  title="(Side B) — Itsmicki"
+  description="The personal side of Micaela Galimberti: fashion, music, film photography and the visual references that shape her work."
+  active="projects"
+  side="b"
+  hideFooter
+  customCursor
+  themeColor="#202020"
+  preloadFonts={['/fonts/OTNeueMontreal-MediumSemiSqueezed.otf', '/fonts/OTNeueMontreal-MediumExtraSqueezed.otf']}
+>
+  <HomeStage
+    side="b"
+    intro={[
+      "I'm micki, a hyperactive creative director ①, freak ②, and mom of two insane cats ③. Born and raised in Buenos Aires, Argentina, surviving my late twenties",
+      "I’ve spent my life exploring art and design, drawn to experimentation, fashion, and aesthetics. I love photography—mostly analog—and feel equally at home in noise and silence, with a soft spot for glitches, distortion, and the beauty in between",
+    ]}
+    plusHref="/sideb/deets"
+    cards={cards}
+    wordmark="mickivainilla"
+  />
+</BaseLayout>

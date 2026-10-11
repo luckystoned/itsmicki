@@ -1,6 +1,6 @@
 ---
 // Loading screen after hedroom.fm: two small dots spinning around each other on the home page colour. It always shows
-// while the home page loads (the `is-loading` class is set before the first paint by the inline script in
+// while a home page (Side A or Side B) loads (the `is-loading` class is set before the first paint by the inline script in
 // BaseLayout's <head>); on other pages it only appears if loading stalls. It leaves (fading, blurring and rising
 // slightly) once the page has loaded, or after a few seconds at most; if this script never runs, a CSS fallback hides
 // it anyway.
@@ -47,7 +47,7 @@
     setTimeout(finish, Math.max(0, MAX - performance.now()));
     // The home page restored by the back/forward buttons shows the loader again for its minimum time.
     addEventListener('pageshow', (event) => {
-      if (!event.persisted || location.pathname !== '/') return;
+      if (!event.persisted || !['/', '/sideb'].includes(location.pathname.replace(/\/$/, '') || '/')) return;
       show();
       setTimeout(leave, HOME_MIN);
     });
@@ -60,6 +60,9 @@
   .page-loader-motion { display: block; transition: opacity .42s cubic-bezier(.22, 1, .36, 1), transform .42s cubic-bezier(.22, 1, .36, 1), filter .42s cubic-bezier(.22, 1, .36, 1); }
   .page-loader-dots { position: relative; display: block; width: 6px; height: 30px; animation: page-loader-spin .92s linear infinite; }
   .page-loader-dots span { position: absolute; left: 0; width: 6px; height: 6px; border-radius: 50%; background: #2e2e2e; }
+  /* Side B is dark: the loader takes its colours. */
+  :global(html.is-side-b) .page-loader { background: #202020; }
+  :global(html.is-side-b) .page-loader-dots span { background: #fafafa; }
   .page-loader-dots span:first-child { top: 0; }
   .page-loader-dots span:last-child { bottom: 0; }
   .page-loader.is-done { opacity: 0; pointer-events: none; }

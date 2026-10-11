@@ -50,10 +50,11 @@ const fashion = {
 <BaseLayout
   title="(Side B) — Itsmicki"
   description="The personal side of Micaela Galimberti: fashion, music, film photography and the visual references that shape her work."
-  active="sideb"
+  active="deets"
+  side="b"
   hideFooter
   customCursor
-  themeColor="#fafafa"
+  themeColor="#202020"
   preconnectOrigins={['https://open.spotify.com']}
   preloadFonts={[
     '/fonts/OTNeueMontreal-MediumSemiSqueezed.otf',
@@ -87,7 +88,7 @@ const fashion = {
             </div>
             <div>
               <h2 class="sideb-label" data-appear>In a Nutshell</h2>
-              <p class="sideb-big" data-appear>Hey — On my B-side, I’m still micki, just a little more laid-back and messy. I study fashion design, take photos, make endless playlists, sell vintage and secondhand clothes, and can spend hours scrolling or watching the most cursed YouTube videos imaginable.</p>
+              <p class="sideb-big" data-appear>Hey — On my B-side, I’m still micki—just a little more laid-back, messy, and experimental. It’s where I loosen the rules of formal work and give myself free rein to explore. I study fashion design and professional makeup for fashion, work on styling, take photos, make endless playlists, sell vintage and secondhand clothes, and can spend hours scrolling or watching the most cursed YouTube videos imaginable.</p>
             </div>
           </div>
 
@@ -195,8 +196,8 @@ const fashion = {
     </article>
 
     <footer class="sideb-footer" id="sideb-footer">
-      <div class="sideb-footer-wordmark" aria-label="Itsmicki, copyright 2026">
-        <span data-sideb-reveal>Itsmicki</span>
+      <div class="sideb-footer-wordmark" aria-label="mickivainilla, copyright 2026">
+        <span data-sideb-reveal>mickivainilla</span>
         <span data-sideb-reveal>©2026</span>
       </div>
       <div class="sideb-footer-info" id="sideb-footer-info">
@@ -390,8 +391,11 @@ const fashion = {
 
   html:has(.sideb-page),
   body:has(.sideb-page) {
-    --sideb-ink: #2e2e2e;
-    --sideb-paper: #fafafa;
+    /* Side B is dark (Figma 925:1755). The footer and contact labels stay dark boxes with light text. */
+    --sideb-ink: #fafafa;
+    --sideb-paper: #202020;
+    --sideb-chip: #202020;
+    --sideb-chip-ink: #fafafa;
     --sideb-pad: var(--gutter);
     --sideb-ease: cubic-bezier(.19, 1, .22, 1);
     background: var(--sideb-paper);
@@ -425,7 +429,7 @@ const fashion = {
     z-index: 20;
     top: auto;
     padding: 24px var(--sideb-pad) 0;
-    background: transparent;
+    background: var(--sideb-paper) !important;
     color: var(--sideb-ink);
     backdrop-filter: none;
     font-family: 'OT Neue Montreal SideB', 'Arial Narrow', sans-serif;
@@ -713,7 +717,9 @@ const fashion = {
     align-items: flex-end;
     color: var(--sideb-ink);
     font-family: 'OT Neue Montreal SideB Extra', Impact, sans-serif;
-    font-size: 37.4vw;
+    /* "mickivainilla©2026" is 2.77em wide against 2.19em for "Itsmicki©2026", so Side B sets it smaller to fill the
+       same width (Figma: 583px on the 1600px frame). */
+    font-size: 36.2vw;
     font-weight: 500;
     line-height: .79;
     letter-spacing: -.04em;
@@ -722,7 +728,7 @@ const fashion = {
 
   @media (min-width: 761px) {
     .sideb-footer-wordmark {
-      font-size: var(--footer-wordmark-size);
+      font-size: min(36.2vw, 58.1svh);
       line-height: .8;
       transform: translateY(var(--footer-wordmark-edge));
     }
@@ -751,8 +757,8 @@ const fashion = {
   .sideb-footer-info > * {
     width: fit-content;
     padding-top: 1px;
-    background: var(--sideb-ink);
-    color: var(--sideb-paper);
+    background: var(--sideb-chip);
+    color: var(--sideb-chip-ink);
     white-space: nowrap;
   }
 
@@ -764,7 +770,7 @@ const fashion = {
   .sideb-footer-info > :nth-child(6) { margin-left: auto; }
 
   .sideb-footer-info a:is(:hover, :focus-visible) {
-    color: var(--sideb-paper);
+    color: var(--sideb-chip-ink);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: .08em;
@@ -960,14 +966,14 @@ const fashion = {
     .sideb-mobile-mail,
     .sideb-mobile-socials {
       justify-self: end;
-      background: var(--sideb-ink);
-      color: var(--sideb-paper);
+      background: var(--sideb-chip);
+      color: var(--sideb-chip-ink);
       white-space: nowrap;
     }
 
     .sideb-mobile-mail,
     .sideb-mobile-socials a {
-      color: var(--sideb-paper);
+      color: var(--sideb-chip-ink);
       text-decoration: underline;
       text-decoration-thickness: 1px;
       text-underline-offset: .08em;
@@ -1238,7 +1244,7 @@ const fashion = {
       inset: 0 min(-7px, -1.794872vw) 0 min(-5.565px, -1.426923vw);
       justify-content: flex-start;
       width: min(402px, 103.076923vw);
-      font-size: min(180.188px, 46.202051vw);
+      font-size: min(142.2px, 36.45vw);
       line-height: normal;
       text-box-edge: cap alphabetic;
       text-box-trim: trim-both;
@@ -1350,7 +1356,7 @@ const fashion = {
       bottom: 0;
       left: -1.538462vw; /* Same size as the home wordmark. */
       justify-content: flex-start;
-      font-size: 46.202051vw;
+      font-size: 36.45vw;
       line-height: .74;
       text-box-trim: none;
       width: max-content;

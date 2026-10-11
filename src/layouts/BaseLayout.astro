@@ -10,6 +10,7 @@ const {
   title = DEFAULT_TITLE,
   description = DEFAULT_DESCRIPTION,
   active = '',
+  side = 'a',
   theme = 'light',
   image = DEFAULT_SOCIAL_IMAGE,
   imageAlt = 'Micaela Galimberti (Itsmicki) — Creative Director and Designer in Buenos Aires',
@@ -53,7 +54,7 @@ const globalStructuredData = {
 <!doctype html>
 <html lang="en" data-theme={theme}>
   <head>
-    <script is:inline>if (location.pathname === '/') document.documentElement.classList.add('is-loading');</script>
+    <script is:inline>(() => { const home = location.pathname.replace(/\/$/, '') || '/'; if (home === '/' || home === '/sideb') document.documentElement.classList.add('is-loading'); if (home.startsWith('/sideb')) document.documentElement.classList.add('is-side-b'); })();</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
@@ -92,7 +93,7 @@ const globalStructuredData = {
     <a class="skip-link" href="#content">Skip to content</a>
     {!customCursor && <div class="cursor" data-cursor aria-hidden="true"><span>view</span></div>}
     <SiteCursor />
-    <Header active={active} />
+    <Header active={active} side={side} />
     <main id="content"><slot /></main>
     {!hideFooter && <Footer />}
     <script>
