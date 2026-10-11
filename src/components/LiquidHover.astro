@@ -15,14 +15,16 @@
   const SETTINGS = {
     field: 192, // Simulation grid over the canvas.
     pad: .22, // Room around the card for the oil to spill into, as a share of the card's longer side.
-    radius: .0035, // Pointer footprint, in squared canvas units.
-    drag: .55, // How much the pointer's motion drags the oil.
-    velocityDissipation: .82, // Short trail, so the effect stays one point under the cursor.
-    relax: .9, // How fast the oil flows back into place (closer to 1 = slower).
-    lens: .11, // Frosted-glass lens radius, as a share of the canvas height.
-    frost: 3.6, // Lens blur at its centre (mipmap level); it fades out smoothly toward the edge.
-    milk: .12, // Milky whitening inside the lens.
-    ease: .18, // How quickly the lens catches up with the pointer.
+    radius: .009, // Pointer footprint, in squared canvas units: wide, so the motion is soft and broad.
+    drag: .32, // How much the pointer's motion drags the oil.
+    velocityDissipation: .93, // A long, smooth glide after each move.
+    relax: .972, // How slowly the oil flows back into place (closer to 1 = slower).
+    lens: .2, // Frosted-glass lens radius, as a share of the canvas height.
+    frost: 2.6, // Lens blur at its centre (mipmap level); it fades out smoothly toward the edge.
+    milk: .08, // Milky whitening inside the lens.
+    ease: .07, // How quickly the lens catches up with the pointer (lower = slower, more fluid).
+    fade: .05, // How quickly the lens fades in and out.
+    settle: 210, // Frames the effect keeps flowing after the pointer leaves.
   };
 
   const canvas = document.createElement('canvas');
@@ -65,8 +67,7 @@
         vec2 uv = coverUv(clamp(card, 0., 1.));
         // One soft frosted-glass lens under the pointer: the blur and the milky tint fade out smoothly to its edge.
         float dist = length((vUv - uLens) * vec2(uAspect, 1.));
-        float lens = uLensOn * (1. - smoothstep(0., uLensRadius, dist));
-        lens = lens * lens * (3. - 2. * lens);
+        float lens = uLensOn * exp(-pow(dist / (uLensRadius * .62), 2.));
         vec3 color = textureLod(uImage, uv, uFrost * lens).rgb;
         color = mix(color, vec3(1.), uMilk * lens);
         outColor = vec4(color, alpha);
@@ -223,7 +224,7 @@
       const [px, py] = at(pointer.x, pointer.y);
       lens.x += (px - lens.x) * SETTINGS.ease;
       lens.y += (py - lens.y) * SETTINGS.ease;
-      lensOn += ((hovering ? 1 : 0) - lensOn) * .14;
+      lensOn += ((hovering ? 1 : 0) - lensOn) * SETTINGS.fade;
 
       // 3. Draw the photo through the displacement, exactly where the <img> sits inside the card.
       const rect = image.getBoundingClientRect();
@@ -246,7 +247,7 @@
 
       // Once the pointer has left and the oil has settled, hand the card back to the real image or video.
       quiet = hovering ? 0 : quiet + 1;
-      if (quiet > 90) { stop(); return; }
+      if (quiet > SETTINGS.settle) { stop(); return; }
       requestAnimationFrame(frame);
     };
 

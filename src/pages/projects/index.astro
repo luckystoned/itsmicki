@@ -16,8 +16,8 @@ const definitions = [
     slug: 'genova',
     label: '02_Genova_Art Direction+Visual Design — (Coming soon) !!!!!^*^',
     width: 'calc((97.23vw - 6px) * .50047)', height: 'auto', ratio: '47.57 / 63.01', eager: true,
-    // The pizza sits low in the photo: a shorter parallax travel keeps it whole.
-    parallaxSpan: '7%',
+    // The photo fills its frame (logo at the top, pizza at the bottom): a small, centred travel keeps both in view.
+    parallaxHeight: '108%', parallaxStart: '-6%', parallaxSpan: '2%',
   },
   {
     slug: 'amazon',
@@ -65,7 +65,7 @@ const cards = definitions.map((definition) => {
     cover: 'cover' in definition ? definition.cover : undefined,
     vimeoId: 'vimeoId' in definition ? definition.vimeoId : undefined,
     videoRatio: 'videoRatio' in definition ? definition.videoRatio : undefined,
-    style: `--project-width:${definition.width};--project-height:${definition.height};--project-ratio:${definition.ratio}${'parallaxSpan' in definition ? `;--parallax-span:${definition.parallaxSpan}` : ''}`,
+    style: `--project-width:${definition.width};--project-height:${definition.height};--project-ratio:${definition.ratio}${'parallaxSpan' in definition ? `;--parallax-span:${definition.parallaxSpan}` : ''}${'parallaxStart' in definition ? `;--parallax-start:${definition.parallaxStart}` : ''}${'parallaxHeight' in definition ? `;--parallax-height:${definition.parallaxHeight}` : ''}`,
   };
 });
 
@@ -436,10 +436,10 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody
     height: 100%;
     object-fit: cover;
     object-position: 50% 50%;
-    /* Parallax: the image is 25% taller than its frame and slides through it as the frame crosses the viewport. */
-    height: 125%;
-    /* --parallax-span shortens the travel for a photo whose subject sits close to an edge (Genova). */
-    translate: 0 calc(-20% + var(--parallax-span, 20%) * var(--parallax-progress, .5));
+    /* Parallax: the image is 25% taller than its frame and slides through it as the frame crosses the viewport.
+       --parallax-height, --parallax-start and --parallax-span narrow it for a photo that fills its frame (Genova). */
+    height: var(--parallax-height, 125%);
+    translate: 0 calc(var(--parallax-start, -20%) + var(--parallax-span, 20%) * var(--parallax-progress, .5));
     transition: transform .6s var(--projects-ease);
   }
 
