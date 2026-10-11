@@ -1,0 +1,773 @@
+---
+// The projects page frame, shared by Side A (/projects) and Side B (/sideb/projects): title, contact strip, footer with
+// the big wordmark, scrolling and load-in. Each page passes its own grid. Side B is the same page in inverted colours.
+type Props = {
+  side?: 'a' | 'b';
+  wordmark: string;
+};
+
+const { side = 'a', wordmark } = Astro.props;
+---
+  <div class:list={['projects-page', { 'projects-page-b': side === 'b' }]}>
+    <div class="projects-mobile-meta" aria-label="Contact and social links" data-scroll-bar>
+      <span>SAY HI</span>
+      <a class="projects-mobile-mail" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
+      <span>SOCIALS</span>
+      <span class="projects-mobile-socials">
+        <a href="https://www.linkedin.com/in/itsmicki/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+        {" "}<a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
+        {" "}<a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+        {" "}<a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
+        {" "}<a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
+      </span>
+    </div>
+
+    <section class="projects-hero" aria-labelledby="projects-title">
+      <h1 id="projects-title" class="projects-appear-text" data-appear>(Picked projects)</h1>
+      <p class="projects-appear-text" data-appear style="--delay-order:1">2020—today</p>
+    </section>
+
+    <section class="projects-grid" aria-label="Selected projects">
+      <slot />
+    </section>
+
+    <footer class="projects-footer" id="projects-footer">
+      <div class="projects-footer-wordmark" aria-label={`${wordmark}, copyright 2026`}>
+        <span data-footer-reveal>{wordmark}</span>
+        <span data-footer-reveal>©2026</span>
+      </div>
+      <div class="projects-footer-info" id="projects-footer-info">
+        <span data-footer-reveal style="--reveal-delay:0ms">DEV BY</span>
+        <a data-footer-reveal style="--reveal-delay:70ms" href="https://www.instagram.com/luckystoned/" target="_blank" rel="noopener noreferrer">@LUCKYSTONED</a>
+        <span data-footer-reveal style="--reveal-delay:140ms">SAY HI</span>
+        <a data-footer-reveal style="--reveal-delay:210ms" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
+        <span data-footer-reveal style="--reveal-delay:280ms">ALL RIGHTS RESERVED.</span>
+        <span class="projects-footer-socials" data-footer-reveal style="--reveal-delay:350ms">
+          SOCIALS <a href="https://www.linkedin.com/in/itsmicki/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
+          {" "}<a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
+          {" "}<a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+          {" "}<a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
+          {" "}<a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    import { initPageMotion } from '@/scripts/pageMotion';
+    import { playVisibleVideos } from '@/scripts/playVisibleVideos';
+
+    /* ============ SMOOTH SCROLL (inercia, mantiene scroll nativo) ============ */
+    (function () {
+      const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
+      if (RM || !matchMedia('(pointer:fine)').matches) return;
+
+      let tgt = window.scrollY;
+      let cur = tgt;
+      let run = false;
+      let raf: number | null = null;
+      let lock = false;
+      let last = 0;
+
+      function max() {
+        return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      }
+
+      function loop(now: number) {
+        if (!last) last = now;
+        const dt = Math.min(64, now - last) / 1000;
+        last = now;
+        /* damping independiente del framerate: mas bajo = mas suave */
+        cur += (tgt - cur) * (1 - Math.exp(-6.5 * dt));
+        if (Math.abs(tgt - cur) < 0.12) {
+          cur = tgt;
+          run = false;
+          last = 0;
+        }
+        lock = true;
+        window.scrollTo(0, cur);
+        lock = false;
+        raf = run ? requestAnimationFrame(loop) : null;
+      }
+
+      addEventListener('wheel', function (event) {
+        if (event.ctrlKey) return;
+        event.preventDefault();
+        let delta = event.deltaY;
+        if (event.deltaMode === 1) delta *= 16;
+        else if (event.deltaMode === 2) delta *= window.innerHeight;
+        tgt = Math.max(0, Math.min(max(), tgt + delta));
+        if (!run) {
+          run = true;
+          if (!raf) raf = requestAnimationFrame(loop);
+        }
+      }, { passive: false });
+
+      addEventListener('scroll', function () {
+        if (!lock && !run) tgt = cur = window.scrollY;
+      });
+
+      addEventListener('resize', function () {
+        tgt = cur = window.scrollY;
+      });
+
+      document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach(function (anchor) {
+        anchor.addEventListener('click', function (event) {
+          const href = anchor.getAttribute('href');
+          if (!href || href === '#') return;
+          const target = document.querySelector<HTMLElement>(href);
+          if (!target) return;
+          event.preventDefault();
+          tgt = Math.max(0, Math.min(max(), target.getBoundingClientRect().top + window.scrollY));
+          if (!run) {
+            run = true;
+            if (!raf) raf = requestAnimationFrame(loop);
+          }
+        });
+      });
+    })();
+
+    /* ============ DESKTOP: each project opens in a new tab ============ */
+    if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      document.querySelectorAll<HTMLAnchorElement>('.projects-page a.project-card-inner').forEach((link) => {
+        link.target = '_blank';
+        link.rel = 'noopener';
+      });
+    }
+
+    initPageMotion(document.querySelector<HTMLElement>('.projects-page'));
+    const projectsGrid = document.querySelector<HTMLElement>('.projects-grid');
+    if (projectsGrid) playVisibleVideos(projectsGrid, matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    const footerReveals = document.querySelectorAll<HTMLElement>('.projects-page [data-footer-reveal]');
+    if (footerReveals.length) {
+      const footerObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => entry.target.classList.toggle('is-visible', entry.isIntersecting));
+      }, { threshold: .02, rootMargin: '-2% 0px -6% 0px' });
+      footerReveals.forEach((node) => footerObserver.observe(node));
+    }
+  </script>
+
+<style is:global>
+  @font-face {
+    font-family: 'OT Neue Montreal Projects';
+    src: url('/fonts/OTNeueMontreal-MediumSemiSqueezed.otf') format('opentype');
+    font-style: normal;
+    font-weight: 400 600;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'OT Neue Montreal Projects Extra';
+    src: url('/fonts/OTNeueMontreal-MediumExtraSqueezed.otf') format('opentype');
+    font-style: normal;
+    font-weight: 400 600;
+    font-display: swap;
+  }
+
+  html:has(.projects-page),
+  body:has(.projects-page) {
+    --projects-ink: #2e2e2e;
+    --projects-paper: #fafafa;
+    --projects-placeholder: #efece7;
+    /* Footer and contact labels: dark boxes with light text on both sides. */
+    --projects-chip: #2e2e2e;
+    --projects-chip-ink: #fafafa;
+    --projects-ease: cubic-bezier(.16, 1, .3, 1);
+    background: var(--projects-paper);
+    color: var(--projects-ink);
+    cursor: url('/cursors/view.png') 0 0, auto;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  html:has(.projects-page) {
+    /* The reference inertia loop owns interpolation on this route. */
+    scroll-behavior: auto;
+  }
+
+  body:has(.projects-page) a,
+  body:has(.projects-page) .project-card-inner {
+    cursor: url('/cursors/view.png') 0 0, auto;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body:has(.projects-page) a:hover,
+  body:has(.projects-page) a:focus-visible {
+    cursor: url('/cursors/view-hover.png') 0 0, pointer;
+  }
+
+  body:has(.projects-page) ::selection {
+    background: var(--projects-ink);
+    color: var(--projects-paper);
+  }
+
+  body:has(.projects-page) .site-header {
+    position: relative;
+    z-index: 20;
+    top: auto;
+    padding: 24px var(--gutter) 0;
+    background: transparent;
+    color: var(--projects-ink);
+    backdrop-filter: none;
+    font-family: 'OT Neue Montreal Projects', 'Arial Narrow', sans-serif;
+    font-size: clamp(14px, 1.74vw, 27.117px);
+    font-weight: 500;
+    line-height: normal;
+    letter-spacing: -.02em;
+  }
+
+  body:has(.projects-page) .site-header nav {
+    gap: 10px;
+  }
+
+  body:has(.projects-page) .site-header a::after {
+    display: none;
+  }
+
+  body:has(.projects-page) .site-header a:is(:hover, :focus-visible, .active) {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .08em;
+  }
+
+  .projects-page {
+    min-height: 100vh;
+    background: var(--projects-paper);
+    color: var(--projects-ink);
+    font-family: 'OT Neue Montreal Projects', 'Arial Narrow', sans-serif;
+    font-weight: 500;
+    letter-spacing: -.01em;
+  }
+
+  .projects-mobile-meta {
+    display: none;
+  }
+
+  .projects-hero {
+    position: relative;
+    /* Heading sits at the height of the Side B title; the grid keeps its spacing below it. */
+    height: 27vw;
+  }
+
+  .projects-hero h1,
+  .projects-hero p {
+    position: absolute;
+    margin: 0;
+    font-family: 'OT Neue Montreal Projects Extra', Impact, sans-serif;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -.04em;
+    white-space: nowrap;
+  }
+
+  .projects-hero h1 {
+    top: 28.87vw;
+    left: calc(50% - 48.6vw);
+    font-size: 20.2vw;
+    transform: translateY(-100%);
+  }
+
+  .projects-hero p {
+    top: 25.56vw;
+    left: calc(50% + 1.16vw);
+    font-size: 6.44vw;
+    transform: translateY(-100%);
+  }
+
+  @media (min-width: 761px) {
+    .projects-hero {
+      display: flex;
+      align-items: baseline;
+      padding-top: 4.47vw;
+      padding-left: var(--gutter);
+    }
+
+    .projects-hero h1,
+    .projects-hero p {
+      position: static;
+      transform: none;
+    }
+
+    .projects-hero h1 { flex: 0 0 49.76vw; }
+  }
+
+  .projects-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5.94vw;
+    width: calc(100% - 2 * var(--gutter)); /* Same side margins as the home. */
+    margin: 0 auto;
+  }
+
+  .projects-row {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  /* Both duos: 6px between the photos and the pair spanning margin to margin. */
+  .projects-row {
+    gap: 6px;
+  }
+
+  @media (min-width: 761px) {
+    .projects-row > .project-card {
+      flex: 1 1 var(--project-width);
+      min-width: 0;
+    }
+  }
+
+  .project-card {
+    flex: 0 0 auto;
+    width: var(--project-width);
+    margin: 0;
+  }
+
+  .project-card-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1vw;
+    width: 100%;
+    color: inherit;
+  }
+
+  .project-visual {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: var(--project-height);
+    aspect-ratio: var(--project-ratio);
+    overflow: hidden;
+    background: var(--projects-placeholder);
+  }
+
+  .project-visual img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 50%;
+    /* Parallax: the image is 25% taller than its frame and slides through it as the frame crosses the viewport.
+       --parallax-height, --parallax-start and --parallax-span can narrow it for a photo that must stay whole. */
+    height: var(--parallax-height, 125%);
+    translate: 0 calc(var(--parallax-start, -20%) + var(--parallax-span, 20%) * var(--parallax-progress, .5));
+    transition: transform .6s var(--projects-ease);
+  }
+
+  .project-visual iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: auto;
+    min-width: calc(100% + 4px); /* 2px overscan per side so no poster edge shows. */
+    height: 100%;
+    aspect-ratio: 426 / 240;
+    border: 0;
+    pointer-events: none;
+    height: 125%;
+    transform: translate(-50%, -50%);
+    translate: 0 calc((var(--parallax-progress, .5) - .5) * 20%);
+  }
+
+  /* Videos served from the site sit over the cover with the same parallax as the image. */
+  .project-visual video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: var(--parallax-height, 125%);
+    object-fit: cover;
+    pointer-events: none;
+    translate: 0 calc(var(--parallax-start, -20%) + var(--parallax-span, 20%) * var(--parallax-progress, .5));
+    transition: transform .6s var(--projects-ease);
+  }
+
+  .project-card-inner:focus-visible .project-visual video { transform: scale(1.03); }
+
+  @media (hover: hover) and (pointer: fine) {
+    .project-card-inner:has(.project-label:hover) .project-visual video { transform: scale(1.03); }
+  }
+
+  /* Side B: the same page in inverted colours. */
+  html:has(.projects-page-b),
+  body:has(.projects-page-b) {
+    --projects-ink: #fafafa;
+    --projects-paper: #202020;
+    --projects-placeholder: #2a2a2a;
+    --projects-chip: #202020;
+    --projects-chip-ink: #fafafa;
+  }
+
+  /* On phones, Side B's link boxes turn white with dark type; on desktop they stay dark with white type. */
+  @media (max-width: 760px) {
+    html:has(.projects-page-b),
+    body:has(.projects-page-b) {
+      --projects-chip: #fafafa;
+      --projects-chip-ink: #202020;
+    }
+  }
+
+  body:has(.projects-page-b) .site-header[data-header] { background: var(--projects-paper) !important; color: var(--projects-ink); }
+
+
+  /* Load-in: type and images rise and fade in as they enter the viewport. */
+  :root.appear-ready .projects-page [data-appear] {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: opacity .75s cubic-bezier(.22, 1, .36, 1), transform .75s cubic-bezier(.22, 1, .36, 1);
+    transition-delay: calc(.1s * var(--delay-order, 0));
+  }
+
+  :root.appear-ready .projects-page [data-appear].is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  :root.appear-ready .projects-page .projects-appear-text[data-appear] {
+    transform: translateY(50%) skewY(6deg);
+    transform-origin: 0 100%;
+    transition-duration: 1s;
+  }
+
+  :root.appear-ready .projects-page .projects-appear-text[data-appear].is-visible { transform: none; }
+
+  .projects-row > .project-card:nth-child(2) { --delay-order: 1; }
+
+  .project-visual img { opacity: 0; transition: opacity .9s cubic-bezier(.22, 1, .36, 1), transform .6s var(--projects-ease); }
+  .project-visual img.is-loaded { opacity: 1; }
+
+  /* The whole card is clickable, but the image only zooms when the project name (the link text) is hovered. */
+  .project-card-inner:focus-visible .project-visual img {
+    transform: scale(1.03);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .project-card-inner:has(.project-label:hover) .project-visual img {
+      transform: scale(1.03);
+    }
+  }
+
+  a.project-card-inner:focus-visible .project-label,
+  a.project-card-inner .project-label:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .08em;
+  }
+
+  a.project-card-inner:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 5px;
+  }
+
+  .project-label {
+    display: block;
+    width: 100%;
+    font-size: 1.5vw;
+    line-height: 1.1;
+    letter-spacing: -.01em;
+  }
+
+  .projects-footer {
+    position: relative;
+    margin-top: clamp(26px, 3.6vw, 56px);
+    overflow: hidden;
+  }
+
+  .projects-footer-wordmark {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    color: var(--projects-ink);
+    font-family: 'OT Neue Montreal Projects Extra', Impact, sans-serif;
+    font-size: 37.4vw;
+    font-weight: 500;
+    line-height: .79;
+    letter-spacing: -.04em;
+    white-space: nowrap;
+  }
+
+  @media (min-width: 761px) {
+    .projects-footer-wordmark {
+      font-size: var(--footer-wordmark-size);
+      line-height: .8;
+      transform: translateY(var(--footer-wordmark-edge));
+    }
+  }
+
+  /* The ink of "I" and "6" touches both edges of the screen. */
+  .projects-footer-wordmark span:first-child {
+    margin-left: -.032em;
+  }
+
+  .projects-footer-wordmark span:last-child {
+    margin-right: .016em;
+  }
+
+  .projects-footer-info {
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    bottom: 5vw;
+    left: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    padding: 0; /* Edge to edge, like the home footer. */
+    font-size: clamp(10px, 1.31vw, 21px);
+    line-height: 1;
+    letter-spacing: -.02em;
+    text-transform: uppercase;
+  }
+
+  .projects-footer-info > * {
+    width: fit-content;
+    padding-top: 1px;
+    background: var(--projects-chip);
+    color: var(--projects-chip-ink);
+    white-space: nowrap;
+  }
+
+  .projects-footer-info > :nth-child(1) { margin-left: 0; }
+  .projects-footer-info > :nth-child(2) { margin-left: 5.1%; }
+  .projects-footer-info > :nth-child(3) { margin-left: 5.2%; }
+  .projects-footer-info > :nth-child(4) { margin-left: 5.1%; }
+  .projects-footer-info > :nth-child(5) { margin-left: 6.1%; }
+  .projects-footer-info > :nth-child(6) { margin-left: auto; }
+
+  .projects-footer-info a:is(:hover, :focus-visible) {
+    color: var(--projects-chip-ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .08em;
+  }
+
+  .projects-page [data-footer-reveal] {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity .85s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms),
+      transform .95s cubic-bezier(.19, 1, .22, 1) var(--reveal-delay, 0ms);
+  }
+
+  .projects-page [data-footer-reveal].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (max-width: 760px) {
+    .projects-page {
+      container-type: inline-size;
+    }
+
+    body:has(.projects-page) {
+      padding-bottom: 0;
+    }
+
+    /* Leave room at the end so the bottom navigation never covers the footer. */
+    .projects-page {
+      padding-bottom: calc(min(48px, 12.307692cqw) + env(safe-area-inset-bottom));
+    }
+
+    body:has(.projects-page) .site-header {
+      position: fixed !important;
+      z-index: 2000 !important;
+      inset: auto 0 0 !important;
+      display: flex !important;
+      justify-content: space-between;
+      align-items: flex-start;
+      /* Same spacing as the home: the four links spread evenly between 10px side margins. */
+      gap: calc((100vw - min(20px, 5.128205vw) - min(332px, 85.128205vw)) / 3);
+      width: 100vw !important;
+      height: auto !important;
+      min-height: 0 !important;
+      padding: min(8px, 2.051282cqw) min(10px, 2.564103cqw) !important;
+      background: var(--projects-paper) !important;
+      font-size: min(26.498px, 6.794359cqw);
+      line-height: normal;
+      letter-spacing: -.02em;
+      pointer-events: auto !important;
+    }
+
+    body:has(.projects-page) .site-header .wordmark,
+    body:has(.projects-page) .site-header nav {
+      pointer-events: auto;
+    }
+
+    body:has(.projects-page) .site-header nav {
+      flex: 1 1 auto;
+      justify-content: space-between;
+      gap: 0;
+    }
+
+    body:has(.projects-page) .site-header a {
+      white-space: nowrap;
+    }
+
+    .projects-mobile-meta {
+      position: absolute;
+      z-index: 30;
+      top: max(min(8px, 2.051282cqw), env(safe-area-inset-top));
+      right: env(safe-area-inset-right);
+      left: env(safe-area-inset-left);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      color: var(--projects-ink);
+      font-size: min(16px, 4.102564cqw);
+      line-height: normal;
+      letter-spacing: -.02em;
+      text-transform: uppercase;
+    }
+
+    .projects-mobile-mail,
+    .projects-mobile-socials {
+      justify-self: end;
+      background: var(--projects-chip);
+      color: var(--projects-chip-ink);
+      white-space: nowrap;
+    }
+
+    .projects-mobile-mail,
+    .projects-mobile-socials a {
+      color: var(--projects-chip-ink);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: .08em;
+    }
+
+    .projects-hero {
+      height: 65.192cqw;
+    }
+
+    /* Hero scales with the screen width: one line, both texts sharing a baseline at 49.6% of the width. */
+    .projects-hero h1 {
+      top: 22.04cqw;
+      left: 2.307692cqw;
+      width: auto;
+      font-size: 25.3cqw;
+      line-height: normal;
+      transform: none;
+      white-space: nowrap;
+    }
+
+    .projects-hero p {
+      top: 35.94cqw;
+      right: auto;
+      /* Sits 4px after the end of "(Picked projects)". */
+      left: calc(2.307692cqw + 59.97cqw + 4px);
+      width: auto;
+      font-size: 10.79cqw;
+      line-height: normal;
+      transform: none;
+      white-space: nowrap;
+    }
+
+    .projects-grid {
+      box-sizing: border-box;
+      align-items: stretch;
+      gap: 40px;
+      width: 100%;
+      margin: 0;
+      padding: 0 min(9px, 2.307692cqw) min(64px, 16.410256cqw);
+    }
+
+    .projects-row {
+      display: contents;
+    }
+
+    .project-card {
+      width: 100%;
+    }
+
+    .project-card-inner {
+      gap: 8px;
+    }
+
+    .project-visual {
+      height: auto;
+    }
+
+    .project-label {
+      font-size: min(12px, 3.076923cqw);
+      line-height: min(14px, 3.589744cqw);
+      letter-spacing: -.01em;
+      white-space: nowrap;
+    }
+
+    /* Mobile proportions from Figma; each row was reordered (Genova before Winona, Lumen before Outliant), so each
+       card keeps its own proportion. */
+    .projects-row-primary .project-card:nth-child(2) .project-visual,
+    .projects-row-secondary .project-card:nth-child(2) .project-visual {
+      aspect-ratio: 366 / 484.802429;
+    }
+
+    .projects-row-primary .project-card:nth-child(1) .project-visual,
+    .projects-row-secondary .project-card:nth-child(1) .project-visual {
+      aspect-ratio: 366 / 363.78186;
+    }
+
+    .projects-grid > .project-card:nth-of-type(1) .project-visual,
+    .projects-grid > .project-card:nth-of-type(3) .project-visual {
+      aspect-ratio: 366 / 241.768295;
+    }
+
+    .projects-grid > .project-card:nth-of-type(2) .project-visual {
+      aspect-ratio: 366 / 363.042419;
+    }
+
+    .projects-footer {
+      height: min(169px, 43.333333cqw);
+      margin-top: 0;
+      padding: 0;
+      z-index: 2;
+      background: var(--projects-paper);
+    }
+
+    /* Sitting on the bottom edge: the line height leaves the baseline (plus the overshoot of round letters) just above
+       it, so the letters are never clipped, whatever the phone width. */
+    .projects-footer-wordmark {
+      position: absolute;
+      top: auto;
+      right: auto;
+      bottom: 0;
+      left: -1.538462cqw; /* Same size as the home wordmark. */
+      justify-content: flex-start;
+      font-size: 46.202051cqw;
+      line-height: .74;
+      width: max-content;
+    }
+
+    .projects-footer-wordmark span:first-child {
+      margin-left: 0;
+    }
+
+    .projects-footer-wordmark span:last-child {
+      margin-right: 0;
+    }
+
+    .projects-footer-info {
+      display: none;
+    }
+  }
+
+  /* Tablet: 8px from image to name and 40px between projects, like mobile. */
+  @media (min-width: 761px) and (max-width: 1024px) {
+    .projects-grid { gap: 40px; }
+    .project-card-inner { gap: 8px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .project-visual img {
+      transition: none !important;
+    }
+
+    .projects-page [data-footer-reveal] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+</style>

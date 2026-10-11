@@ -26,7 +26,8 @@
     };
     // Over a draggable sticker (or while holding one) the arrow becomes the pixel hand.
     const refresh = (target: Element | null) => {
-      pointer.classList.toggle('is-grab', !!target?.closest('[data-case-drag]') || !!document.querySelector('[data-case-drag].is-dragging'));
+      // Also over something that can be picked up inside a canvas (it says so with data-grab) or while holding it.
+      pointer.classList.toggle('is-grab', !!target?.closest('[data-case-drag], [data-grab]') || !!document.querySelector('[data-case-drag].is-dragging, [data-grab-active]'));
       setHover(!!target?.closest(linkable));
     };
     const render = () => {
@@ -35,8 +36,13 @@
       pointer.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${calm ? 0 : tilt}deg)`;
       if (visible) requestAnimationFrame(render);
     };
+    // A modal dialog sits in the top layer, above everything else on the page: the pointer goes inside it while it is
+    // open, so it stays on top; back to the page once it closes.
+    const host = () => document.querySelector('dialog[open]') ?? document.body;
     document.addEventListener('pointermove', (event) => {
       if (event.pointerType === 'touch' || !finePointer.matches) { setVisible(false); return; }
+      const home = host();
+      if (pointer.parentElement !== home) home.append(pointer);
       x = event.clientX; y = event.clientY;
       if (!visible) { lastX = x; setVisible(true); requestAnimationFrame(render); }
       refresh(document.elementFromPoint(x, y));
@@ -48,7 +54,9 @@
     document.addEventListener('pointerup', () => requestAnimationFrame(recheck));
     document.addEventListener('pointerdown', () => { if (visible) { const size = hovering ? HOVER : REST; morph([{ transform: `scale(${size})` }, { transform: `scale(${size * .9})`, offset: .4 }, { transform: `scale(${size})` }], 300); } });
     // Pointer capture on a dragged sticker fires a pointerout with no relatedTarget; that is not leaving the window.
-    document.addEventListener('pointerout', (event) => { if (!event.relatedTarget && !document.querySelector('[data-case-drag].is-dragging')) setVisible(false); });
+    document.addEventListener('pointerout', (event) => { if (!event.relatedTarget && !document.querySelector('[data-case-drag].is-dragging, [data-grab-active]')) setVisible(false); });
+    // A dialog closing takes the pointer with it: bring it back to the page.
+    document.addEventListener('close', () => { if (pointer.parentElement !== document.body) document.body.append(pointer); }, true);
     window.addEventListener('blur', () => setVisible(false));
     finePointer.addEventListener('change', () => setVisible(false));
   }

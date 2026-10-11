@@ -1,13 +1,18 @@
 ---
 import ProjectCaseFooter from '@/components/ProjectCaseFooter.astro';
+import RevealVideo from '@/components/RevealVideo.astro';
+import DotsField from '@/components/DotsField.astro';
+import SoulsField from '@/components/SoulsField.astro';
 import { imageMetadata } from '@/data/imageMetadata';
 import type { CaseMedia, ProjectCase } from '@/data/projectCases';
 
 interface Props {
   caseStudy: ProjectCase;
+  /** Side B cases use the same page in inverted colours. */
+  side?: 'a' | 'b';
 }
 
-const { caseStudy } = Astro.props;
+const { caseStudy, side = 'a' } = Astro.props;
 
 const ratioValue = (ratio: string) => {
   const [width, height] = ratio.split('/').map(Number);
@@ -33,7 +38,7 @@ const vimeoUrl = (id: string) =>
   `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&muted=1&controls=0&quality=1080p&dnt=1`;
 ---
 
-<div class="project-case-page" data-case={caseStudy.slug}>
+<div class:list={['project-case-page', { 'project-case-page-b': side === 'b' }]} data-case={caseStudy.slug}>
   <aside class="case-mobile-meta" aria-label="Contact and social links" data-scroll-bar>
     <span>SAY HI</span>
     <a class="case-mobile-mail" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
@@ -143,7 +148,13 @@ const vimeoUrl = (id: string) =>
             <section class="case-media-block case-media-single" style={mediaStyle(item)}>
               <div class="case-media-surface" data-case-media-reveal>
                 <div class:list={['case-media-content', { 'is-rotated': item.rotate === 90 }]}>
-                  {item.type === 'image' && item.src && dimensions ? (
+                  {item.type === 'dots' ? (
+                    <DotsField label={item.alt} />
+                  ) : item.type === 'souls' ? (
+                    <SoulsField label={item.alt} />
+                  ) : item.type === 'reveal' && item.src && item.revealSrc && item.poster ? (
+                    <RevealVideo top={item.src} under={item.revealSrc} poster={item.poster} label={item.alt} />
+                  ) : item.type === 'image' && item.src && dimensions ? (
                     <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
                   ) : item.type === 'carousel' && item.slides?.length ? (
                     <div class="case-carousel" data-case-carousel role="group" aria-roledescription="carousel" aria-label={item.alt}>
@@ -185,6 +196,42 @@ const vimeoUrl = (id: string) =>
                 </div>
               </div>
               {item.caption && <p class="case-media-caption" data-case-text-reveal>{item.caption}</p>}
+              {item.type === 'reveal' && (
+                <p class="case-media-caption case-reveal-caption" data-case-text-reveal>
+                  hover, drag<span data-reveal-camera-option hidden> or <button type="button" class="case-reveal-camera" data-reveal-camera aria-pressed="false">turn the camera on</button></span> for this one ↑
+                </p>
+                <div class="case-reveal-help" data-reveal-camera-help hidden>
+                  <p class="case-reveal-status" data-reveal-camera-status aria-live="polite"></p>
+                  <ol>
+                    <li>Sit about an arm’s length from the screen, facing it, in good light.</li>
+                    <li>Your nose is the brush: turn and tilt your head slowly to open the image.</li>
+                    <li>Move out of view to lift the brush; the trail closes on its own.</li>
+                  </ol>
+                  <p>The camera image stays on your device. Turn it off anytime above.</p>
+                </div>
+              )}
+              {item.type === 'souls' && (
+                <p class="case-media-caption case-reveal-caption" data-case-text-reveal data-souls-add-line>
+                  add your pet <button type="button" class="case-reveal-camera" data-souls-add>here</button> ↑ or <button type="button" class="case-reveal-camera" data-souls-list>see who’s here &lt;3</button>
+                </p>
+                <input type="file" accept="image/*" data-souls-input hidden />
+                <p class="case-reveal-help case-reveal-status" data-souls-status aria-live="polite" hidden></p>
+              )}
+              {item.type === 'dots' && (
+                <p class="case-media-caption case-reveal-caption" data-case-text-reveal>
+                  move, click, click again<span data-dots-camera-option hidden> or <button type="button" class="case-reveal-camera" data-dots-camera aria-pressed="false">turn the camera on</button></span> for this one ↑
+                </p>
+                <div class="case-reveal-help" data-dots-camera-help hidden>
+                  <p class="case-reveal-status" data-dots-camera-status aria-live="polite"></p>
+                  <ol>
+                    <li>Show your open hand to the camera, about an arm’s length away, in good light.</li>
+                    <li>Move your open hand and the dots follow it.</li>
+                    <li>Close your hand to gather them all; open it again to drop them to the floor.</li>
+                    <li>Hold still for a few seconds and they go back to their own flow.</li>
+                  </ol>
+                  <p>The camera image stays on your device. Turn it off anytime above.</p>
+                </div>
+              )}
             </section>
           );
         }
@@ -266,7 +313,7 @@ const vimeoUrl = (id: string) =>
     });
   </script>
 
-  <ProjectCaseFooter currentSlug={caseStudy.slug} />
+  <ProjectCaseFooter currentSlug={caseStudy.slug} side={side} />
 </div>
 
 <script>
@@ -689,6 +736,9 @@ const vimeoUrl = (id: string) =>
     --case-ink: #2e2e2e;
     --case-paper: #fafafa;
     --case-placeholder: #efece7;
+    /* Footer and contact labels: dark boxes with light text on both sides. */
+    --case-chip: #2e2e2e;
+    --case-chip-ink: #fafafa;
     --case-sans: 'OT Neue Montreal Cases', 'Arial Narrow', sans-serif;
     --case-display: 'OT Neue Montreal Cases Extra', 'Arial Narrow', sans-serif;
     color: var(--case-ink);
@@ -701,6 +751,27 @@ const vimeoUrl = (id: string) =>
   html:has(.project-case-page) {
     scroll-behavior: auto;
   }
+
+  /* Side B cases: the same page in inverted colours. */
+  html:has(.project-case-page-b),
+  body:has(.project-case-page-b) {
+    --case-ink: #fafafa;
+    --case-paper: #202020;
+    --case-placeholder: #2a2a2a;
+    --case-chip: #202020;
+    --case-chip-ink: #fafafa;
+  }
+
+  /* On phones, Side B's link boxes turn white with dark type; on desktop they stay dark with white type. */
+  @media (max-width: 760px) {
+    html:has(.project-case-page-b),
+    body:has(.project-case-page-b) {
+      --case-chip: #fafafa;
+      --case-chip-ink: #202020;
+    }
+  }
+
+  body:has(.project-case-page-b) .site-header[data-header] { background: var(--case-paper) !important; }
 
   body:has(.project-case-page) a,
   body:has(.project-case-page) [data-case-drag],
@@ -924,6 +995,28 @@ const vimeoUrl = (id: string) =>
     margin-top: 2.72vw;
   }
 
+  /* Side B cases, as in Figma (930:2032, 930:2203) on a 1600px frame: 10px between frames side by side and 9px from
+     row to row; 27px from a frame's caption (8px under it) to the next frame; the year 19px from the title. */
+  .project-case-page-b .case-media-block + .case-media-block {
+    margin-top: .5625vw;
+  }
+
+  .project-case-page-b .case-media-pair {
+    gap: .625vw;
+  }
+
+  .project-case-page-b .case-year {
+    margin-left: 1.45vw;
+  }
+
+  .project-case-page-b .case-media-block:has(.case-reveal-caption) + .case-media-block {
+    margin-top: 1.69vw;
+  }
+
+  .project-case-page-b .case-reveal-caption {
+    margin-top: .5vw;
+  }
+
   .case-media-single {
     width: 100%;
   }
@@ -997,6 +1090,45 @@ const vimeoUrl = (id: string) =>
     width: calc(max(100cqh, 100cqw * var(--source-ratio, 1.7778)) + 2px);
     height: calc(max(100cqw, 100cqh / var(--source-ratio, 1.7778)) + 2px);
     transform: translate(-50%, -50%) rotate(90deg);
+  }
+
+  .case-reveal-caption {
+    margin-top: .6vw;
+    font-size: 1.25vw;
+  }
+
+  /* How to use the camera: under the caption while it is on. */
+  .case-reveal-help {
+    max-width: 38vw;
+    margin-top: .8vw;
+    font-size: 1.1vw;
+    line-height: 1.2;
+    letter-spacing: -.01em;
+  }
+
+  .case-reveal-help[hidden] { display: none; }
+
+  .case-reveal-help ol {
+    margin: .5vw 0;
+    padding-left: 1.3em;
+  }
+
+  .case-reveal-help p { margin: 0; }
+
+  .case-reveal-help > p:last-child { opacity: .6; }
+
+  /* "turn the camera on" reads as an underlined word in the caption. */
+  .case-reveal-camera {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .12em;
+    cursor: pointer;
   }
 
   .case-carousel,
@@ -1305,7 +1437,7 @@ const vimeoUrl = (id: string) =>
 
   /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='missing-souls']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
       text-align: justify;
     }
   }
@@ -1335,8 +1467,8 @@ const vimeoUrl = (id: string) =>
       height: auto !important;
       min-height: 0 !important;
       padding: min(8px, 2.051282vw) min(10px, 2.564103vw) !important;
-      background: #fafafa !important;
-      color: #2e2e2e !important;
+      background: var(--case-paper) !important;
+      color: var(--case-ink) !important;
       font-size: min(26.498px, 6.794359vw) !important;
       line-height: normal !important;
       letter-spacing: -.02em;
@@ -1373,13 +1505,13 @@ const vimeoUrl = (id: string) =>
     .case-mobile-mail,
     .case-mobile-socials {
       justify-self: end;
-      background: var(--case-ink);
-      color: var(--case-paper);
+      background: var(--case-chip);
+      color: var(--case-chip-ink);
       white-space: nowrap;
     }
 
     .case-mobile-meta :is(.case-mobile-mail, .case-mobile-socials a) {
-      color: var(--case-paper);
+      color: var(--case-chip-ink);
       text-decoration: underline;
       text-decoration-thickness: 1px;
       text-underline-offset: .08em;
@@ -1476,7 +1608,7 @@ const vimeoUrl = (id: string) =>
     }
 
     /* Body copy justified on phones, as on Lumen; role and headings keep their alignment. */
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='missing-souls']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
       text-align: justify;
     }
 
@@ -1508,6 +1640,21 @@ const vimeoUrl = (id: string) =>
     .case-media-caption {
       display: none;
     }
+
+    /* The interactive frame keeps its how-to line on phones. */
+    .case-media-caption.case-reveal-caption {
+      display: block;
+      margin-top: 8px;
+      font-size: min(14px, 3.589744vw);
+    }
+
+    .case-reveal-help {
+      max-width: none;
+      margin-top: 8px;
+      font-size: min(13px, 3.333333vw);
+    }
+
+    .case-reveal-help ol { margin: 6px 0; }
 
     /* Winona's synopsis is one paragraph split into two columns on desktop: on phones it reads as one. */
     .project-case-page[data-case='winona'] .case-text-content > .case-text-columns {
@@ -1590,6 +1737,22 @@ const vimeoUrl = (id: string) =>
     .case-intro + .case-flow > .case-media-block:first-child,
     .case-text + .case-media-block {
       margin-top: 32px;
+    }
+
+    .project-case-page-b .case-media-block + .case-media-block {
+      margin-top: 6px;
+    }
+
+    .project-case-page-b .case-media-pair {
+      gap: 6px;
+    }
+
+    .project-case-page-b .case-year {
+      margin-left: 2.2vw;
+    }
+
+    .project-case-page-b .case-media-block:has(.case-reveal-caption) + .case-media-block {
+      margin-top: 24px;
     }
 
     .case-flow,

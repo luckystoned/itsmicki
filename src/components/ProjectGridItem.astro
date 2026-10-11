@@ -3,7 +3,8 @@ import type { Project } from '@/data/projects';
 import { imageMetadata } from '@/data/imageMetadata';
 
 type Props = {
-  project: Project;
+  /** A Side A project, or any card with the same few fields (Side B projects have no entry in projects.ts yet). */
+  project: Pick<Project, 'slug' | 'title' | 'comingSoon' | 'cover'>;
   label: string;
   style: string;
   eager?: boolean;
@@ -13,10 +14,14 @@ type Props = {
   vimeoId?: string;
   /** Width / height of the Vimeo video when it is not 16:9, so it still covers the card. */
   videoRatio?: string;
+  /** Muted loop served from the site, over the cover. */
+  video?: string;
+  /** Case page; defaults to /projects/{slug}. `null` keeps the card without a link. */
+  href?: string | null;
 };
 
-const { project, label, style, eager = false, cover = project.cover, vimeoId, videoRatio } = Astro.props;
-const href = project.comingSoon ? undefined : `/projects/${project.slug}`;
+const { project, label, style, eager = false, cover = project.cover, vimeoId, videoRatio, video } = Astro.props;
+const href = project.comingSoon || Astro.props.href === null ? undefined : Astro.props.href ?? `/projects/${project.slug}`;
 const dimensions = cover ? imageMetadata[cover] : undefined;
 
 if (!cover || !dimensions) {
@@ -42,6 +47,7 @@ const videoSrc = vimeoId
           decoding="async"
         />
         {videoSrc && <iframe src={videoSrc} style={videoRatio ? `aspect-ratio:${videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-project-video></iframe>}
+        {video && <video src={video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
       </span>
       <span class="project-label">{label}</span>
     </a>
@@ -58,6 +64,7 @@ const videoSrc = vimeoId
           decoding="async"
         />
         {videoSrc && <iframe src={videoSrc} style={videoRatio ? `aspect-ratio:${videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-project-video></iframe>}
+        {video && <video src={video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
       </span>
       <span class="project-label">{label}</span>
     </div>

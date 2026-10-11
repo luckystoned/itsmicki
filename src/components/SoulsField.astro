@@ -1,0 +1,1164 @@
+---
+// Missing souls: a warm, glowing place (coral sky, lavender ground, blurred plants swaying) where a caregiver looks
+// after the animals people leave with her. Anyone can add their cat or dog from a full-body photo. The photo is read on
+// their device (MediaPipe finds the animal, reads its colours and markings, and turns down photos full of people), then
+// a little form asks its name, its owner's, cat or dog, a few words about its coat (which win over the photo), how thin
+// or chubby it is (a slider, with a live preview) and its size. In the place it becomes a soft, glowing illustrated cat
+// or dog in its own colours, with an aura and colours fringing off its edges, its name shown near it on hover; its
+// photo, cropped around it and re-drawn (no location or camera details), is kept for the list of who's here. Once here,
+// it lives its own little life: it stands, walks about on its paws, hops, stretches, grooms, lies down to nap and blinks;
+// a newcomer is first stroked by the caregiver, and anyone can pick one up (legs dangling) and set it down elsewhere.
+// The souls are shared by every visitor (api/souls.ts, Vercel Blob) and stay for good, until the place is full; without
+// the shared store (local dev, or before it is connected) they are kept on the visitor's device. With reduced motion
+// nothing moves.
+type Props = { label: string };
+const { label } = Astro.props;
+---
+
+<div class="souls-field" data-souls-field>
+  <canvas class="souls-field-canvas" role="img" aria-label={label}></canvas>
+  <!-- A song to listen to while here, if they want: the official audio on YouTube (whole song, its own volume control),
+       in the top right corner. It never plays on its own. -->
+  <iframe
+    class="souls-field-music"
+    src="https://www.youtube-nocookie.com/embed/Bi8G90nkmDA?rel=0&playsinline=1"
+    title="Dauwd — Theory of Colours (official audio, YouTube)"
+    loading="lazy"
+    allow="encrypted-media; picture-in-picture"
+    referrerpolicy="strict-origin-when-cross-origin"
+  ></iframe>
+  <!-- Who they are: asked once the photo is read. The coat words correct the colours and markings read from the photo. -->
+  <dialog class="souls-dialog" data-souls-dialog aria-labelledby="souls-dialog-title">
+    <form method="dialog" class="souls-form">
+      <p class="souls-form-title" id="souls-dialog-title">Who are you leaving in her care?</p>
+      <label class="souls-form-field">Their name <input name="name" maxlength="20" autocomplete="off" required /></label>
+      <label class="souls-form-field">Your name <input name="owner" maxlength="20" autocomplete="name" required /></label>
+      <fieldset class="souls-form-choice">
+        <legend>Cat or dog</legend>
+        <label><input type="radio" name="kind" value="cat" /> cat</label>
+        <label><input type="radio" name="kind" value="dog" /> dog</label>
+      </fieldset>
+      <label class="souls-form-field">Their coat, in a few words <input name="coat" maxlength="80" autocomplete="off" placeholder="e.g. orange tabby, black with white paws" /></label>
+      <label class="souls-form-field souls-form-build">Build <span><small>thin</small><input type="range" name="build" min="0" max="9" step="1" value="4" /><small>chubby</small></span></label>
+      <canvas class="souls-form-preview" data-souls-preview aria-hidden="true"></canvas>
+      <fieldset class="souls-form-choice">
+        <legend>Size</legend>
+        <label><input type="radio" name="size" value="0" /> small</label>
+        <label><input type="radio" name="size" value="1" checked /> medium</label>
+        <label><input type="radio" name="size" value="2" /> big</label>
+      </fieldset>
+      <div class="souls-form-actions">
+        <button type="submit" value="cancel" formnovalidate>cancel</button>
+        <button type="submit" value="ok" class="souls-form-ok">leave them with her</button>
+      </div>
+    </form>
+  </dialog>
+  <!-- Who's here: every soul's own photo, as it was, with their name and who left them. -->
+  <dialog class="souls-dialog souls-list" data-souls-list-dialog aria-labelledby="souls-list-title">
+    <div class="souls-list-head">
+      <p class="souls-form-title" id="souls-list-title">Who’s here</p>
+      <form method="dialog"><button type="submit" class="souls-list-close">close</button></form>
+    </div>
+    <p class="souls-list-empty" data-souls-list-empty>No one yet. Be the first to leave someone in her care.</p>
+    <ul class="souls-list-grid" data-souls-list-grid></ul>
+  </dialog>
+</div>
+
+<script>
+  import { loadVision } from '@/scripts/camera';
+
+  const SETTINGS = {
+    cap: 42, // Souls the place holds (the server has the final word).
+    minPet: .008, // Share of the photo the animal has to cover to count as found.
+    margin: .012, // Whole body: the animal must not touch the photo's sides or bottom (share of the photo).
+    model: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite',
+    // Finds the animal coarsely; then Magic Touch, given points on it, cuts it out with crisp edges.
+    edges: 'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite',
+    classes: { cat: 8, dog: 12, person: 15 }, // DeepLab v3 (PASCAL VOC) labels.
+    people: .2, // Photos are shown in the list: a crop where people fill more than this share is turned down.
+    photoSide: 1000, // The photo kept: cropped around the animal, at most this many pixels on its longer side.
+    // The place, after the reference: a coral sky melting into a lavender-blue ground, a warm glow on the floor.
+    sky: [[0, '#e46a55'], [.3, '#ec7d60'], [.45, '#f19a7c'], [.56, '#a198e2'], [.8, '#8380d8'], [1, '#716ecb']] as Array<[number, string]>,
+    horizon: .5, // Where the ground starts, as a share of the height.
+    plants: { back: '#98a3ee', stem: '#6f8f63', front: '#5f8456' }, // Flowers on the horizon, their stems, leaves in front.
+    eyes: '#ff4a2a', // Eyes are little arches (∩), smiling shut.
+    grain: .17, // Strength of the film grain over everything.
+    // How big each kind is next to the others (a medium dog is 1).
+    scale: { cat: [.6, .78, .9], dog: [.66, .92, 1.2] },
+    // What they do, and how often; lengths in seconds.
+    acts: { sit: [.32, 3, 8], walk: [.3, 0, 0], hop: [.06, 1.1, 1.1], stretch: [.1, 1.8, 1.8], groom: [.08, 2.4, 3.4], sleep: [.12, 7, 13] } as Record<string, [number, number, number]>,
+    walkSpeed: .045, // Share of the width per second.
+  };
+
+  /** What is kept of each pet: cat or dog, size (dogs: 0 small, 1 medium, 2 big), markings (0 plain, 1 tabby,
+      2 patches) and its colours (light, mid, dark). It travels as a short code, e.g. "c12_f2d9b0b98a5e4a3326". */
+  type Look = { kind: 'cat' | 'dog'; size: 0 | 1 | 2; pattern: 0 | 1 | 2; build: number; colours: [string, string, string]; name?: string; owner?: string };
+  // Its name travels as hex of its UTF-8 bytes (up to 20), after the look: "c12_f2d9b0b98a5e4a3326_4d696c6f".
+  const nameHex = (name: string) => [...new TextEncoder().encode(name.trim())].slice(0, 20).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const lookCode = (look: Look) => `${look.kind[0]}${look.size}${look.pattern}${look.build}_${look.colours.map((c) => c.slice(1)).join('')}${look.name ? `_${nameHex(look.name)}${look.owner ? `_${nameHex(look.owner)}` : ''}` : ''}`;
+  const readLook = (id: string): Look | null => {
+    // Kind, size, markings, build (0 thin … 9 chubby; older souls have none), colours, name, owner.
+    const m = /([cd])([012])([012])([0-9])?_([0-9a-f]{6})([0-9a-f]{6})([0-9a-f]{6})(?:_([0-9a-f]{2,40}))?(?:_([0-9a-f]{2,40}))?(?:\.json)?$/.exec(id);
+    if (!m) return null;
+    const text = (hexText?: string) => { if (!hexText) return undefined; try { return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(hexText.match(/../g)!.map((b) => parseInt(b, 16)))); } catch { return undefined; } };
+    return { kind: m[1] === 'c' ? 'cat' : 'dog', size: Number(m[2]) as 0 | 1 | 2, pattern: Number(m[3]) as 0 | 1 | 2, build: m[4] ? Number(m[4]) : 4, colours: [`#${m[5]}`, `#${m[6]}`, `#${m[7]}`], name: text(m[8]), owner: text(m[9]) };
+  };
+
+  /** Colours and markings from a few words about the coat (English or Spanish), or null where the words say nothing. */
+  const COAT_COLOURS: Array<[RegExp, string]> = [
+    [/\b(black|negr[oa]s?)\b/, '#2c2a33'], [/\b(white|blanc[oa]s?)\b/, '#f6f3ee'], [/\b(gr[ae]y|gris)\b/, '#9b9aa3'],
+    [/\b(silver|platead[oa])\b/, '#c5c7ce'], [/\b(blue|azul)\b/, '#8e98ae'], [/\b(orange|ginger|red|naranja|rojiz[oa]|colorad[oa])\b/, '#e8914a'],
+    [/\b(cream|beige|crema)\b/, '#f1dcbc'], [/\b(brown|chocolate|marr[oó]n|caf[eé])\b/, '#7a5236'], [/\b(golden|gold|yellow|dorad[oa]|amarill[oa]|rubi[oa])\b/, '#e3b765'],
+    [/\b(tan|fawn|canela|leonad[oa])\b/, '#c9925a'],
+  ];
+  const lum = (colour: string) => { const [r, g, b] = rgbOf(colour); return .299 * r + .587 * g + .114 * b; };
+  const coatFrom = (text: string): { colours?: [string, string, string]; pattern?: 0 | 1 | 2 } => {
+    const words = text.toLowerCase();
+    let pattern: 0 | 1 | 2 | undefined;
+    if (/(tabby|stripe|atigrad|rayad|rayas)/.test(words)) pattern = 1;
+    else if (/(patch|spot|tuxedo|bicolou?r|manch|calico|tricolou?r|carey|tortoise|y blanc|and white|with white|con blanc)/.test(words)) pattern = 2;
+    else if (/(solid|plain|lis[oa]|entero|entera)/.test(words)) pattern = 0;
+    let found = COAT_COLOURS.map(([re, colour]) => ({ at: words.search(re), colour })).filter((c) => c.at >= 0).sort((a, b) => a.at - b.at).map((c) => c.colour);
+    if (/(calico|tricolou?r|carey|tortoise)/.test(words) && found.length < 3) found = ['#e8914a', '#2c2a33', '#f6f3ee'];
+    if (!found.length) return { pattern };
+    let colours: [string, string, string];
+    if (found.length === 1) colours = [mix(found[0], '#ffffff', .45), found[0], mix(found[0], '#000000', .35)];
+    else {
+      const byLight = [...found].sort((a, b) => lum(b) - lum(a));
+      colours = [byLight[0], found[0] === byLight[0] ? mix(byLight[0], byLight[byLight.length - 1], .45) : found[0], byLight[byLight.length - 1]];
+    }
+    // Lifted a little to glow, like the colours read from photos.
+    return { colours: colours.map((c) => mix(c, '#ffffff', .1)) as [string, string, string], pattern };
+  };
+
+  type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep' | 'pet' | 'held' | 'fall';
+  type Layer = { canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number };
+  type Leg = Layer & { pivotX: number; pivotY: number; near: boolean; front: boolean };
+  type Figure = { body: Layer; legs: Leg[]; eyes: Array<{ x: number; y: number }>; eyeR: number; legLength: number; unit: number };
+  type Soul = {
+    id: string; look: Look; born: number; figure?: Figure; photo?: string;
+    // Picked up: where its feet are in the air (px), how fast it falls, its legs' pendulum and its lean; when it landed.
+    air?: number; airV?: number; swing?: number; swingV?: number; hang?: number; landed?: number; heldUnit?: number;
+    // Life: its home, where it is (feet; shares of the frame), what it is doing and until when.
+    hx: number; hy: number; x: number; y: number; fromX: number; fromY: number; toX: number; toY: number;
+    act: Act; actStart: number; actEnd: number; face: number; faceShown: number; blink: number; phase: number; drawn: number;
+  };
+  type Plant = { sprite: HTMLCanvasElement; x: number; y: number; w: number; h: number; phase: number; sway: number };
+
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STORE = 'missing-souls';
+
+  const hash = (text: string) => { let h = 2166136261; for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619); return h >>> 0; };
+  const canvasOf = (width: number, height: number) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(width)); c.height = Math.max(1, Math.round(height)); return c; };
+  const ease = (p: number) => p * p * (3 - 2 * p);
+  const hex = (rgb: number[]) => `#${rgb.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')}`;
+  const rgbOf = (colour: string) => [1, 3, 5].map((i) => parseInt(colour.slice(i, i + 2), 16));
+  const mix = (a: string, b: string, t: number) => { const x = rgbOf(a), y = rgbOf(b); return hex(x.map((v, i) => v + (y[i] - v) * t)); };
+  /** An eye: a little arch (∩) with a soft glow; asleep, it turns into a closed curve (∪). */
+  const drawEye = (g: CanvasRenderingContext2D, x: number, y: number, r: number, asleep = false) => {
+    g.save();
+    g.lineCap = 'round';
+    g.lineWidth = Math.max(.9, r * .75);
+    g.strokeStyle = SETTINGS.eyes;
+    g.shadowColor = 'rgba(255, 74, 42, .7)';
+    g.shadowBlur = r * 2.2;
+    g.beginPath();
+    if (asleep) g.arc(x, y - r * .5, r * 1.05, Math.PI * .15, Math.PI * .85);
+    else g.arc(x, y + r * .55, r * 1.15, Math.PI * 1.12, Math.PI * 1.88);
+    g.stroke();
+    g.restore();
+  };
+
+  // Souls kept on this device, when the shared place cannot be reached. `?souls=reset` in the address clears them.
+  try { if (new URLSearchParams(location.search).get('souls') === 'reset') localStorage.removeItem(STORE); } catch { /* No storage. */ }
+  type Entry = { id: string; photo?: string };
+  const localSouls = (): Entry[] => {
+    try {
+      const list = JSON.parse(localStorage.getItem(STORE) ?? '[]');
+      return Array.isArray(list) ? list.map((item) => (typeof item === 'string' ? { id: item } : item)).filter((item) => typeof item?.id === 'string') : [];
+    } catch { return []; }
+  };
+  const keepLocally = (entry: Entry) => {
+    try { localStorage.setItem(STORE, JSON.stringify([...localSouls(), entry])); } catch {
+      // Storage full (photos are big): keep it without its photo.
+      try { localStorage.setItem(STORE, JSON.stringify([...localSouls(), { id: entry.id }])); } catch { /* Blocked: it stays for this visit. */ }
+    }
+  };
+
+  /** Reads a pet from a photo: cat or dog, its colours and its markings; or why it can't. */
+  type Masks = { confidenceMasks?: Array<{ width: number; height: number; getAsFloat32Array: () => Float32Array }>; close: () => void };
+  type Point = { x: number; y: number };
+  let segmenter: Promise<{ segment: (image: HTMLCanvasElement) => Masks }> | null = null;
+  let cutter: Promise<{ segment: (image: HTMLCanvasElement, roi: { scribble: Point[] }) => Masks } | null> | null = null;
+  const readPet = async (file: File): Promise<(Omit<Look, 'size' | 'build'> & { photo: string }) | 'none' | 'cut' | 'people'> => {
+    segmenter ??= (async () => {
+      const { module, files } = await loadVision();
+      return module.ImageSegmenter.createFromOptions(files, { baseOptions: { modelAssetPath: SETTINGS.model }, runningMode: 'IMAGE', outputCategoryMask: false, outputConfidenceMasks: true });
+    })();
+    cutter ??= (async () => {
+      try {
+        const { module, files } = await loadVision();
+        return await module.InteractiveSegmenter.createFromOptions(files, { baseOptions: { modelAssetPath: SETTINGS.edges }, outputCategoryMask: false, outputConfidenceMasks: true });
+      } catch { return null; }
+    })();
+    const model = await segmenter;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 640 / Math.max(bitmap.width, bitmap.height));
+    const photo = canvasOf(bitmap.width * scale, bitmap.height * scale);
+    photo.getContext('2d')!.drawImage(bitmap, 0, 0, photo.width, photo.height);
+    const result = model.segment(photo);
+    const masks = result.confidenceMasks;
+    if (!masks) { result.close(); bitmap.close(); return 'none'; }
+    const cat = masks[SETTINGS.classes.cat].getAsFloat32Array(), dog = masks[SETTINGS.classes.dog].getAsFloat32Array(), person = masks[SETTINGS.classes.person].getAsFloat32Array();
+    const { width, height } = masks[SETTINGS.classes.cat];
+    result.close();
+    // The animal: wherever the model sees a cat or a dog; which of the two, by how much it sees of each.
+    const pet = new Float32Array(width * height);
+    let found = 0, cats = 0, dogs = 0, x0 = width, y0 = height, x1 = -1, y1 = -1;
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      const i = y * width + x, p = Math.max(cat[i], dog[i]);
+      pet[i] = p; cats += cat[i]; dogs += dog[i];
+      if (p > .5) { found++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+    if (found / (width * height) < SETTINGS.minPet) { bitmap.close(); return 'none'; }
+    // Whole body only: an animal running off the sides or the bottom of the photo is cut (a close-up of a face, say).
+    const m = SETTINGS.margin;
+    if (x0 < width * m || x1 > width * (1 - m) || y1 > height * (1 - m) || y0 < height * m * .5) { bitmap.close(); return 'cut'; }
+    // The photo kept for the list: the animal with some room around it; never one where people fill the crop.
+    const room = Math.max(x1 - x0, y1 - y0) * .14;
+    const cx0 = Math.max(0, Math.floor(x0 - room)), cy0 = Math.max(0, Math.floor(y0 - room)), cx1 = Math.min(width - 1, Math.ceil(x1 + room)), cy1 = Math.min(height - 1, Math.ceil(y1 + room));
+    let people = 0;
+    for (let y = cy0; y <= cy1; y++) for (let x = cx0; x <= cx1; x++) if (person[y * width + x] > .5) people++;
+    if (people / ((cx1 - cx0 + 1) * (cy1 - cy0 + 1)) > SETTINGS.people) { bitmap.close(); return 'people'; }
+    const toBitmap = bitmap.width / width, keepScale = Math.min(1, SETTINGS.photoSide / (Math.max(cx1 - cx0, cy1 - cy0) * toBitmap));
+    const kept = canvasOf((cx1 - cx0 + 1) * toBitmap * keepScale, (cy1 - cy0 + 1) * toBitmap * keepScale), keptContext = kept.getContext('2d')!;
+    keptContext.imageSmoothingQuality = 'high';
+    keptContext.fillStyle = '#f4efe8'; // Under transparent images (a sticker, say), paper rather than black.
+    keptContext.fillRect(0, 0, kept.width, kept.height);
+    keptContext.drawImage(bitmap, cx0 * toBitmap, cy0 * toBitmap, (cx1 - cx0 + 1) * toBitmap, (cy1 - cy0 + 1) * toBitmap, 0, 0, kept.width, kept.height);
+    bitmap.close();
+    // Re-drawn, so nothing of the original file travels with it (no location or camera details).
+    const keptPhoto = kept.toDataURL('image/jpeg', .82);
+    // Crisp edges (Magic Touch, from points the model is surest of), so the colours are read from the animal only.
+    const sure: Point[] = [];
+    const step = Math.max(4, Math.round(Math.sqrt(found / 24)));
+    for (let y = y0; y <= y1; y += step) for (let x = x0; x <= x1; x += step) if (pet[y * width + x] > .8) sure.push({ x: x / width, y: y / height });
+    const scribble = sure.filter((_, i) => i % Math.max(1, Math.ceil(sure.length / 12)) === 0);
+    const edges = await cutter;
+    if (edges && scribble.length) {
+      try {
+        const cut = edges.segment(photo, { scribble });
+        const fine = cut.confidenceMasks?.[0];
+        if (fine && fine.width === width && fine.height === height) {
+          const crisp = fine.getAsFloat32Array();
+          for (let i = 0; i < pet.length; i++) pet[i] = pet[i] > .08 ? crisp[i] : 0;
+        }
+        cut.close();
+      } catch { /* Keep the coarse cut. */ }
+    }
+    // Its colours: the lightest, middle and darkest fifths of its fur.
+    const rgb = photo.getContext('2d')!.getImageData(0, 0, width, height).data;
+    const luma = new Float32Array(width * height), inside: number[] = [];
+    for (let i = 0; i < luma.length; i++) { luma[i] = .299 * rgb[i * 4] + .587 * rgb[i * 4 + 1] + .114 * rgb[i * 4 + 2]; if (pet[i] > .6) inside.push(i); }
+    if (inside.length < 50) return 'none';
+    inside.sort((a, b) => luma[a] - luma[b]);
+    const average = (from: number, to: number) => {
+      const slice = inside.slice(Math.floor(inside.length * from), Math.max(Math.floor(inside.length * from) + 1, Math.floor(inside.length * to)));
+      const sum = [0, 0, 0];
+      slice.forEach((i) => { sum[0] += rgb[i * 4]; sum[1] += rgb[i * 4 + 1]; sum[2] += rgb[i * 4 + 2]; });
+      return sum.map((v) => v / slice.length);
+    };
+    // A little lifted and glowing, but its own colours.
+    const glow = (c: number[], lift: number) => c.map((v) => v + (255 - v) * lift);
+    const colours: [string, string, string] = [hex(glow(average(.8, 1), .25)), hex(glow(average(.4, .6), .15)), hex(glow(average(0, .2), .1))];
+    // Its markings: little contrast is plain fur; contrast in fine detail is tabby stripes; contrast in big areas is patches.
+    const contrast = luma[inside[Math.floor(inside.length * .85)]] - luma[inside[Math.floor(inside.length * .15)]];
+    let fine = 0, counted = 0;
+    for (const i of inside) {
+      const x = i % width, y = (i - x) / width;
+      if (x < 3 || y < 3 || x > width - 4 || y > height - 4) continue;
+      let sum = 0, n = 0;
+      for (let dy = -3; dy <= 3; dy += 3) for (let dx = -3; dx <= 3; dx += 3) { const j = i + dy * width + dx; if (pet[j] > .6) { sum += luma[j]; n++; } }
+      if (n > 6) { fine += Math.abs(luma[i] - sum / n); counted++; }
+    }
+    fine = counted ? fine / counted : 0;
+    const pattern: 0 | 1 | 2 = contrast < 50 ? 0 : fine / contrast > .14 ? 1 : 2;
+    return { kind: dogs > cats ? 'dog' : 'cat', pattern, colours, photo: keptPhoto };
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-souls-field]').forEach((root) => {
+    const canvas = root.querySelector<HTMLCanvasElement>('.souls-field-canvas')!;
+    const context = canvas.getContext('2d')!;
+    const caption = root.closest('section') ?? document;
+    const addButton = caption.querySelector<HTMLButtonElement>('[data-souls-add]');
+    const input = caption.querySelector<HTMLInputElement>('[data-souls-input]');
+    const status = caption.querySelector<HTMLElement>('[data-souls-status]');
+    const setStatus = (text: string) => { if (status) { status.textContent = text; status.hidden = !text; } };
+
+    let width = 0, height = 0, ratio = 1;
+    let souls: Soul[] = [];
+    let cap = SETTINGS.cap;
+    let shared = true; // False when the shared place cannot be reached: souls are kept on this device.
+
+    // Film grain: a noise tile, shifted every few frames so it lives.
+    const grain = canvasOf(160, 160);
+    {
+      const g = grain.getContext('2d')!, img = g.createImageData(160, 160);
+      for (let i = 0; i < img.data.length; i += 4) { const v = Math.random() < .03 ? 255 : Math.random() * 200; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
+      g.putImageData(img, 0, 0);
+    }
+
+    // Soft edges without canvas filters (Safari): halve the image step by step, then double it back up the same way;
+    // each step blends neighbours, so the result is a smooth blur (one big jump would look blocky).
+    const soften = (source: HTMLCanvasElement, amount: number) => {
+      const steps: HTMLCanvasElement[] = [source];
+      let scale = 1;
+      while (scale * 2 <= amount) {
+        const last = steps[steps.length - 1], next = canvasOf(last.width / 2, last.height / 2), n = next.getContext('2d')!;
+        n.imageSmoothingQuality = 'high';
+        n.drawImage(last, 0, 0, next.width, next.height);
+        steps.push(next);
+        scale *= 2;
+      }
+      if (amount / scale > 1.05) {
+        const last = steps[steps.length - 1], next = canvasOf(source.width / amount, source.height / amount), n = next.getContext('2d')!;
+        n.imageSmoothingQuality = 'high';
+        n.drawImage(last, 0, 0, next.width, next.height);
+        steps.push(next);
+      }
+      let up = steps[steps.length - 1];
+      for (let i = steps.length - 2; i >= 0; i--) {
+        const next = canvasOf(steps[i].width, steps[i].height), n = next.getContext('2d')!;
+        n.imageSmoothingQuality = 'high';
+        n.drawImage(up, 0, 0, next.width, next.height);
+        up = next;
+      }
+      return up;
+    };
+
+    /** A pet as a soft illustrated figure, facing right, in its own colours and markings: a body, a head with ears
+        (pointed for a cat, floppy with a snout for a dog), a tail, and four legs on their own so they can walk and fold.
+        Everything is drawn crisp in unit space (feet at y = 1, about one unit tall), then blurred into a glow. */
+    const paintFigure = (soul: Soul, unit: number): Figure => {
+      const { look } = soul, dog = look.kind === 'dog';
+      let n = hash(soul.id) || 1;
+      const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
+      const [light, mid, dark] = look.colours;
+      // Proportions, a little different for every one; small dogs have shorter legs and bigger heads, big dogs longer.
+      // Rounder, softer volumes than a drawing, like the references; and as thin or chubby as they are (build 0–9).
+      const build = .72 + look.build * .08;
+      const legScale = dog ? [.66, .9, 1.02][look.size] : [.78, .88, .92][look.size];
+      const legTop = 1 - (dog ? .34 : .3) * legScale * (.94 + random() * .12);
+      const bodyLength = (dog ? .64 : .56) * (.95 + random() * .1) * (.94 + build * .06), bodyDepth = (dog ? .34 : .32) * (.94 + random() * .12) * build;
+      const bodyCx = .56, bodyCy = legTop - bodyDepth * .28;
+      const headR = (dog ? [.18, .155, .145][look.size] : [.18, .16, .15][look.size]) * (.95 + random() * .1) * (.94 + build * .06);
+      const headX = bodyCx + bodyLength / 2 + headR * .4, headY = bodyCy - bodyDepth * .5 - headR * .5;
+      const legW = (dog ? [.09, .095, .1][look.size] : .08) * (.85 + build * .15);
+      const pad = .3; // Room around the figure for its glow, in units.
+      const W = (1.45 + pad * 2) * unit, H = (1.15 + pad * 2) * unit, ox = pad * unit, oy = (pad + .15) * unit; // Unit (0,0) → canvas (ox,oy).
+      const X = (u: number) => ox + u * unit, Y = (u: number) => oy + u * unit;
+
+      // Its coat: light on the back and face, into its colour, into shadow towards the belly and paws.
+      const coat = (g: CanvasRenderingContext2D, w: number, h: number) => {
+        const fill = g.createLinearGradient(0, Y(headY - headR * 1.6), 0, Y(1));
+        fill.addColorStop(0, light); fill.addColorStop(.45, mid); fill.addColorStop(1, dark);
+        g.fillStyle = fill; g.fillRect(0, 0, w, h);
+      };
+      const tinted = (source: HTMLCanvasElement, colour: string) => { const c = canvasOf(source.width, source.height), t = c.getContext('2d')!; t.drawImage(source, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = colour; t.fillRect(0, 0, c.width, c.height); return c; };
+      const finish = (shape: HTMLCanvasElement, colour: (g: CanvasRenderingContext2D) => void) => {
+        const c = shape.getContext('2d')!;
+        c.globalCompositeOperation = 'source-atop';
+        colour(c);
+        // Light from inside, like the references: a warm glow low in the chest, a cool green one on the back.
+        c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
+        const warm = c.createRadialGradient(X(bodyCx + bodyLength * .2), Y(bodyCy + bodyDepth * .1), 0, X(bodyCx + bodyLength * .2), Y(bodyCy + bodyDepth * .1), bodyLength * .45 * unit);
+        warm.addColorStop(0, 'rgba(255, 112, 78, .55)'); warm.addColorStop(1, 'rgba(255, 112, 78, 0)');
+        c.fillStyle = warm; c.fillRect(0, 0, W, H);
+        const cool = c.createRadialGradient(X(bodyCx - bodyLength * .2), Y(bodyCy - bodyDepth * .5), 0, X(bodyCx - bodyLength * .2), Y(bodyCy - bodyDepth * .5), bodyLength * .5 * unit);
+        cool.addColorStop(0, 'rgba(120, 214, 140, .35)'); cool.addColorStop(1, 'rgba(120, 214, 140, 0)');
+        c.fillStyle = cool; c.fillRect(0, 0, W, H);
+        // Very soft, with a halo, and the colours fringing off the edges (green one side, orange the other), like an
+        // old print slightly out of register.
+        const out = canvasOf(shape.width, shape.height), g = out.getContext('2d')!;
+        g.imageSmoothingQuality = 'high';
+        const soft = soften(shape, 7), shift = .026 * unit * ratio;
+        const halo = soften(shape, 16);
+        g.globalAlpha = .5; g.drawImage(tinted(halo, mix(light, '#fff4e4', .3)), 0, 0);
+        g.globalCompositeOperation = 'screen';
+        g.globalAlpha = .55; g.drawImage(tinted(soft, '#7fe0a0'), -shift, -shift * .4);
+        g.globalAlpha = .5; g.drawImage(tinted(soft, '#ff8a5c'), shift, shift * .4);
+        g.globalCompositeOperation = 'source-over';
+        g.globalAlpha = 1; g.drawImage(soft, 0, 0);
+        g.globalAlpha = .35; g.drawImage(soften(shape, 3.5), 0, 0);
+        return out;
+      };
+
+      // The body, head, ears, tail (and a dog's snout).
+      const shape = canvasOf(W * ratio, H * ratio), s = shape.getContext('2d')!;
+      s.scale(ratio, ratio); s.fillStyle = '#fff'; s.strokeStyle = '#fff'; s.lineCap = 'round';
+      s.beginPath(); s.ellipse(X(bodyCx), Y(bodyCy), bodyLength / 2 * unit, bodyDepth / 2 * unit, 0, 0, Math.PI * 2); s.fill();
+      // A round haunch at the back and a full chest at the front, for volume.
+      s.beginPath(); s.arc(X(bodyCx - bodyLength * .3), Y(bodyCy + bodyDepth * .05), bodyDepth * .55 * unit, 0, Math.PI * 2); s.fill();
+      s.beginPath(); s.arc(X(bodyCx + bodyLength * .3), Y(bodyCy - bodyDepth * .05), bodyDepth * .5 * unit, 0, Math.PI * 2); s.fill();
+      // Neck, from the shoulders up to the head.
+      s.beginPath(); s.moveTo(X(bodyCx + bodyLength * .28), Y(bodyCy - bodyDepth * .35)); s.lineTo(X(headX - headR * .3), Y(headY)); s.lineWidth = headR * 1.3 * unit; s.stroke();
+      s.beginPath(); s.arc(X(headX), Y(headY), headR * unit, 0, Math.PI * 2); s.fill();
+      if (dog) {
+        s.beginPath(); s.ellipse(X(headX + headR * .85), Y(headY + headR * .35), headR * .62 * unit, headR * .45 * unit, .1, 0, Math.PI * 2); s.fill();
+        // Floppy ears, hanging by the cheeks.
+        s.beginPath(); s.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .32 * unit, headR * .7 * unit, .35, 0, Math.PI * 2); s.fill();
+      } else {
+        // Pointed ears.
+        for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
+          s.beginPath();
+          s.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .55));
+          s.lineTo(X(headX + headR * tip), Y(headY - headR * 1.55));
+          s.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .75));
+          s.closePath(); s.fill();
+        }
+      }
+      // Tail: a cat's rises in a soft curve; a dog's is shorter and wags up.
+      const tailBaseX = bodyCx - bodyLength / 2 + .03, tailBaseY = bodyCy - bodyDepth * .2;
+      s.lineWidth = (dog ? .05 : .045) * unit;
+      s.beginPath(); s.moveTo(X(tailBaseX), Y(tailBaseY));
+      if (dog) s.quadraticCurveTo(X(tailBaseX - .12), Y(tailBaseY - .02), X(tailBaseX - .14), Y(tailBaseY - .2));
+      else s.quadraticCurveTo(X(tailBaseX - .2), Y(tailBaseY - .02), X(tailBaseX - .16), Y(tailBaseY - .34 - random() * .06));
+      s.stroke();
+      const body = finish(shape, (c) => {
+        c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
+        coat(c, W, H);
+        // Markings.
+        if (look.pattern === 1) {
+          // Tabby: soft curved stripes across the back, a few on the forehead, rings on the tail.
+          c.strokeStyle = dark; c.globalAlpha = .55; c.lineCap = 'round'; c.lineWidth = .028 * unit;
+          for (let i = 0; i < 6; i++) {
+            const x = bodyCx - bodyLength * .38 + i * bodyLength * .15;
+            c.beginPath(); c.moveTo(X(x - .02), Y(bodyCy - bodyDepth * .55)); c.quadraticCurveTo(X(x + .03), Y(bodyCy), X(x - .01), Y(bodyCy + bodyDepth * .3)); c.stroke();
+          }
+          for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(X(headX + i * headR * .3), Y(headY - headR * .85)); c.lineTo(X(headX + i * headR * .25), Y(headY - headR * .4)); c.stroke(); }
+          for (let i = 1; i <= 3; i++) { c.beginPath(); c.arc(X(tailBaseX - .05 - i * .035), Y(tailBaseY - i * .08), .03 * unit, 0, Math.PI * 2); c.stroke(); }
+          c.globalAlpha = 1;
+        } else if (look.pattern === 2) {
+          // Patches: the darkest colour on the back and head, the lightest on the chest, belly and muzzle.
+          c.fillStyle = dark; c.globalAlpha = .7;
+          c.beginPath(); c.ellipse(X(bodyCx - bodyLength * .05), Y(bodyCy - bodyDepth * .2), bodyLength * .38 * unit, bodyDepth * .35 * unit, 0, 0, Math.PI * 2); c.fill();
+          c.beginPath(); c.arc(X(headX), Y(headY - headR * .3), headR * .85 * unit, 0, Math.PI * 2); c.fill();
+          c.fillStyle = mix(light, '#ffffff', .4); c.globalAlpha = .9;
+          c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .1), Y(bodyCy + bodyDepth * .3), bodyLength * .3 * unit, bodyDepth * .22 * unit, 0, 0, Math.PI * 2); c.fill();
+          c.beginPath(); c.ellipse(X(headX + headR * .3), Y(headY + headR * .45), headR * .5 * unit, headR * .4 * unit, 0, 0, Math.PI * 2); c.fill();
+          c.globalAlpha = 1;
+        }
+        // A lighter glow on the face and chest.
+        const face = c.createRadialGradient(X(headX), Y(headY), 0, X(headX), Y(headY), headR * 1.6 * unit);
+        face.addColorStop(0, 'rgba(255, 248, 236, .35)'); face.addColorStop(1, 'rgba(255, 248, 236, 0)');
+        c.fillStyle = face; c.fillRect(0, 0, W, H);
+      });
+
+      // The legs: back pair and front pair, the far one of each a little darker.
+      const legs: Leg[] = [];
+      const legLength = 1 - legTop;
+      for (const [lx, near, front] of [[bodyCx - bodyLength * .32, false, false], [bodyCx - bodyLength * .2, true, false], [bodyCx + bodyLength * .26, false, true], [bodyCx + bodyLength * .38, true, true]] as Array<[number, boolean, boolean]>) {
+        const lw = (legW + .3) * unit, lh = (legLength + .3) * unit;
+        const leg = canvasOf(lw * ratio, lh * ratio), l = leg.getContext('2d')!;
+        l.scale(ratio, ratio); l.fillStyle = '#fff';
+        const cx = lw / 2, top = .12 * unit;
+        l.beginPath(); l.roundRect(cx - legW / 2 * unit, top, legW * unit, legLength * unit, legW / 2 * unit); l.fill();
+        l.beginPath(); l.ellipse(cx + legW * .2 * unit, top + legLength * unit - legW * .25 * unit, legW * .62 * unit, legW * .42 * unit, 0, 0, Math.PI * 2); l.fill();
+        const painted = finish(leg, (c) => {
+          c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
+          const fill = c.createLinearGradient(0, top, 0, top + legLength * unit);
+          fill.addColorStop(0, mid); fill.addColorStop(1, near ? dark : mix(dark, '#1a1530', .3));
+          c.fillStyle = fill; c.fillRect(0, 0, lw, lh);
+          if (look.pattern === 2) { c.fillStyle = mix(light, '#ffffff', .4); c.globalAlpha = .85; c.fillRect(0, top + legLength * unit * .72, lw, lh); c.globalAlpha = 1; }
+          if (look.pattern === 1) { c.strokeStyle = dark; c.globalAlpha = .45; c.lineWidth = .022 * unit; for (let i = 1; i <= 2; i++) { c.beginPath(); c.moveTo(cx - legW * unit, top + legLength * unit * i * .3); c.lineTo(cx + legW * unit, top + legLength * unit * i * .3 + .01 * unit); c.stroke(); } c.globalAlpha = 1; }
+        });
+        // In figure space (origin at the middle of its feet): where the leg hangs from.
+        legs.push({ canvas: painted, x: (lx - bodyCx) * unit, y: (legTop - 1) * unit, w: lw, h: lh, pivotX: cx, pivotY: top, near, front });
+      }
+      const eyeY = headY - headR * .1, eyes = (dog ? [headX + headR * .05, headX + headR * .55] : [headX - headR * .15, headX + headR * .45]).map((ex) => ({ x: (ex - bodyCx) * unit, y: (eyeY - 1) * unit }));
+      return {
+        body: { canvas: body, x: -X(bodyCx), y: -Y(1), w: W, h: H },
+        legs, eyes, eyeR: headR * .16 * unit, legLength: legLength * unit, unit,
+      };
+    };
+
+    /** The caregiver: a soft, luminous girl with a bob and a short dress, warm white into pale lime, glowing orange from
+        her chest, with a layered halo; both arms drawn on their own so they can move. */
+    let keeper: HTMLCanvasElement | null = null;
+    const KEEPER = .78; // Her height, as a share of the frame's.
+    type Limb = { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number; length: number };
+    let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
+    const UPPER = .13, FOREARM = .15; // Her upper arm and forearm, as shares of her height.
+    const KEEPER_PAD = .55; // Room around her for her halo, as a share of her height.
+    const paintKeeper = (size: number) => {
+      const w = size * .56, pad = size * KEEPER_PAD;
+      const shape = canvasOf(w + pad * 2, size + pad * 2), s = shape.getContext('2d')!;
+      const cx = (w + pad * 2) / 2, top = pad, u = size;
+      s.fillStyle = '#fff';
+      const round = (x: number, y: number, rw: number, rh: number, r: number) => { s.beginPath(); s.roundRect(cx + x * u - rw * u / 2, top + y * u, rw * u, rh * u, r * u); s.fill(); };
+      // Like the girl in the references: a bob haircut, a short A-line dress, bare legs and little shoes.
+      s.beginPath(); s.ellipse(cx, top + .1 * u, .1 * u, .1 * u, 0, 0, Math.PI * 2); s.fill(); // Head and crown
+      round(0, .08, .21, .14, .05); // The bob, down to the chin
+      round(0, .2, .05, .04, .02); // Neck
+      s.beginPath(); // The dress, from the shoulders out to a rounded hem above the knee.
+      s.moveTo(cx - .085 * u, top + .23 * u); s.quadraticCurveTo(cx, top + .21 * u, cx + .085 * u, top + .23 * u);
+      s.quadraticCurveTo(cx + .14 * u, top + .42 * u, cx + .19 * u, top + .62 * u);
+      s.quadraticCurveTo(cx, top + .67 * u, cx - .19 * u, top + .62 * u);
+      s.quadraticCurveTo(cx - .14 * u, top + .42 * u, cx - .085 * u, top + .23 * u);
+      s.fill();
+      round(-.045, .6, .048, .36, .024); round(.045, .6, .048, .36, .024); // Legs
+      s.beginPath(); s.ellipse(cx - .05 * u, top + .965 * u, .04 * u, .02 * u, 0, 0, Math.PI * 2); s.fill(); // Shoes
+      s.beginPath(); s.ellipse(cx + .05 * u, top + .965 * u, .04 * u, .02 * u, 0, 0, Math.PI * 2); s.fill();
+      const W = w + pad * 2, H = size + pad * 2;
+      const out = canvasOf(W * ratio, H * ratio), g = out.getContext('2d')!;
+      g.scale(ratio, ratio);
+      g.imageSmoothingQuality = 'high';
+      // Ethereal: no edge anywhere. Her halo fades out in layers, wider and fainter each time, then her body, itself
+      // mostly glow; all of it in her colours: warm white into a pale lime, a warm orange glow in her chest.
+      for (const [blur, grow, alpha] of [[72, 1.7, .16], [52, 1.48, .2], [36, 1.3, .24], [22, 1.15, .3], [12, 1.05, .38]] as Array<[number, number, number]>) {
+        g.globalAlpha = alpha; g.drawImage(soften(shape, blur), W * (1 - grow) / 2, H * (1 - grow) / 2.6, W * grow, H * grow);
+      }
+      g.globalAlpha = .95; g.drawImage(soften(shape, 7), 0, 0, W, H);
+      g.drawImage(soften(shape, 4.5), 0, 0, W, H);
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = 'source-in';
+      const fill = g.createLinearGradient(0, top, 0, top + size);
+      fill.addColorStop(0, '#fffdf6'); fill.addColorStop(.3, '#f9f6e6'); fill.addColorStop(.6, '#eef6c4'); fill.addColorStop(1, '#bfe8a4');
+      g.fillStyle = fill; g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = 'source-atop';
+      const heart = g.createRadialGradient(cx, top + .4 * u, 0, cx, top + .4 * u, .24 * u);
+      heart.addColorStop(0, 'rgba(255, 130, 80, .55)'); heart.addColorStop(.55, 'rgba(255, 175, 140, .18)'); heart.addColorStop(1, 'rgba(255, 175, 140, 0)');
+      g.fillStyle = heart; g.fillRect(0, 0, W, H);
+      // Her feet melt softly into the floor.
+      g.globalCompositeOperation = 'destination-out';
+      const floor = g.createLinearGradient(0, top + .9 * u, 0, top + 1.04 * u);
+      floor.addColorStop(0, 'rgba(0, 0, 0, 0)'); floor.addColorStop(1, 'rgba(0, 0, 0, 1)');
+      g.fillStyle = floor; g.fillRect(0, top + .9 * u, W, size);
+      // Her face, a warm peach glow.
+      g.globalCompositeOperation = 'source-over';
+      const face = g.createRadialGradient(cx, top + .13 * u, 0, cx, top + .13 * u, .075 * u);
+      face.addColorStop(0, 'rgba(255, 150, 112, .8)'); face.addColorStop(.6, 'rgba(255, 175, 140, .35)'); face.addColorStop(1, 'rgba(255, 175, 140, 0)');
+      g.fillStyle = face; g.fillRect(cx - .1 * u, top + .03 * u, .2 * u, .2 * u);
+      for (const ex of [-.026, .03]) drawEye(g, cx + ex * u, top + .135 * u, .008 * u);
+      keeper = out;
+      // Her arms, each an upper arm from the shoulder and a forearm with the hand from the elbow, tapering, soft and
+      // glowing like her. The shoulder melts into her body; the forearm turns lilac towards the hand.
+      // Like the reference: a puffed sleeve at the shoulder, a slender arm, and a hand with soft fingers; pale at the
+      // sleeve, turning lilac-blue towards the hand.
+      const limb = (length: number, from: number, to: number, colours: string[], hand: boolean, sleeve: boolean): Limb => {
+        const lp = .08 * u, form = canvasOf(lp * 2 + from * 3.2, length + lp * 2 + (hand ? .07 * u : 0)), a = form.getContext('2d')!;
+        const ax = form.width / 2, y0 = lp, y1 = lp + length;
+        a.fillStyle = '#fff'; a.strokeStyle = '#fff'; a.lineCap = 'round';
+        a.beginPath(); a.arc(ax, y0, from, 0, Math.PI * 2); a.fill();
+        a.beginPath(); a.arc(ax, y1, to, 0, Math.PI * 2); a.fill();
+        a.beginPath(); a.moveTo(ax - from, y0); a.quadraticCurveTo(ax - (from + to) * .45, (y0 + y1) / 2, ax - to, y1); a.lineTo(ax + to, y1); a.quadraticCurveTo(ax + (from + to) * .5, (y0 + y1) / 2, ax + from, y0); a.fill();
+        if (sleeve) { a.beginPath(); a.ellipse(ax, y0 + length * .22, from * 1.55, length * .3, 0, 0, Math.PI * 2); a.fill(); }
+        if (hand) {
+          // A small palm and four slim fingers, slightly spread, resting downwards.
+          a.beginPath(); a.ellipse(ax, y1 + to * .9, to * 1.25, to * 1.4, 0, 0, Math.PI * 2); a.fill();
+          a.lineWidth = to * .55;
+          [-.9, -.3, .3, .9].forEach((spread, i) => { a.beginPath(); a.moveTo(ax + spread * to * .8, y1 + to * 1.8); a.lineTo(ax + spread * to * 1.3, y1 + to * (3.6 + (i === 1 || i === 2 ? .5 : 0))); a.stroke(); });
+        }
+        const done = canvasOf(form.width * ratio, form.height * ratio), d = done.getContext('2d')!;
+        d.scale(ratio, ratio); d.imageSmoothingQuality = 'high';
+        d.globalAlpha = .35; d.drawImage(soften(form, 10), 0, 0, form.width, form.height);
+        d.globalAlpha = .95; d.drawImage(soften(form, 2.6), 0, 0, form.width, form.height);
+        d.globalCompositeOperation = 'source-in';
+        const tint = d.createLinearGradient(0, y0, 0, form.height - lp);
+        colours.forEach((colour, i) => tint.addColorStop(i / (colours.length - 1), colour));
+        d.fillStyle = tint; d.fillRect(0, 0, form.width, form.height);
+        if (sleeve) {
+          // The shoulder melts into her body.
+          d.globalCompositeOperation = 'destination-out';
+          const fade = d.createLinearGradient(0, 0, 0, y0 + length * .35);
+          fade.addColorStop(0, 'rgba(0, 0, 0, 1)'); fade.addColorStop(.5, 'rgba(0, 0, 0, .45)'); fade.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          d.fillStyle = fade; d.fillRect(0, 0, form.width, y0 + length * .35);
+        }
+        return { canvas: done, w: form.width, h: form.height, pivotX: ax, pivotY: y0, length };
+      };
+      keeperArms = {
+        reachUpper: limb(UPPER * u, .028 * u, .019 * u, ['#fcf8ec', '#f2f1de'], false, true),
+        reachLower: limb(FOREARM * u, .019 * u, .013 * u, ['#eeedf2', '#dedaf3', '#c2bcf0'], true, false), // A light lilac at the hand.
+        restUpper: limb(UPPER * u, .028 * u, .019 * u, ['#fcf8ec', '#eff3d8'], false, true),
+        restLower: limb(FOREARM * u, .019 * u, .013 * u, ['#eff3d8', '#e2eec8', '#cde4b4'], true, false),
+      };
+    };
+    let petting = 0; // Until when she is stroking a newcomer.
+    // Her shoulders and her reaching hand, in the frame (shares of width and height).
+    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.09 * KEEPER * height) / width, y: 1.02 - KEEPER + .245 * KEEPER });
+    // At rest (angles from straight down; positive swings to her right, our left): the reaching arm hangs a little out
+    // with the elbow softly bent towards the animals; the other one hangs along her side.
+    const UPPER_ANGLE = .26, FOREARM_ANGLE = .5, REST_UPPER = -.14, REST_FOREARM = -.05;
+    const handAt = () => {
+      const sh = shoulder(-1);
+      const dx = -(Math.sin(UPPER_ANGLE) * UPPER + Math.sin(FOREARM_ANGLE) * FOREARM) * KEEPER, dy = (Math.cos(UPPER_ANGLE) * UPPER + Math.cos(FOREARM_ANGLE) * FOREARM) * KEEPER;
+      return { x: sh.x + dx * height / width, y: sh.y + dy };
+    };
+    const drawArm = (from: { x: number; y: number }, upperAngle: number, lowerAngle: number, upperLimb: Limb, lowerLimb: Limb, sway: number) => {
+      context.save();
+      context.translate(from.x * width, from.y * height + sway);
+      context.rotate(upperAngle);
+      context.drawImage(upperLimb.canvas, -upperLimb.pivotX, -upperLimb.pivotY, upperLimb.w, upperLimb.h);
+      context.translate(0, upperLimb.length);
+      context.rotate(lowerAngle - upperAngle);
+      context.drawImage(lowerLimb.canvas, -lowerLimb.pivotX, -lowerLimb.pivotY, lowerLimb.w, lowerLimb.h);
+      context.restore();
+    };
+
+    /** Plants, blurred like they are out of focus: flowers on round heads along the horizon, and tall leafy stems in
+        front, near the edges. Each sways from its base. */
+    let plants: { back: Plant[]; front: Plant[] } = { back: [], front: [] };
+    const paintPlant = (kind: 'flower' | 'leaves', w: number, h: number, seed: number, blur: number) => {
+      let n = seed;
+      const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
+      const shape = canvasOf(w, h), s = shape.getContext('2d')!;
+      s.lineCap = 'round';
+      if (kind === 'flower') {
+        const stems = 1 + Math.floor(random() * 3);
+        for (let i = 0; i < stems; i++) {
+          const bx = w * (.35 + random() * .3), tx = bx + (random() - .5) * w * .4, ty = h * (.08 + random() * .35);
+          s.strokeStyle = SETTINGS.plants.stem; s.lineWidth = Math.max(1, w * .05);
+          s.beginPath(); s.moveTo(bx, h); s.quadraticCurveTo(bx, (h + ty) / 2, tx, ty); s.stroke();
+          s.fillStyle = SETTINGS.plants.back;
+          s.beginPath(); s.arc(tx, ty, w * (.1 + random() * .07), 0, Math.PI * 2); s.fill();
+        }
+      } else {
+        s.strokeStyle = SETTINGS.plants.front; s.fillStyle = SETTINGS.plants.front;
+        const bx = w * .5;
+        s.lineWidth = Math.max(1, w * .035);
+        s.beginPath(); s.moveTo(bx, h); s.quadraticCurveTo(bx + w * .1, h * .5, bx - w * .05, 0); s.stroke();
+        const leaves = 5 + Math.floor(random() * 4);
+        for (let i = 0; i < leaves; i++) {
+          const y = h * (.12 + .8 * (i / leaves)), side = i % 2 ? 1 : -1, len = w * (.3 + random() * .2);
+          s.save(); s.translate(bx + w * .03 * (1 - y / h), y); s.rotate(side * (.6 + random() * .5));
+          s.beginPath(); s.ellipse(side * len / 2, 0, len / 2, len * .14, side * -.5, 0, Math.PI * 2); s.fill(); s.restore();
+        }
+      }
+      const out = canvasOf(w * ratio, h * ratio), g = out.getContext('2d')!;
+      g.imageSmoothingQuality = 'high';
+      if (kind === 'leaves') {
+        // The leaves in front keep a coarser, blotchy blur (one jump down and back up): soft patches, like the reference.
+        const tiny = canvasOf(shape.width / blur, shape.height / blur), t = tiny.getContext('2d')!;
+        t.imageSmoothingQuality = 'high';
+        t.drawImage(shape, 0, 0, tiny.width, tiny.height);
+        g.drawImage(tiny, 0, 0, out.width, out.height);
+      } else g.drawImage(soften(shape, blur), 0, 0, out.width, out.height);
+      return out;
+    };
+    const growPlants = () => {
+      let n = 17;
+      const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
+      const back: Plant[] = [], front: Plant[] = [];
+      const horizon = height * SETTINGS.horizon;
+      const variants = Array.from({ length: 8 }, (_, i) => { const h = height * (.13 + random() * .14), w = h * .7; return { sprite: paintPlant('flower', w, h, 31 + i * 7, 4), w, h }; });
+      for (let x = -width * .02; x < width * 1.02; x += width * (.022 + random() * .025)) {
+        const v = variants[Math.floor(random() * variants.length)];
+        back.push({ ...v, x, y: horizon + height * (random() * .06 - .01), phase: random() * 6.28, sway: .04 + random() * .04 });
+      }
+      for (const [x, lean] of [[.03, 1], [.1, 1], [.18, 1], [.84, -1], [.92, -1], [.98, -1]] as Array<[number, number]>) {
+        const h = height * (.32 + random() * .22), w = h * .5;
+        front.push({ sprite: paintPlant('leaves', w, h, 101 + Math.round(x * 100), 7), x: width * x + lean * random() * width * .02, y: height * 1.04, w, h, phase: random() * 6.28, sway: .05 + random() * .03 });
+      }
+      plants = { back, front };
+    };
+    const drawPlant = (plant: Plant, t: number, alpha: number) => {
+      context.save();
+      context.globalAlpha = alpha;
+      context.translate(plant.x, plant.y);
+      context.rotate(calm ? 0 : Math.sin(t * .7 + plant.phase) * plant.sway + Math.sin(t * 1.9 + plant.phase * 2) * plant.sway * .25);
+      context.drawImage(plant.sprite, -plant.w / 2, -plant.h, plant.w, plant.h);
+      context.restore();
+    };
+
+    // Homes: rings around the caregiver, on the ground (feet between the horizon and the bottom), nearest first.
+    let homes: Array<{ x: number; y: number }> = [];
+    const layout = () => {
+      homes = [];
+      const rings = [8, 10, 12, 12];
+      let seed = 5;
+      const random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+      rings.forEach((count, ring) => {
+        const rx = .2 + ring * .09, ry = .15 + ring * .06;
+        for (let j = 0; j < count; j++) {
+          const a = Math.PI * .72 + (j + (ring % 2) * .5 + random() * .3) / count * Math.PI * 1.56;
+          homes.push({ x: Math.min(.95, Math.max(.05, .5 + Math.cos(a) * rx)), y: Math.min(.97, Math.max(SETTINGS.horizon + .06, .78 + Math.sin(a) * ry)) });
+        }
+      });
+    };
+    layout();
+    // How big a soul is where it stands: smaller far away (up near the horizon), larger up close; and by its kind/size.
+    const kindScale = (look: Look) => SETTINGS.scale[look.kind][look.size];
+    const unitAt = (soul: Soul) => soul.act === 'held' && soul.heldUnit ? soul.heldUnit : height * (.11 + Math.min(1, Math.max(0, (soul.y - SETTINGS.horizon) / (1 - SETTINGS.horizon))) * .2) * kindScale(soul.look);
+    const PAINT_AT = .32; // Figures are painted at the largest size they can have (share of the height), then drawn smaller.
+
+    const meet = (id: string, look: Look, index: number, born: number): Soul => {
+      const home = homes[index % homes.length], h = hash(id);
+      return { id, look, born, hx: home.x, hy: home.y, x: home.x, y: home.y, fromX: home.x, fromY: home.y, toX: home.x, toY: home.y, act: 'sit', actStart: 0, actEnd: 0, face: home.x < .5 ? 1 : -1, faceShown: home.x < .5 ? 1 : -1, blink: 0, phase: (h % 1000) / 1000 * 6.28, drawn: 0 };
+    };
+
+    /** What a soul does next. */
+    const decide = (soul: Soul, now: number) => {
+      const acts = Object.entries(SETTINGS.acts) as Array<[Act, [number, number, number]]>;
+      let pick = Math.random(), act: Act = 'sit';
+      for (const [name, [weight]] of acts) { pick -= weight; if (pick <= 0) { act = name; break; } }
+      // After her welcome, a newcomer walks off to its own place.
+      const goingHome = soul.act === 'pet';
+      if (goingHome) act = 'walk';
+      soul.fromX = soul.x; soul.fromY = soul.y; soul.toX = soul.x; soul.toY = soul.y;
+      let length: number;
+      if (act === 'walk') {
+        // A short walk around its home, then it faces where it goes.
+        soul.toX = goingHome ? soul.hx : Math.min(.96, Math.max(.04, soul.hx + (Math.random() - .5) * .22));
+        soul.toY = goingHome ? soul.hy : Math.min(.98, Math.max(SETTINGS.horizon + .05, soul.hy + (Math.random() - .5) * .1));
+        const distance = Math.hypot(soul.toX - soul.x, (soul.toY - soul.y) * height / width);
+        length = Math.max(1.2, distance / SETTINGS.walkSpeed);
+        if (Math.abs(soul.toX - soul.x) > .005) soul.face = Math.sign(soul.toX - soul.x);
+      } else {
+        const [, min, max] = SETTINGS.acts[act];
+        length = min + Math.random() * (max - min);
+        // Standing, it turns towards her now and then.
+        if (act === 'sit' && Math.random() < .5) soul.face = soul.x < .5 ? 1 : -1;
+      }
+      soul.act = act; soul.actStart = now; soul.actEnd = now + length * 1000;
+    };
+
+    const resize = () => {
+      const rect = root.getBoundingClientRect();
+      ratio = Math.min(devicePixelRatio || 1, 2);
+      if (Math.round(rect.width) === width && Math.round(rect.height) === height) return;
+      width = Math.round(rect.width); height = Math.round(rect.height);
+      canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
+      paintKeeper(height * KEEPER);
+      growPlants();
+      souls.forEach((soul) => { soul.figure = undefined; });
+    };
+
+    const draw = (time: number) => {
+      if (!width) return;
+      const t = calm ? 0 : time / 1000, now = performance.now();
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.globalCompositeOperation = 'source-over';
+      // Coral sky into lavender ground; a warm glow on the floor beneath her.
+      const sky = context.createLinearGradient(0, 0, 0, height);
+      SETTINGS.sky.forEach(([at, color]) => sky.addColorStop(at, color));
+      context.fillStyle = sky; context.fillRect(0, 0, width, height);
+      const pool = context.createRadialGradient(width * .5, height * .9, 0, width * .5, height * .9, width * .3);
+      pool.addColorStop(0, `rgba(240, 120, 96, ${.6 + .08 * Math.sin(t * .6)})`); pool.addColorStop(1, 'rgba(240, 120, 96, 0)');
+      context.save(); context.translate(0, height * .9); context.scale(1, .4); context.translate(0, -height * .9);
+      context.fillStyle = pool; context.fillRect(0, 0, width, height * 2.5); context.restore();
+      plants.back.forEach((plant) => drawPlant(plant, t, .85));
+      const aura = context.createRadialGradient(width * .5, height * .45, 0, width * .5, height * .45, height * .55);
+      aura.addColorStop(0, `rgba(255, 236, 205, ${.55 + .08 * Math.sin(t * .7)})`); aura.addColorStop(1, 'rgba(255, 236, 205, 0)');
+      context.fillStyle = aura; context.fillRect(0, 0, width, height);
+
+      const drawSoul = (soul: Soul) => {
+        if (!calm && now > soul.actEnd) decide(soul, now);
+        const dt = soul.drawn ? Math.min(.1, (now - soul.drawn) / 1000) : 0;
+        soul.drawn = now;
+        const p = soul.actEnd > soul.actStart ? Math.min(1, (now - soul.actStart) / (soul.actEnd - soul.actStart)) : 1;
+        if (soul.act === 'walk') { soul.x = soul.fromX + (soul.toX - soul.fromX) * ease(p); soul.y = soul.fromY + (soul.toY - soul.fromY) * ease(p); }
+        const unit = unitAt(soul), paintUnit = Math.round(height * PAINT_AT * kindScale(soul.look));
+        if (!soul.figure || soul.figure.unit !== paintUnit) soul.figure = paintFigure(soul, paintUnit);
+        const figure = soul.figure, k = unit / figure.unit;
+        // Its pose for what it is doing, eased in and out so one thing flows into the next.
+        const into = ease(Math.min(1, (now - soul.actStart) / 700)) * ease(Math.min(1, Math.max(0, (soul.actEnd - now) / 700)));
+        const breath = Math.sin(t * 1.5 + soul.phase);
+        let lift = 0, sx = 1, sy = 1 + breath * .008, tilt = 0, eyesOpen = 1, stride = 0, pace = 0, fold = 0;
+        if (!calm) {
+          if (soul.act === 'walk') {
+            // Steps follow the ground actually covered, so the legs slow down as it starts and stops.
+            const covered = Math.hypot((soul.x - soul.fromX) * width, (soul.y - soul.fromY) * height);
+            stride = covered / (unit * .3) * Math.PI;
+            pace = Math.sin(p * Math.PI); // 0 standing, 1 at full pace.
+            lift = (1 - Math.cos(stride * 2)) / 2 * unit * .012 * pace;
+            tilt = Math.sin(stride) * .006 * pace;
+          }
+          if (soul.act === 'hop') {
+            // Crouch, spring, land soft.
+            const air = p > .2 && p < .8 ? Math.sin((p - .2) / .6 * Math.PI) : 0;
+            const crouch = Math.max(0, 1 - Math.abs(p - .14) / .14) + Math.max(0, 1 - Math.abs(p - .88) / .12);
+            lift = Math.pow(air, 1.3) * unit * .16;
+            fold = crouch * .25;
+            sy = 1 + air * .02;
+          }
+          if (soul.act === 'stretch') { const e = ease(Math.sin(p * Math.PI)); sx = 1 + e * .06; sy = 1 - e * .03; fold = e * .15; }
+          if (soul.act === 'groom') tilt = Math.sin((now - soul.actStart) / 1000 * 3.2) * .02 * into;
+          // Lying down to nap: the legs fold under it and it settles low, breathing slowly.
+          if (soul.act === 'sleep') { fold = .75 * into; sy = 1 + Math.sin(t * .8 + soul.phase) * .012; }
+          if (soul.act === 'pet') { tilt = -soul.face * .025 * into; fold = .15 * into; }
+          // Landing after a drop: a little crouch.
+          if (soul.landed && now - soul.landed < 320) { const c = 1 - (now - soul.landed) / 320; fold = Math.max(fold, c * .3); sy *= 1 - c * .04; }
+          // Blinks.
+          if (now > soul.blink + 4200 + (soul.phase * 600)) soul.blink = now;
+          if (now - soul.blink < 140) eyesOpen = 0;
+        }
+        // Picked up, or falling back: hanging from where it is held, legs dangling like pendulums that swing with the
+        // hand's moves; let go, it falls, bounces a little and stands again where it landed.
+        const airborne = soul.act === 'held' || soul.act === 'fall';
+        if (airborne) {
+          if (soul.act === 'fall') {
+            soul.airV = (soul.airV ?? 0) + 3200 * dt;
+            soul.air = (soul.air ?? soul.y * height) + soul.airV * dt;
+            if (soul.air >= soul.y * height) {
+              soul.air = soul.y * height;
+              soul.landed = now;
+              if (soul.airV > 260) soul.airV *= -.28;
+              else { soul.act = 'sit'; soul.actStart = now; soul.actEnd = now + 2500; soul.hx = soul.x; soul.hy = soul.y; soul.air = undefined; }
+            }
+          }
+          const shake = soul.act === 'held' && held ? held.ax : 0;
+          soul.swingV = (soul.swingV ?? 0) + (-55 * (soul.swing ?? 0) - 4.5 * (soul.swingV ?? 0) - shake * .0005) * dt;
+          soul.swing = Math.max(-.7, Math.min(.7, (soul.swing ?? 0) + soul.swingV * dt));
+          const lean = soul.act === 'held' && held ? Math.max(-.35, Math.min(.35, held.vx * .0004)) : 0;
+          soul.hang = (soul.hang ?? 0) + (lean - (soul.hang ?? 0)) * Math.min(1, dt * 8);
+          if (soul.air !== undefined) lift = soul.y * height - soul.air;
+          tilt = soul.hang; fold = 0; sx = .98; sy = 1.03; stride = 0; pace = 0;
+        }
+        const dangling = airborne && soul.air !== undefined;
+        // Turning round takes a moment: it narrows, then opens the other way.
+        soul.faceShown += (soul.face - soul.faceShown) * Math.min(1, dt * 5);
+        if (calm) soul.faceShown = soul.face;
+        const facing = Math.sign(soul.faceShown) || 1;
+        const fade = soul.born ? Math.min(1, (now - soul.born) / 1600) : 1;
+        context.save();
+        context.globalAlpha = fade;
+        context.translate(soul.x * width, soul.y * height - lift);
+        // A soft shadow on the floor.
+        context.save(); context.globalAlpha = fade * .22 * (1 - Math.min(1, lift / unit)); context.scale(1, .18);
+        const shade = context.createRadialGradient(0, 0, 0, 0, 0, unit * .55); shade.addColorStop(0, '#2b2166'); shade.addColorStop(1, 'rgba(43, 33, 102, 0)');
+        context.fillStyle = shade; context.fillRect(-unit, -unit, unit * 2, unit * 2); context.restore();
+        context.rotate(tilt);
+        context.scale(soul.faceShown * sx * k, sy * k);
+        // Folded legs lower the body by as much.
+        const drop = figure.legLength * fold;
+        const drawLeg = (leg: Leg) => {
+          // Diagonal pairs step together (back-far with front-near), like a real walk.
+          const together = leg.near === leg.front;
+          // Dangling, the legs keep hanging straight down whatever its lean, and swing on their own.
+          const swing = dangling
+            ? facing * ((soul.swing ?? 0) * (leg.front ? 1 : .8) + Math.sin(t * 2.4 + (leg.near ? 1 : 0) + (leg.front ? 2 : 0)) * .05 - tilt)
+            : Math.sin(stride + (together ? 0 : Math.PI)) * .28 * pace;
+          context.save();
+          context.translate(leg.x, leg.y + drop);
+          context.rotate(swing);
+          context.scale(1, 1 - fold);
+          context.drawImage(leg.canvas, -leg.pivotX, -leg.pivotY, leg.w, leg.h);
+          context.restore();
+        };
+        figure.legs.filter((leg) => !leg.near).forEach(drawLeg);
+        context.drawImage(figure.body.canvas, figure.body.x, figure.body.y + drop, figure.body.w, figure.body.h);
+        figure.legs.filter((leg) => leg.near).forEach(drawLeg);
+        if (eyesOpen > .5 || soul.act === 'sleep') for (const eye of figure.eyes) drawEye(context, eye.x, eye.y + drop, figure.eyeR, soul.act === 'sleep');
+        context.restore();
+      };
+      // Further away first; those behind her before her, the rest after.
+      const order = souls.filter((soul) => soul.act !== 'held' && soul.act !== 'fall').sort((a, b) => a.y - b.y);
+      const herLine = .86;
+      order.filter((soul) => soul.y < herLine).forEach(drawSoul);
+      const sway = calm ? 0 : Math.sin(t * .5) * height * .003;
+      if (keeperArms) {
+        // The arm along her side, behind her glow, swaying a little.
+        const idle = calm ? 0 : Math.sin(t * .7 + 1) * .02;
+        drawArm(shoulder(1), REST_UPPER + idle, REST_FOREARM + idle * 1.4, keeperArms.restUpper, keeperArms.restLower, sway);
+      }
+      if (keeper) {
+        const w = keeper.width / ratio, h = keeper.height / ratio, size = height * KEEPER;
+        context.drawImage(keeper, width * .5 - w / 2, height * 1.02 - (size * KEEPER_PAD + size) + sway, w, h);
+      }
+      order.filter((soul) => soul.y >= herLine).forEach(drawSoul);
+      if (keeperArms) {
+        // Her reaching arm: resting, it sways a little; stroking a newcomer, it goes back and forth along its back. The
+        // stroke comes from the elbow and wrist, the shoulder barely moves: slow, even, like a real caress.
+        const stroking = !calm && now < petting ? ease(Math.min(1, (petting - now) / 600, (now - petting + 5000) / 600)) : 0;
+        const idle = calm ? 0 : Math.sin(t * .8) * .02, stroke = Math.sin(t * 2 * Math.PI * .65);
+        drawArm(shoulder(-1), UPPER_ANGLE + idle + stroking * (.06 + stroke * .05), FOREARM_ANGLE + idle * 1.5 + stroking * (.12 + stroke * .2), keeperArms.reachUpper, keeperArms.reachLower, sway);
+      }
+      plants.front.forEach((plant) => drawPlant(plant, t, .8));
+      // Whoever is in the air, over everything.
+      if (held && now - held.lastT > 60) { held.vx *= .85; held.ax = 0; }
+      souls.filter((soul) => soul.act === 'held' || soul.act === 'fall').forEach(drawSoul);
+
+      // Its name, softly over its head, while the pointer is near it (or after a tap on it).
+      const named = souls.find((soul) => soul.id === nameShown.id);
+      const nameAlpha = named?.look.name ? Math.min(1, Math.max(0, (nameShown.until - now) / 400)) : 0;
+      if (named && nameAlpha > 0) {
+        const unit = unitAt(named);
+        context.save();
+        context.globalAlpha = nameAlpha;
+        context.font = `400 ${Math.max(11, Math.round(height * .028))}px ${getComputedStyle(root).fontFamily}`;
+        context.textAlign = 'center';
+        context.fillStyle = '#fffaf0';
+        context.shadowColor = 'rgba(80, 60, 140, .6)';
+        context.shadowBlur = 8;
+        context.fillText(named.look.name!, named.x * width, (named.air ?? named.y * height) - unit * 1.05);
+        context.restore();
+      }
+
+      // Grain over everything.
+      context.globalCompositeOperation = 'overlay';
+      context.globalAlpha = SETTINGS.grain;
+      const shift = calm ? 0 : Math.floor(t * 12);
+      context.fillStyle = context.createPattern(grain, 'repeat')!;
+      context.save(); context.translate(-(shift * 37) % 160, -(shift * 53) % 160); context.fillRect(0, 0, width + 160, height + 160); context.restore();
+      context.globalAlpha = 1;
+      context.globalCompositeOperation = 'source-over';
+    };
+
+    // Which soul's name shows, and until when.
+    const nameShown = { id: '', until: 0 };
+    const nearest = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect(), x = event.clientX - rect.left, y = event.clientY - rect.top;
+      let best: Soul | null = null, bestDistance = Infinity;
+      for (const soul of souls) {
+        const unit = unitAt(soul), dx = x - soul.x * width, dy = y - (soul.y * height - unit * .45);
+        const distance = Math.hypot(dx, dy * 1.4);
+        if (distance < unit * .75 && distance < bestDistance) { best = soul; bestDistance = distance; }
+      }
+      return best;
+    };
+    // Picking them up: press on one (or touch it) and drag; let go and it falls back down.
+    let held: { soul: Soul; offX: number; offY: number; vx: number; ax: number; lastX: number; lastT: number; id: number } | null = null;
+    const local = (event: { clientX: number; clientY: number }) => { const rect = canvas.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };
+    const grabbable = (value: boolean) => { if (root.hasAttribute('data-grab') !== value) { root.toggleAttribute('data-grab', value); document.dispatchEvent(new Event('project-preview-refresh')); } };
+    root.addEventListener('pointerdown', (event) => {
+      const soul = nearest(event);
+      if (!soul) return;
+      nameShown.id = soul.id; nameShown.until = performance.now() + 2500;
+      if (calm) return;
+      const { x, y } = local(event), feet = soul.air ?? soul.y * height;
+      held = { soul, offX: soul.x * width - x, offY: feet - y, vx: 0, ax: 0, lastX: x, lastT: performance.now(), id: event.pointerId };
+      // It keeps its size while held (lifted up close, not sent far away).
+      soul.heldUnit = unitAt(soul);
+      soul.act = 'held'; soul.actStart = performance.now(); soul.actEnd = Infinity; soul.air = feet; soul.airV = 0;
+      root.setPointerCapture(event.pointerId);
+      root.toggleAttribute('data-grab-active', true);
+      event.preventDefault();
+    });
+    root.addEventListener('pointermove', (event) => {
+      if (held && event.pointerId === held.id) {
+        const { x, y } = local(event), now = performance.now(), dt = Math.max(.008, (now - held.lastT) / 1000);
+        const vx = (x - held.lastX) / dt;
+        held.ax = (vx - held.vx) / dt; held.vx = vx; held.lastX = x; held.lastT = now;
+        const soul = held.soul, feet = Math.min(height * .99, y + held.offY);
+        soul.x = Math.min(.97, Math.max(.03, (x + held.offX) / width));
+        soul.air = feet;
+        // The ground under it, for its size and for where it lands.
+        soul.y = Math.min(.98, Math.max(SETTINGS.horizon + .05, feet / height));
+        nameShown.id = soul.id; nameShown.until = now + 900;
+        return;
+      }
+      const soul = nearest(event);
+      grabbable(!!soul);
+      if (soul) { nameShown.id = soul.id; nameShown.until = performance.now() + 900; }
+    });
+    const release = (event: PointerEvent) => {
+      if (!held || event.pointerId !== held.id) return;
+      held.soul.act = 'fall'; held.soul.airV = 0; held.soul.actEnd = Infinity;
+      held = null;
+      root.removeAttribute('data-grab-active');
+      document.dispatchEvent(new Event('project-preview-refresh'));
+    };
+    root.addEventListener('pointerup', release);
+    root.addEventListener('pointercancel', release);
+    root.addEventListener('pointerleave', () => grabbable(false));
+    // A finger on an animal picks it up instead of scrolling the page.
+    root.addEventListener('touchstart', (event) => { const touch = event.touches[0]; if (touch && nearest(touch as unknown as PointerEvent)) event.preventDefault(); }, { passive: false });
+
+    let visible = false, running = false;
+    const frame = (time: number) => {
+      if (!visible) { running = false; return; }
+      draw(time);
+      requestAnimationFrame(frame);
+    };
+    const start = () => { if (!running && visible && !calm) { running = true; requestAnimationFrame(frame); } else if (calm) draw(0); };
+    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) start(); }, { rootMargin: '10%' }).observe(root);
+    new ResizeObserver(() => { resize(); draw(performance.now()); }).observe(root);
+
+    const full = () => souls.length >= cap;
+    // Full: no more adding (the list stays open to see who's here).
+    const showFull = () => { if (full()) { if (addButton) { addButton.disabled = true; addButton.setAttribute('aria-disabled', 'true'); } setStatus('The place is full now. Every soul has company.'); } };
+
+    // The souls already here.
+    const load = async () => {
+      let entries: Entry[] = [];
+      try {
+        const response = await fetch('/api/souls', { headers: { accept: 'application/json' } });
+        if (!response.ok || !(response.headers.get('content-type') ?? '').includes('json')) throw new Error('No shared place');
+        const data = await response.json() as { souls: Entry[]; cap: number };
+        entries = data.souls; cap = data.cap;
+      } catch {
+        shared = false;
+        entries = localSouls();
+      }
+      souls = entries.map((entry) => ({ ...entry, look: readLook(entry.id) })).filter((entry): entry is Entry & { look: Look } => !!entry.look).map(({ id, look, photo }, i) => ({ ...meet(id, look, i, 0), photo }));
+      draw(performance.now());
+      showFull();
+    };
+    load();
+
+    // Who they are: name, cat or dog, a few words about the coat, and size (a photo can't tell size).
+    const dialog = root.querySelector<HTMLDialogElement>('[data-souls-dialog]');
+    // A live preview of them in the form, redrawn as the answers change.
+    const preview = root.querySelector<HTMLCanvasElement>('[data-souls-preview]');
+    const lookFromForm = (form: HTMLFormElement, found: Omit<Look, 'size' | 'build'>): Look => {
+      const data = new FormData(form), coat = coatFrom(String(data.get('coat') ?? ''));
+      return {
+        kind: data.get('kind') === 'dog' ? 'dog' : 'cat', size: Number(data.get('size') ?? 1) as 0 | 1 | 2, build: Number(data.get('build') ?? 4),
+        pattern: coat.pattern ?? found.pattern, colours: coat.colours ?? found.colours,
+        name: String(data.get('name') ?? '').trim().slice(0, 20), owner: String(data.get('owner') ?? '').trim().slice(0, 20),
+      };
+    };
+    const drawPreview = (look: Look) => {
+      if (!preview) return;
+      const w = preview.clientWidth || 300, h = preview.clientHeight || 150;
+      preview.width = Math.round(w * ratio); preview.height = Math.round(h * ratio);
+      const g = preview.getContext('2d')!, unit = h * 1.12 * SETTINGS.scale[look.kind][look.size] / SETTINGS.scale.dog[2];
+      const figure = paintFigure({ id: 'preview', look } as Soul, Math.round(unit));
+      g.setTransform(ratio, 0, 0, ratio, 0, 0);
+      g.translate(w / 2 - unit * .05, h * .94);
+      figure.legs.filter((leg) => !leg.near).forEach((leg) => g.drawImage(leg.canvas, leg.x - leg.pivotX, leg.y - leg.pivotY, leg.w, leg.h));
+      g.drawImage(figure.body.canvas, figure.body.x, figure.body.y, figure.body.w, figure.body.h);
+      figure.legs.filter((leg) => leg.near).forEach((leg) => g.drawImage(leg.canvas, leg.x - leg.pivotX, leg.y - leg.pivotY, leg.w, leg.h));
+      for (const eye of figure.eyes) drawEye(g, eye.x, eye.y, figure.eyeR);
+    };
+    const askAbout = (found: Omit<Look, 'size' | 'build'>) => new Promise<Look | null>((resolve) => {
+      const form = dialog?.querySelector('form');
+      if (!dialog || !form) { resolve({ ...found, size: 1, build: 4 }); return; }
+      form.reset();
+      form.querySelector<HTMLInputElement>(`input[name="kind"][value="${found.kind}"]`)!.checked = true;
+      const update = () => drawPreview(lookFromForm(form, found));
+      form.addEventListener('input', update);
+      requestAnimationFrame(update);
+      dialog.addEventListener('close', () => {
+        form.removeEventListener('input', update);
+        resolve(dialog.returnValue === 'ok' ? lookFromForm(form, found) : null);
+      }, { once: true });
+      dialog.showModal();
+      update();
+    });
+    // Who's here: their photos, as they are, newest first, with their names and who left them.
+    const listDialog = root.querySelector<HTMLDialogElement>('[data-souls-list-dialog]');
+    const listGrid = root.querySelector<HTMLElement>('[data-souls-list-grid]');
+    const listEmpty = root.querySelector<HTMLElement>('[data-souls-list-empty]');
+    caption.querySelector<HTMLButtonElement>('[data-souls-list]')?.addEventListener('click', () => {
+      if (!listDialog || !listGrid) return;
+      listGrid.replaceChildren(...[...souls].reverse().map((soul) => {
+        const item = document.createElement('li'), figure = document.createElement('figure'), label = document.createElement('figcaption');
+        if (soul.photo) {
+          const img = document.createElement('img');
+          img.src = soul.photo; img.alt = `${soul.look.name ?? 'A'} ${soul.look.kind}`; img.loading = 'lazy'; img.decoding = 'async';
+          figure.append(img);
+        } else {
+          const none = document.createElement('div'); none.className = 'souls-list-nophoto';
+          none.style.background = `linear-gradient(160deg, ${soul.look.colours[0]}, ${soul.look.colours[1]} 55%, ${soul.look.colours[2]})`;
+          figure.append(none);
+        }
+        const name = document.createElement('strong'); name.textContent = soul.look.name ?? (soul.look.kind === 'cat' ? 'A cat' : 'A dog');
+        label.append(name);
+        if (soul.look.owner) { const by = document.createElement('span'); by.textContent = `left by ${soul.look.owner}`; label.append(' ', by); }
+        figure.append(label); item.append(figure);
+        return item;
+      }));
+      if (listEmpty) listEmpty.hidden = souls.length > 0;
+      listDialog.showModal();
+    });
+
+    // Adding a pet.
+    addButton?.addEventListener('click', () => {
+      setStatus('Choose a photo of your whole cat or dog, from ears to paws, without people. It will be shown in the list of who’s here, cropped around your pet.');
+      input?.click();
+    });
+    input?.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      input.value = '';
+      if (!file) return;
+      if (full()) { showFull(); return; }
+      if (addButton) addButton.disabled = true;
+      setStatus('Looking for your pet…');
+      try {
+        const found = await readPet(file);
+        if (found === 'none') { setStatus('I couldn’t find a cat or a dog in that photo. Try another one.'); return; }
+        if (found === 'cut') { setStatus('Only whole bodies, please: a photo where all of your pet fits, from ears to paws, with a little room around.'); return; }
+        if (found === 'people') { setStatus('Just your pet, please: a photo without people in it (it will be shown in the list).'); return; }
+        setStatus('');
+        // Their words win over the photo where they say something (the form reads them as they type).
+        const look = await askAbout(found);
+        if (!look) { setStatus('Whenever you’re ready.'); return; }
+        const code = lookCode(look);
+        let id = `souls/local-${Date.now().toString(36)}_${code}`, photo = found.photo;
+        setStatus('Bringing them over…');
+        if (shared) {
+          const response = await fetch('/api/souls', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ look: code, photo }) }).catch(() => null);
+          if (response?.status === 409) { cap = souls.length; showFull(); return; }
+          if (response?.ok) ({ id, photo } = (await response.json()) as { id: string; photo: string });
+          else { shared = false; keepLocally({ id, photo }); }
+        } else keepLocally({ id, photo });
+        // A newcomer is welcomed under her hand, and she strokes it for a few seconds before it goes to its place.
+        const newcomer = meet(id, look, souls.length, performance.now());
+        const hand = handAt();
+        newcomer.x = newcomer.fromX = newcomer.toX = Math.max(.06, hand.x - .03);
+        // Standing where its head comes up to her hand (bigger animals stand a little further down).
+        let y = hand.y + .2;
+        for (let i = 0; i < 4; i++) { newcomer.y = y; y = hand.y + unitAt(newcomer) * .85 / height; }
+        newcomer.y = newcomer.fromY = newcomer.toY = Math.min(.97, y);
+        newcomer.face = newcomer.faceShown = 1;
+        newcomer.act = 'pet'; newcomer.actStart = performance.now(); newcomer.actEnd = newcomer.actStart + 5000;
+        newcomer.photo = photo;
+        petting = newcomer.actEnd;
+        souls.push(newcomer);
+        if (calm) draw(0);
+        setStatus(shared ? 'Welcome. They’re in good company now, for good.' : 'Welcome. They’re in good company now (kept on this device).');
+        showFull();
+      } catch {
+        setStatus('Something went wrong reading that photo. Try another one.');
+      } finally {
+        if (addButton) addButton.disabled = full();
+      }
+    });
+  });
+</script>
+
+<style>
+  .souls-field { position: absolute; inset: 0; overflow: hidden; }
+  .souls-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  /* Over the case page's own iframe rules (those centre Vimeo videos in their frame). */
+  .souls-field .souls-field-music { position: absolute; z-index: 2; inset: .8vw .8vw auto auto; width: min(240px, 34%); height: auto; aspect-ratio: 16 / 9; min-width: 0; min-height: 0; border: 0; border-radius: 10px; transform: none; }
+
+  @media (max-width: 760px) {
+    .souls-field .souls-field-music { inset: 8px 8px auto auto; width: min(200px, 46%); }
+  }
+
+  /* The little form, in Side B's dark: white type, hairline fields, the page's own buttons. */
+  .souls-dialog { width: min(420px, calc(100vw - 32px)); padding: 0; border: 1px solid rgb(250 250 250 / .25); border-radius: 14px; background: #202020; color: #fafafa; font: inherit; font-size: 16px; line-height: 1.25; }
+  .souls-dialog::backdrop { background: rgb(20 14 30 / .55); backdrop-filter: blur(3px); }
+  .souls-form { display: grid; gap: 13px; padding: 20px 22px; }
+  .souls-dialog:not(.souls-list) { max-height: calc(100dvh - 24px); overflow: auto; }
+  .souls-form-build span { display: flex; align-items: center; gap: 10px; }
+  .souls-form-build small { font-size: 12px; opacity: .7; }
+  .souls-form-build input[type='range'] { flex: 1; width: auto; min-width: 0; padding: 0; border: 0; accent-color: #fafafa; }
+  .souls-form-preview { display: block; width: 100%; height: 150px; border-radius: 10px; background: linear-gradient(#ec7d60 0%, #f19a7c 45%, #a198e2 56%, #8380d8 100%); }
+  .souls-form-title { margin: 0; font-size: 22px; line-height: 1.1; }
+  .souls-form-field { display: grid; gap: 6px; font-size: 13px; }
+  .souls-form-field input { width: 100%; padding: 8px 0; border: 0; border-bottom: 1px solid rgb(250 250 250 / .4); background: transparent; color: inherit; font: inherit; font-size: 16px; }
+  .souls-form-field input:focus-visible { outline: none; border-bottom-color: #fafafa; }
+  .souls-form-field input::placeholder { color: rgb(250 250 250 / .4); }
+  .souls-form-choice { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; border: 0; font-size: 16px; }
+  .souls-form-choice legend { width: 100%; margin-bottom: 6px; padding: 0; font-size: 13px; }
+  .souls-form-choice label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .souls-form-choice input { accent-color: #fafafa; }
+  .souls-form-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 4px; }
+  .souls-form-actions button { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .souls-list { width: min(980px, calc(100vw - 32px)); max-height: min(86vh, 900px); }
+  .souls-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 22px 22px 0; }
+  .souls-list-close { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .souls-list-empty { margin: 16px 22px 22px; }
+  .souls-list-grid { columns: 3 220px; column-gap: 12px; margin: 0; padding: 16px 22px 22px; list-style: none; }
+  .souls-list-grid li { break-inside: avoid; margin-bottom: 14px; }
+  .souls-list-grid figure { margin: 0; }
+  .souls-list-grid img { display: block; width: 100%; height: auto; border-radius: 8px; }
+  .souls-list-nophoto { aspect-ratio: 4 / 5; border-radius: 8px; filter: blur(.5px); }
+  .souls-list .souls-list-grid figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; margin-top: 6px; font-size: 14px; line-height: 1.2; }
+  .souls-list .souls-list-grid figcaption strong { font-weight: 400; }
+  .souls-list .souls-list-grid figcaption span { opacity: .6; }
+  .souls-form-ok { padding: 6px 12px !important; background: #fafafa !important; color: #202020 !important; text-decoration: none !important; border-radius: 4px !important; }
+</style>

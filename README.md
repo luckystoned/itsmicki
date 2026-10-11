@@ -20,6 +20,8 @@ Portfolio editorial de Miki, desarrollado en Astro a partir del diseño original
 
 Esta arquitectura mantiene el portfolio rápido, estático y sencillo de mantener. No requiere React, base de datos, CMS ni renderizado del lado del servidor para el alcance actual.
 
+Única excepción, decidida para *Missing souls* (Side B): la función `api/souls.ts` de Vercel guarda en Vercel Blob los animales que suben los visitantes, compartidos por todos hasta que el espacio se llena (42). La foto se procesa en el navegador: se recorta alrededor del animal, se vuelve a dibujar (sin ubicación ni datos de cámara) y se rechaza si hay personas; esa foto se guarda para el listado de quiénes están, junto con una descripción del animal (gato o perro, tamaño, colores, manchas, nombre y dueño) con la que se dibuja. Requiere conectar un Blob store al proyecto en Vercel (crea la variable `BLOB_READ_WRITE_TOKEN`). Sin esa función (por ejemplo con `pnpm dev`), el frame guarda los animales en el navegador de cada visitante.
+
 ## Desarrollo local
 
 Requisitos recomendados: Node.js 22 o superior y pnpm 11 o superior.
@@ -66,7 +68,9 @@ El resultado estático se genera en `dist/`. No se debe versionar esa carpeta.
 - `/projects`: archivo de proyectos.
 - `/projects/[slug]`: detalle dinámico de cada caso.
 - `/deets`: perfil e información profesional.
-- `/sideb`: exploraciones y trabajos paralelos.
+- `/sideb`: home de Side B, el mismo home en colores invertidos (`src/components/HomeStage.astro`), con los nombres de sus proyectos (todavía sin página de caso).
+- `/sideb/deets`: fashion, música y fotografía analógica de Side B, en oscuro.
+- `/sideb/projects`: grilla de proyectos de Side B (`src/data/sideBProjects.ts`), con el mismo marco que `/projects` (`src/components/ProjectsStage.astro`) en colores invertidos.
 
 ## Editar o agregar proyectos
 
