@@ -42,7 +42,7 @@ const filmPhotos = [
 ---
 
 <BaseLayout
-  title="(Deets) — mickivainilla"
+  title="(Deets) — Itsmicki"
   description="The personal side of Micaela Galimberti: fashion, music, film photography and the visual references that shape her work."
   active="deets"
   side="b"
@@ -170,8 +170,8 @@ const filmPhotos = [
     </article>
 
     <footer class="sideb-footer" id="sideb-footer">
-      <div class="sideb-footer-wordmark" aria-label="mickivainilla, copyright 2026">
-        <span data-sideb-reveal>mickivainilla</span>
+      <div class="sideb-footer-wordmark" aria-label="Itsmicki, copyright 2026">
+        <span data-sideb-reveal>Itsmicki</span>
         <span data-sideb-reveal>©2026</span>
       </div>
       <div class="sideb-footer-info" id="sideb-footer-info">
@@ -664,9 +664,7 @@ const filmPhotos = [
     align-items: flex-end;
     color: var(--sideb-ink);
     font-family: 'OT Neue Montreal SideB Extra', Impact, sans-serif;
-    /* "mickivainilla©2026" is 2.77em wide against 2.19em for "Itsmicki©2026", so Side B sets it smaller to fill the
-       same width (Figma: 583px on the 1600px frame). */
-    font-size: 36.2vw;
+    font-size: 36.451438vw;
     font-weight: 500;
     line-height: .79;
     letter-spacing: -.04em;
@@ -675,7 +673,7 @@ const filmPhotos = [
 
   @media (min-width: 761px) {
     .sideb-footer-wordmark {
-      font-size: min(36.2vw, 58.1svh);
+      font-size: var(--footer-wordmark-size);
       line-height: .8;
       transform: translateY(var(--footer-wordmark-edge));
     }
@@ -1166,14 +1164,14 @@ const filmPhotos = [
       inset: 0 min(-7px, -1.794872vw) 0 min(-5.565px, -1.426923vw);
       justify-content: flex-start;
       width: min(402px, 103.076923vw);
-      font-size: min(142.2px, 36.45vw);
+      font-size: min(180.188px, 46.202051vw);
       line-height: normal;
       text-box-edge: cap alphabetic;
       text-box-trim: trim-both;
     }
 
-    .sideb-footer-wordmark span:first-child { margin-left: -1.5vw; }
-    .sideb-footer-wordmark span:last-child { margin-right: -1.4vw; }
+    .sideb-footer-wordmark span:first-child,
+    .sideb-footer-wordmark span:last-child { margin: 0; }
     .sideb-footer-info { display: none; }
   }
 
@@ -1276,7 +1274,7 @@ const filmPhotos = [
       bottom: 0;
       left: -1.538462vw; /* Same size as the home wordmark. */
       justify-content: flex-start;
-      font-size: 36.45vw;
+      font-size: 46.202051vw;
       line-height: .74;
       text-box-trim: none;
       width: max-content;

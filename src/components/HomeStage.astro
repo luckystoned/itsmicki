@@ -229,8 +229,6 @@ const loops = [0, 1, 2];
     /* The ink of "I" and "6" touches both edges of the screen, like every other footer. */
     .home-subfooter span:first-child { left: -.032em; margin: 0; }
     .home-subfooter span:last-child { right: .016em; margin: 0; }
-    /* "mickivainilla©2026" is longer than "Itsmicki©2026": Side B sets it smaller so it fills the same width (Figma: 583px). */
-    .home-stage-b .home-subfooter { font-size: min(36.2vw, 58.1svh); }
     :global(body:has(.home-stage) .site-header[data-header]) { background: var(--home-paper) !important; color: var(--home-ink); }
 
     .home-footer-meta { position: absolute; z-index: 3; inset: auto 0 min(86.46px, 5.40375vw, 8.369797svh); display: block; padding: 0; font-size: min(21px, 1.3125vw, 2.032914svh); font-weight: 400; line-height: 1; letter-spacing: -.02em; pointer-events: none; }

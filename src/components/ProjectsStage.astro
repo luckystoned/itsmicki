@@ -392,7 +392,7 @@ const { side = 'a', wordmark } = Astro.props;
     .project-card-inner:has(.project-label:hover) .project-visual video { transform: scale(1.03); }
   }
 
-  /* Side B: the same page in inverted colours, with the longer "mickivainilla©2026" set smaller to fill the width. */
+  /* Side B: the same page in inverted colours. */
   html:has(.projects-page-b),
   body:has(.projects-page-b) {
     --projects-ink: #fafafa;
@@ -404,15 +404,6 @@ const { side = 'a', wordmark } = Astro.props;
 
   body:has(.projects-page-b) .site-header[data-header] { background: var(--projects-paper) !important; color: var(--projects-ink); }
 
-  .projects-page-b .projects-footer-wordmark { font-size: 36.2vw; }
-
-  @media (min-width: 761px) {
-    .projects-page-b .projects-footer-wordmark { font-size: min(36.2vw, 58.1svh); }
-  }
-
-  @media (max-width: 760px) {
-    .projects-page-b .projects-footer-wordmark { font-size: 36.45cqw; }
-  }
 
   /* Load-in: type and images rise and fade in as they enter the viewport. */
   :root.appear-ready .projects-page [data-appear] {

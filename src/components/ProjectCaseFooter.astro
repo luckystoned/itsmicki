@@ -24,7 +24,7 @@ const cards = side === 'b'
       href: publishedCaseSlugs.has(project.slug) && !project.comingSoon ? `/projects/${project.slug}` : undefined,
       current: project.slug === currentSlug,
     }));
-const wordmark = side === 'b' ? 'mickivainilla' : 'Itsmicki';
+const wordmark = 'Itsmicki';
 ---
 
 <div class:list={['case-more', { 'case-more-b': side === 'b' }]} data-current-case={currentSlug}>
@@ -57,7 +57,7 @@ const wordmark = side === 'b' ? 'mickivainilla' : 'Itsmicki';
 </div>
 
 <footer class="case-footer">
-  <div class:list={['case-footer-wordmark', { 'case-footer-wordmark-b': side === 'b' }]} aria-label={`${wordmark}, copyright 2026`}>
+  <div class="case-footer-wordmark" aria-label={`${wordmark}, copyright 2026`}>
     <span data-case-footer-reveal>{wordmark}</span>
     <span data-case-footer-reveal>©2026</span>
   </div>
@@ -195,8 +195,6 @@ const wordmark = side === 'b' ? 'mickivainilla' : 'Itsmicki';
     white-space: nowrap;
   }
 
-  .case-footer-wordmark-b { font-size: 36.2vw; }
-
   @media (min-width: 761px) {
     .case-footer-wordmark {
       font-size: var(--footer-wordmark-size);
@@ -208,7 +206,6 @@ const wordmark = side === 'b' ? 'mickivainilla' : 'Itsmicki';
     .case-footer-wordmark > :first-child { margin-left: -.032em !important; }
     .case-footer-wordmark > :last-child { margin-right: .016em !important; }
 
-    .case-footer-wordmark-b { font-size: min(36.2vw, 58.1svh); }
   }
 
   .case-footer-wordmark > :first-child {
@@ -311,11 +308,6 @@ const wordmark = side === 'b' ? 'mickivainilla' : 'Itsmicki';
     .case-footer-wordmark {
       font-size: 46.2vw;
       line-height: .82;
-    }
-
-    /* "mickivainilla©2026" is longer than "Itsmicki©2026": set smaller so it fits the same width. */
-    .case-footer-wordmark-b {
-      font-size: 36.45vw;
     }
 
     .case-footer-info {
