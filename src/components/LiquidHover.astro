@@ -1,32 +1,32 @@
 ---
-// Hover on the project covers (desktop only). One small, soft spot follows the pointer: the photo is frosted
-// (blurred with a fine grain, never lightened) and dragged along the pointer's motion like oil, leaving a fluid trail that keeps flowing,
-// spills past the card edges and then flows back into place. The head of the trail, the blur and the drag all share one
-// point, so it never reads as two spots; the trail diffuses as it ages. The cover is redrawn on a fixed WebGL2 canvas a bit larger than the card
-// (room for the spill) while the original image is hidden; inside the card the photo always covers it, and outside
-// only what the oil carried out is drawn, so no page white shows. Video cards use their still frame for the effect,
-// since Vimeo frames cannot be read. Off for touch, reduced motion and browsers without WebGL2.
+// Hover on the carousel covers (home and case pages; desktop only). One small, soft spot follows the pointer and turns
+// the photo into grainy frosted glass (scattered and blurred, never lightened), leaving a diffuse frosted trail. The
+// pointer's motion only nudges the photo a little, which can spill just past the card edges and flows back quickly.
+// The head of the trail, the frost and the nudge share one point, so it never reads as two spots. The cover is redrawn
+// on a fixed WebGL2 canvas a bit larger than the card while the original image is hidden; inside the card the photo
+// always covers it, and outside only what was carried out is drawn, so no page white shows. Video cards use their
+// still frame, since Vimeo frames cannot be read. Off for touch, reduced motion and browsers without WebGL2.
 ---
 
 <script>
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
-  const CARDS = '.carousel-card, .more-carousel-card, .project-card-inner';
-  const VISUALS = '.carousel-picture, .more-carousel-picture, .project-visual';
+  const CARDS = '.carousel-card, .more-carousel-card';
+  const VISUALS = '.carousel-picture, .more-carousel-picture';
 
   const SETTINGS = {
     field: 160, // Simulation grid over the canvas.
     pad: .3, // Room around the card for the oil to spill into, as a share of the card's longer side.
     radius: .055, // Spot radius, as a share of the card height (gaussian falloff, so its edge is very soft).
-    drag: .22, // How much of the spot's motion is handed to the oil per frame.
-    velocityKeep: .95, // How long the oil keeps flowing after each move (closer to 1 = longer trail).
-    relax: .975, // How slowly the oil flows back into place (closer to 1 = slower).
+    drag: .08, // How much of the spot's motion is handed to the oil per frame.
+    velocityKeep: .9, // How long the oil keeps flowing after each move (low: the photo barely flows).
+    relax: .95, // How slowly the oil flows back into place (closer to 1 = slower).
     frostKeep: .982, // How long the trail stays frosted.
     diffuse: .15, // How quickly the frosted trail spreads and softens as it ages.
     trail: 1.6, // Width of the frosted trail relative to the spot, so the trail is wider and softer than the spot.
-    grain: .06, // Fine grain inside the frost (zero-mean, so it never lightens).
-    frost: .012, // Blur spread at full frost, as a share of the card height.
-    soften: 1.6, // Extra mipmap blur at full frost, so it is smooth rather than grainy.
+    grain: .12, // Fine grain inside the frost (zero-mean, so it never lightens).
+    frost: .03, // Frosted-glass scatter at full frost, as a share of the card height.
+    soften: .8, // Extra mipmap blur at full frost (low, so the scatter reads as frosted glass).
     swell: .08, // A slight lens bulge at the spot, so it is visible when the pointer is still.
     follow: .22, // How closely the spot follows the pointer per 60 fps frame (1 = no smoothing).
     fadeIn: .08, // How quickly the spot fades in.
@@ -85,12 +85,12 @@
         float frost = clamp(field.z, 0., 1.);
         vec3 color = vec3(0.);
         float spread = uFrost * frost;
-        // A per-pixel random turn of the taps gives the frost a fine, frosted-glass grain.
+        // Per-pixel random taps scatter the photo like frosted glass, with a fine grain.
         vec2 pixel = floor(gl_FragCoord.xy) + floor(uTime * 24.) * 17.;
         float turn = hash(pixel) * 6.2832;
         for (int i = 0; i < 12; i++) {
           float a = float(i) * 2.39996 + turn;
-          float r = sqrt((float(i) + .5) / 12.);
+          float r = sqrt((float(i) + hash(pixel + float(i) * 7.3)) / 12.);
           vec2 tap = (source + vec2(cos(a), sin(a)) * r * spread / scale - uCard.xy) / uCard.zw;
           color += texture(uImage, coverUv(tap), uSoften * frost).rgb;
         }

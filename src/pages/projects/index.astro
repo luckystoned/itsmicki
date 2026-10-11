@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import LiquidHover from '@/components/LiquidHover.astro';
 import ProjectGridItem from '@/components/ProjectGridItem.astro';
 import { projects } from '@/data/projects';
 
@@ -234,7 +233,6 @@ const [winona, genova, amazon, maxMaher, outliant, lumen, blend360, texturesBody
       footerReveals.forEach((node) => footerObserver.observe(node));
     }
   </script>
-  <LiquidHover />
 </BaseLayout>
 
 <style is:global>
