@@ -1,4 +1,7 @@
-/** Side B projects (Figma 925:1848). They have no case pages yet; `comingSoon` adds the "(Coming soon)" label. */
+import { sideBCases } from '@/data/projectCases';
+
+/** Side B projects (Figma 925:1848). `comingSoon` adds the "(Coming soon)" label; a project with an entry in
+    `sideBCases` links to /sideb/projects/{slug}. */
 export type SideBProject = {
   slug: string;
   title: string;
@@ -19,3 +22,36 @@ export const sideBProjects: SideBProject[] = [
   { slug: 'monday-0803am', title: 'Monday, 08.03am', label: `04_Monday, 08.03am_Art Direction+Photography+Styling${coming}`, comingSoon: true, gridCover: '/04_SideB/Home/04_SideBProjects.webp' },
   { slug: 'nostalgia-as-agony', title: 'Nostalgia as Agony', label: `05_Nostalgia as Agony_Concept & Art direction${coming}`, comingSoon: true, gridCover: '/04_SideB/Home/05_SideBProjects.webp' },
 ];
+
+/** Case page of a Side B project, if it has one. */
+export const sideBHref = (slug: string) => (slug in sideBCases ? `/sideb/projects/${slug}` : undefined);
+
+/** Cards of the Side B carousels (home and the end of every Side B case), Figma 922:1494. `width`/`height` are the
+    card's Figma size; `project` is the index of the project whose name it shows. */
+const carouselCards: Array<{ width: number; height: number; alt: string; video?: boolean; project: number }> = [
+  { width: 357, height: 355, alt: 'Red-haired portrait with hair falling over one eye.', project: 0 },
+  { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.', project: 1 },
+  { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true, project: 2 },
+  { width: 357, height: 354, alt: 'Three caps embroidered with the Mm logo.', project: 3 },
+  { width: 358, height: 474, alt: 'A phone with a blue screen resting on a grey ledge.', project: 4 },
+];
+
+export const sideBCarousel = carouselCards.map((card, index) => {
+  const number = String(index + 1).padStart(2, '0');
+  const project = sideBProjects[card.project];
+  return {
+    title: project.title,
+    label: project.label,
+    src: `/04_SideB/Home/${number}_SideBHome.webp`,
+    alt: card.alt,
+    // Keeps each card's Figma proportion at the Side A card width.
+    width: 430,
+    height: (430 * card.height) / card.width,
+    imageWidth: card.width * 2,
+    imageHeight: card.height * 2,
+    // Muted loop over its first frame, like the Side A video cards.
+    video: card.video ? `/04_SideB/Home/${number}_SideBHome.mp4` : undefined,
+    href: project.comingSoon ? undefined : sideBHref(project.slug),
+  };
+});
+

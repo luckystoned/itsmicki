@@ -1,13 +1,16 @@
 ---
 import ProjectCaseFooter from '@/components/ProjectCaseFooter.astro';
+import RevealVideo from '@/components/RevealVideo.astro';
 import { imageMetadata } from '@/data/imageMetadata';
 import type { CaseMedia, ProjectCase } from '@/data/projectCases';
 
 interface Props {
   caseStudy: ProjectCase;
+  /** Side B cases use the same page in inverted colours. */
+  side?: 'a' | 'b';
 }
 
-const { caseStudy } = Astro.props;
+const { caseStudy, side = 'a' } = Astro.props;
 
 const ratioValue = (ratio: string) => {
   const [width, height] = ratio.split('/').map(Number);
@@ -33,7 +36,7 @@ const vimeoUrl = (id: string) =>
   `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&muted=1&controls=0&quality=1080p&dnt=1`;
 ---
 
-<div class="project-case-page" data-case={caseStudy.slug}>
+<div class:list={['project-case-page', { 'project-case-page-b': side === 'b' }]} data-case={caseStudy.slug}>
   <aside class="case-mobile-meta" aria-label="Contact and social links" data-scroll-bar>
     <span>SAY HI</span>
     <a class="case-mobile-mail" href="mailto:hey@itsmicki.com" target="_blank" rel="noopener noreferrer">HEY@ITSMICKI.COM</a>
@@ -143,7 +146,9 @@ const vimeoUrl = (id: string) =>
             <section class="case-media-block case-media-single" style={mediaStyle(item)}>
               <div class="case-media-surface" data-case-media-reveal>
                 <div class:list={['case-media-content', { 'is-rotated': item.rotate === 90 }]}>
-                  {item.type === 'image' && item.src && dimensions ? (
+                  {item.type === 'reveal' && item.src && item.revealSrc && item.poster ? (
+                    <RevealVideo top={item.src} under={item.revealSrc} poster={item.poster} label={item.alt} />
+                  ) : item.type === 'image' && item.src && dimensions ? (
                     <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
                   ) : item.type === 'carousel' && item.slides?.length ? (
                     <div class="case-carousel" data-case-carousel role="group" aria-roledescription="carousel" aria-label={item.alt}>
@@ -266,7 +271,7 @@ const vimeoUrl = (id: string) =>
     });
   </script>
 
-  <ProjectCaseFooter currentSlug={caseStudy.slug} />
+  <ProjectCaseFooter currentSlug={caseStudy.slug} side={side} />
 </div>
 
 <script>
@@ -689,6 +694,9 @@ const vimeoUrl = (id: string) =>
     --case-ink: #2e2e2e;
     --case-paper: #fafafa;
     --case-placeholder: #efece7;
+    /* Footer and contact labels: dark boxes with light text on both sides. */
+    --case-chip: #2e2e2e;
+    --case-chip-ink: #fafafa;
     --case-sans: 'OT Neue Montreal Cases', 'Arial Narrow', sans-serif;
     --case-display: 'OT Neue Montreal Cases Extra', 'Arial Narrow', sans-serif;
     color: var(--case-ink);
@@ -701,6 +709,18 @@ const vimeoUrl = (id: string) =>
   html:has(.project-case-page) {
     scroll-behavior: auto;
   }
+
+  /* Side B cases: the same page in inverted colours. */
+  html:has(.project-case-page-b),
+  body:has(.project-case-page-b) {
+    --case-ink: #fafafa;
+    --case-paper: #202020;
+    --case-placeholder: #2a2a2a;
+    --case-chip: #202020;
+    --case-chip-ink: #fafafa;
+  }
+
+  body:has(.project-case-page-b) .site-header[data-header] { background: var(--case-paper) !important; }
 
   body:has(.project-case-page) a,
   body:has(.project-case-page) [data-case-drag],
@@ -1305,7 +1325,7 @@ const vimeoUrl = (id: string) =>
 
   /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
       text-align: justify;
     }
   }
@@ -1335,8 +1355,8 @@ const vimeoUrl = (id: string) =>
       height: auto !important;
       min-height: 0 !important;
       padding: min(8px, 2.051282vw) min(10px, 2.564103vw) !important;
-      background: #fafafa !important;
-      color: #2e2e2e !important;
+      background: var(--case-paper) !important;
+      color: var(--case-ink) !important;
       font-size: min(26.498px, 6.794359vw) !important;
       line-height: normal !important;
       letter-spacing: -.02em;
@@ -1373,13 +1393,13 @@ const vimeoUrl = (id: string) =>
     .case-mobile-mail,
     .case-mobile-socials {
       justify-self: end;
-      background: var(--case-ink);
-      color: var(--case-paper);
+      background: var(--case-chip);
+      color: var(--case-chip-ink);
       white-space: nowrap;
     }
 
     .case-mobile-meta :is(.case-mobile-mail, .case-mobile-socials a) {
-      color: var(--case-paper);
+      color: var(--case-chip-ink);
       text-decoration: underline;
       text-decoration-thickness: 1px;
       text-underline-offset: .08em;
@@ -1476,7 +1496,7 @@ const vimeoUrl = (id: string) =>
     }
 
     /* Body copy justified on phones, as on Lumen; role and headings keep their alignment. */
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
       text-align: justify;
     }
 

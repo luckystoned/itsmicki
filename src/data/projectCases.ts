@@ -1,10 +1,12 @@
 export type CaseMedia = {
-  type: 'image' | 'video' | 'carousel';
+  type: 'image' | 'video' | 'carousel' | 'reveal';
   alt: string;
   /** Image file, or for a video served from the site (not Vimeo) the .mp4 file. */
   src?: string;
   /** Still frame shown until a site video plays, and instead of it with reduced motion. */
   poster?: string;
+  /** `reveal`: the video under `src`, shown through the hole the pointer opens (RevealVideo). */
+  revealSrc?: string;
   vimeoId?: string;
   sourceRatio?: string;
   /** Turns a video by 90° clockwise inside its frame (a vertical clip shown in a horizontal frame). */
@@ -41,7 +43,7 @@ export type CaseBlock =
     };
 
 export type ProjectCase = {
-  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body';
+  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body' | 'general-immersive';
   title: string;
   year: string;
   role: string;
@@ -69,6 +71,11 @@ const video = (vimeoId: string, alt: string, ratio: string, sourceRatio: string,
 /** Short video served from the site, muted and looping, over its still frame. */
 const clip = (src: string, poster: string, alt: string, ratio: string, caption?: string): CaseMedia => ({
   type: 'video', src, poster, alt, ratio, caption,
+});
+
+/** Two stacked videos of the same scene; the pointer opens a hole in `top` onto `under`. */
+const reveal = (top: string, under: string, poster: string, alt: string, ratio: string): CaseMedia => ({
+  type: 'reveal', src: top, revealSrc: under, poster, alt, ratio,
 });
 
 const carousel = (
@@ -106,7 +113,7 @@ const text = (
   options: { variant?: 'columns' | 'wide' | 'lead'; lead?: string; wide?: string; mobile?: { lead?: string; columns: string[] } } = {},
 ): CaseBlock => ({ type: 'text', title, columns, ...options });
 
-export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
+export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, ProjectCase> = {
   winona: {
     slug: 'winona',
     title: 'Winona',
@@ -461,3 +468,21 @@ export const projectCases: Record<ProjectCase['slug'], ProjectCase> = {
     credits: [],
   },
 };
+
+/** Side B cases, at /sideb/projects/{slug}, with the dark Side B page. */
+type SideBCaseSlug = 'general-immersive';
+export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
+  'general-immersive': {
+    slug: 'general-immersive',
+    title: 'General',
+    year: '2026',
+    role: 'Art Direction,<br>Immersive Design &amp;<br>AI Image Generation',
+    nutshell: `An experimental exploration of animation and figure-based imagery, made with AI by reinterpreting visual references through a vintage, print-inspired aesthetic. Muted colors, soft glow, blur, and noise balance hazy surfaces with moments of sharp focus. Hover over the pieces—or drag them on mobile—to interact.`,
+    drags: [],
+    blocks: [
+      single(reveal('/04_SideB/Home/03_SideBProjects.mp4', '/04_SideB/Projects/03_General/01_General_Negativo.mp4', '/04_SideB/Home/03_SideBProjects.webp', 'Plants and cells under a microscope; the pointer opens a hole onto the same scene in negative.', '1556 / 870')),
+    ],
+    credits: [],
+  },
+};
+

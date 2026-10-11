@@ -1,35 +1,11 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import HomeStage, { type HomeCard } from '@/components/HomeStage.astro';
-import { sideBProjects } from '@/data/sideBProjects';
+import { sideBCarousel } from '@/data/sideBProjects';
 
-// Side B home (Figma 922:1494): the Side A home in inverted colours. Its cards show the Side B projects (names from
-// Figma 925:1848), which have no case pages yet, so none of them links anywhere. Sizes keep each card's Figma
-// proportion at the Side A card width.
-// `project` is the index in sideBProjects whose name the card shows.
-const figmaCards: Array<{ width: number; height: number; alt: string; video?: boolean; project: number }> = [
-  { width: 357, height: 355, alt: 'Red-haired portrait with hair falling over one eye.', project: 0 },
-  { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.', project: 1 },
-  { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true, project: 2 },
-  { width: 357, height: 354, alt: 'Three caps embroidered with the Mm logo.', project: 3 },
-  { width: 358, height: 474, alt: 'A phone with a blue screen resting on a grey ledge.', project: 4 },
-];
-const cards: HomeCard[] = figmaCards.map((card, index) => {
-  const number = String(index + 1).padStart(2, '0');
-  const src = `/04_SideB/Home/${number}_SideBHome.webp`;
-  return {
-    title: sideBProjects[card.project].title,
-    label: sideBProjects[card.project].label,
-    src,
-    alt: card.alt,
-    width: 430,
-    height: (430 * card.height) / card.width,
-    imageWidth: card.width * 2,
-    imageHeight: card.height * 2,
-    // Muted loop over its first frame, like the Side A video cards.
-    video: card.video ? `/04_SideB/Home/${number}_SideBHome.mp4` : undefined,
-  };
-});
+// Side B home (Figma 922:1494): the Side A home in inverted colours, with the Side B projects (names from Figma
+// 925:1848); cards of projects with a case page link to it.
+const cards: HomeCard[] = sideBCarousel;
 ---
 <BaseLayout
   title="(Side B) — Itsmicki"
