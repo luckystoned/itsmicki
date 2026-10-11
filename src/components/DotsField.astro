@@ -27,7 +27,8 @@ const { label } = Astro.props;
     // dots come together and how tight; and how they keep moving in there: swirling round, jittering and breathing.
     settle: 3500, // ms the dropped dots get to bounce before they may go back to their flow.
     bounce: [.65, .85], // Dropped: how much of its speed each dot keeps on every bounce (a lot: they bounce and bounce).
-    gravity: 2600, // Dropped dots: CSS px/s².
+    gravity: 4200, // Dropped dots: CSS px/s² (heavy).
+    burst: [900, 2400], // Dropping them bursts the cloud: each dot flies off, in every direction, this fast (CSS px/s).
     still: { pointer: 1.5, hand: 14 }, // How far (CSS px) the pointer or the hand has to move to count as moving.
     stillAfter: 5000, // ms without moving before the dots go back to their own flow.
     returnAfter: 2000, // ms after the pointer leaves (or after they drop) before they do.
@@ -38,12 +39,13 @@ const { label } = Astro.props;
     // (abstract shapes drifting behind the grid) and khaki (a few smaller ones),
     texts: ['#a49250', '#c9d6e0', '#452928', '#74362d'], // and the words on each, as in the palette.
     blobs: [7, 5, 3], // How many burgundy, blue grey and khaki shapes.
+    shapeSpeed: 3.5, // How fast the shapes (and so the colour zones) drift.
     words: ['BOOM', 'SOFT', 'HARD', 'OPEN', 'CLOSE', 'FLOW'], // Written on the tags, in this order, running on.
     tag: { height: 30, gap: 6, pad: 16, radius: 8, font: 11.5 }, // Tag size, spacing, padding, corner and type, in CSS
     // px on a 1556px-wide frame.
-    change: [2500, 11000], // Each single-word tag turns into another word every this many ms (random in the range),
-    scramble: 700, // its letters scrambling and flickering for this long;
-    blink: .0008, // and now and then (chance per tag per frame) a tag's letters blink.
+    change: [700, 3200], // Each single-word tag turns into another word every this many ms (random in the range),
+    scramble: 450, // its letters scrambling and flickering for this long;
+    blink: .002, // and now and then (chance per tag per frame) a tag's letters blink.
     dot: '#fbf8f1', stroke: '#141010', // White dots, with a washed black outline.
   };
 
@@ -110,7 +112,7 @@ const { label } = Astro.props;
     };
     const drift = (time: number) => {
       if (!layer || !layerContext) return;
-      const t = calm ? 0 : time / 1000;
+      const t = calm ? 0 : time / 1000 * SETTINGS.shapeSpeed;
       const g = layerContext, tagH = SETTINGS.tag.height * unit, radius = SETTINGS.tag.radius * unit;
       // Every tag takes one flat colour (the smaller shapes on top); tags of a colour are filled together.
       const shapes = SETTINGS.fills.map(() => new Path2D()), levels = new Uint8Array(tags.length);
@@ -242,7 +244,11 @@ const { label } = Astro.props;
       start();
     };
     const gather = (point: { x: number; y: number }) => { mode = 'gathered'; modeAt = lastMove = lastInteraction = performance.now(); anchor = point; start(); };
-    const drop = () => { mode = 'falling'; modeAt = lastInteraction = performance.now(); dots.forEach((d) => { d.vx += (random() - .5) * 600; d.vy -= random() * 500; }); start(); };
+    const drop = () => { mode = 'falling'; modeAt = lastInteraction = performance.now(); dots.forEach((d) => {
+      // Out from the middle of the cloud, every which way, a little more upward; then gravity pulls them down hard.
+      const a = Math.atan2(d.y - anchor.y, d.x - anchor.x) + (random() - .5) * 1.2, speed = SETTINGS.burst[0] + random() * (SETTINGS.burst[1] - SETTINGS.burst[0]);
+      d.vx = Math.cos(a) * speed; d.vy = Math.sin(a) * speed - speed * .35;
+    }); start(); };
     const tap = (point: { x: number; y: number }) => (mode === 'gathered' ? drop() : gather(point));
     const leave = () => { if (pointer) lastInteraction = performance.now(); pointer = null; };
 
