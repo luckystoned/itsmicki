@@ -1,9 +1,8 @@
 ---
-// Organic morphing on the project cover images (desktop hover only), after the Lumina-GL "Organic Morphism"
-// reference, tuned to feel like thick oil: around the cursor the photo refracts through a smooth, heavy lens that
-// trails the pointer and slowly settles; the card drifts a little toward the pointer, flat. Plain WebGL2, one shared canvas laid over the hovered
-// card. Vimeo covers live in a cross-origin layer that cannot be read as a texture, so on video cards the effect
-// runs on the video's still frame, which fades in over the video while hovered and out again on leave. Off for touch, reduced motion and browsers without WebGL2.
+// Liquid ink on the project covers (desktop hover only), in the spirit of noth.in: moving the pointer stirs a small
+// fluid simulation (velocity advection, pressure projection) that carries ink in the page colour across the card.
+// The ink is drawn with crisp, organic edges on a transparent canvas over the card, so photos and Vimeo videos
+// both work and videos keep playing underneath. Off for touch, reduced motion and browsers without WebGL2.
 ---
 
 <script>
@@ -11,90 +10,90 @@
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
   const CARDS = '.carousel-card, .more-carousel-card, .project-card-inner';
   const VISUALS = '.carousel-picture, .more-carousel-picture, .project-visual';
+  const INK = [250 / 255, 250 / 255, 250 / 255]; // #fafafa, the page colour.
+
+  const SETTINGS = {
+    sim: 128, // Velocity and pressure grid.
+    dye: 384, // Ink resolution.
+    velocityDissipation: .962,
+    dyeDissipation: .985,
+    pressureIterations: 20,
+    radius: .0028, // Splat size, in squared card units.
+    force: .9, // How much pointer motion pushes the fluid.
+    reveal: 3.9, // Ink density multiplier before the edge threshold.
+    edge: .5, // Density where the ink edge sits.
+    edgeWidth: .02, // Edge softness: small = crisp.
+  };
 
   const canvas = document.createElement('canvas');
   canvas.className = 'liquid-hover-canvas';
   canvas.setAttribute('aria-hidden', 'true');
-  Object.assign(canvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', zIndex: '2', pointerEvents: 'none', transition: 'opacity .35s cubic-bezier(.22, 1, .36, 1)' });
-  const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, antialias: false });
+  Object.assign(canvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', zIndex: '2', pointerEvents: 'none' });
+  const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, alpha: true, antialias: false });
+  const floatTargets = !!gl?.getExtension('EXT_color_buffer_float');
 
   const VERT = `#version 300 es
   in vec2 aPos; out vec2 vUv;
   void main() { vUv = vec2(aPos.x * .5 + .5, .5 - aPos.y * .5); gl_Position = vec4(aPos, 0., 1.); }`;
-
-  // Energy field: decays every frame; the cursor splats energy and its velocity into it, leaving a trail.
-  const ENERGY = `#version 300 es
+  const HEAD = `#version 300 es
   precision highp float;
   in vec2 vUv; out vec4 outColor;
-  uniform sampler2D uPrev; uniform vec2 uMouse; uniform vec2 uVel; uniform float uAspect; uniform float uSplat; uniform float uDecay;
-  void main() {
-    vec4 prev = texture(uPrev, vUv);
-    float e = prev.r * uDecay;
-    vec2 vel = (prev.gb - .5) * uDecay;
-    vec2 d = (vUv - uMouse) * vec2(uAspect, 1.);
-    float s = exp(-dot(d, d) / .03) * uSplat;
-    e += s;
-    vel += s * uVel;
-    outColor = vec4(clamp(e, 0., 1.), clamp(vel * .5 + .5, 0., 1.), 1.);
-  }`;
-
-  const IMAGE = `#version 300 es
-  precision highp float;
-  in vec2 vUv; out vec4 outColor;
-  uniform sampler2D uImage; uniform sampler2D uEnergy; uniform vec4 uRect; uniform vec2 uCover; uniform float uTime; uniform vec2 uRes;
-  float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-  float noise(vec2 p) {
-    vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3. - 2. * f);
-    return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
-  }
-  vec2 texUv(vec2 uv) {
-    vec2 local = (uv - uRect.xy) / uRect.zw;
-    return clamp((local - .5) * uCover + .5, 0., 1.);
-  }
-  void main() {
-    // Oil: the energy field acts like a thick, smooth lens. Its slope bends the photo (refraction), a slow,
-    // low-frequency flow adds a viscous drift, and the pointer's motion drags the surface a little.
-    vec2 px = 1.5 / uRes;
-    float e = smoothstep(0., .9, texture(uEnergy, vUv).r);
-    float ex = texture(uEnergy, vUv + vec2(px.x, 0.)).r - texture(uEnergy, vUv - vec2(px.x, 0.)).r;
-    float ey = texture(uEnergy, vUv + vec2(0., px.y)).r - texture(uEnergy, vUv - vec2(0., px.y)).r;
-    vec2 slope = vec2(ex, ey) / (px * 2.) * .0055;
-    vec2 vel = texture(uEnergy, vUv).gb - .5;
-    vec2 flow = vec2(noise(vUv * 1.6 + uTime * .12), noise(vUv * 1.6 + 4.1 - uTime * .1)) - .5;
-    vec2 offset = -slope * .9 + (flow * .035 + vel * .05) * e;
-    outColor = vec4(texture(uImage, texUv(vUv + offset)).rgb, 1.);
-  }`;
-
-  const compile = (type: number, source: string) => {
-    const shader = gl!.createShader(type)!;
-    gl!.shaderSource(shader, source);
-    gl!.compileShader(shader);
-    return shader;
-  };
-  const program = (fragment: string) => {
-    const p = gl!.createProgram()!;
-    gl!.attachShader(p, compile(gl!.VERTEX_SHADER, VERT));
-    gl!.attachShader(p, compile(gl!.FRAGMENT_SHADER, fragment));
-    gl!.bindAttribLocation(p, 0, 'aPos');
-    gl!.linkProgram(p);
-    return gl!.getProgramParameter(p, gl!.LINK_STATUS) ? p : null;
+  uniform vec2 uTexel;
+  `;
+  const SOURCES = {
+    advect: `${HEAD}uniform sampler2D uVelocity; uniform sampler2D uSource; uniform float uDt; uniform float uDissipation;
+      void main() { vec2 coord = vUv - uDt * texture(uVelocity, vUv).xy; outColor = uDissipation * texture(uSource, coord); }`,
+    splat: `${HEAD}uniform sampler2D uTarget; uniform vec2 uPoint; uniform vec3 uValue; uniform float uRadius; uniform float uAspect;
+      void main() { vec2 p = (vUv - uPoint) * vec2(uAspect, 1.); vec3 base = texture(uTarget, vUv).xyz;
+        outColor = vec4(base + uValue * exp(-dot(p, p) / uRadius), 1.); }`,
+    divergence: `${HEAD}uniform sampler2D uVelocity;
+      void main() { float l = texture(uVelocity, vUv - vec2(uTexel.x, 0.)).x, r = texture(uVelocity, vUv + vec2(uTexel.x, 0.)).x;
+        float t = texture(uVelocity, vUv - vec2(0., uTexel.y)).y, b = texture(uVelocity, vUv + vec2(0., uTexel.y)).y;
+        outColor = vec4(.5 * (r - l + b - t), 0., 0., 1.); }`,
+    pressure: `${HEAD}uniform sampler2D uPressure; uniform sampler2D uDivergence;
+      void main() { float l = texture(uPressure, vUv - vec2(uTexel.x, 0.)).x, r = texture(uPressure, vUv + vec2(uTexel.x, 0.)).x;
+        float t = texture(uPressure, vUv - vec2(0., uTexel.y)).x, b = texture(uPressure, vUv + vec2(0., uTexel.y)).x;
+        outColor = vec4((l + r + t + b - texture(uDivergence, vUv).x) * .25, 0., 0., 1.); }`,
+    gradient: `${HEAD}uniform sampler2D uPressure; uniform sampler2D uVelocity;
+      void main() { float l = texture(uPressure, vUv - vec2(uTexel.x, 0.)).x, r = texture(uPressure, vUv + vec2(uTexel.x, 0.)).x;
+        float t = texture(uPressure, vUv - vec2(0., uTexel.y)).x, b = texture(uPressure, vUv + vec2(0., uTexel.y)).x;
+        outColor = vec4(texture(uVelocity, vUv).xy - .5 * vec2(r - l, b - t), 0., 1.); }`,
+    display: `${HEAD}uniform sampler2D uDye; uniform vec3 uInk; uniform float uReveal; uniform float uEdge; uniform float uEdgeWidth;
+      void main() { float mask = smoothstep(uEdge, uEdge + uEdgeWidth, texture(uDye, vUv).r * uReveal);
+        outColor = vec4(uInk, mask); }`,
   };
 
-  const energyProgram = gl && program(ENERGY);
-  const imageProgram = gl && program(IMAGE);
+  const build = (fragment: string) => {
+    if (!gl) return null;
+    const shader = (type: number, source: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, source); gl.compileShader(s); return s; };
+    const p = gl.createProgram()!;
+    gl.attachShader(p, shader(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fragment));
+    gl.bindAttribLocation(p, 0, 'aPos');
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) return null;
+    const uniforms: Record<string, WebGLUniformLocation | null> = {};
+    const count = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < count; i++) { const name = gl.getActiveUniform(p, i)!.name; uniforms[name] = gl.getUniformLocation(p, name); }
+    return { program: p, uniforms };
+  };
 
-  if (gl && energyProgram && imageProgram) {
+  const programs = gl && floatTargets ? Object.fromEntries(Object.entries(SOURCES).map(([key, source]) => [key, build(source)])) : null;
+
+  if (gl && programs && Object.values(programs).every(Boolean)) {
+    type Program = { program: WebGLProgram; uniforms: Record<string, WebGLUniformLocation | null> };
+    const P = programs as Record<keyof typeof SOURCES, Program>;
     const quad = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    const FIELD = 128;
-    const makeTarget = () => {
+    type Target = { texture: WebGLTexture; framebuffer: WebGLFramebuffer; size: number };
+    const target = (size: number): Target => {
       const texture = gl.createTexture()!;
       gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FIELD, FIELD, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, size, size, 0, gl.RGBA, gl.HALF_FLOAT, null);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -102,155 +101,119 @@
       const framebuffer = gl.createFramebuffer()!;
       gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-      return { texture, framebuffer };
+      return { texture, framebuffer, size };
     };
-    let targets = [makeTarget(), makeTarget()];
-    const clearField = () => targets.forEach(({ framebuffer }) => {
+    const pair = (size: number) => ({ read: target(size), write: target(size), swap() { [this.read, this.write] = [this.write, this.read]; } });
+    const velocity = pair(SETTINGS.sim);
+    const pressure = pair(SETTINGS.sim);
+    const dye = pair(SETTINGS.dye);
+    const divergence = target(SETTINGS.sim);
+
+    const clearAll = () => [velocity.read, velocity.write, pressure.read, pressure.write, dye.read, dye.write, divergence].forEach(({ framebuffer }) => {
       gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-      gl.clearColor(0, .5, .5, 1);
+      gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
     });
 
-    const textures = new Map<string, WebGLTexture>();
-    const textureFor = (img: HTMLImageElement) => {
-      const key = img.currentSrc || img.src;
-      let texture = textures.get(key);
-      if (!texture) {
-        texture = gl.createTexture()!;
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        textures.set(key, texture);
+    const run = (p: Program, output: Target | null, inputs: Record<string, Target>, values: Record<string, number | number[]>) => {
+      gl.useProgram(p.program);
+      let unit = 0;
+      for (const [name, input] of Object.entries(inputs)) {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, input.texture);
+        gl.uniform1i(p.uniforms[name], unit++);
       }
-      return texture;
+      for (const [name, value] of Object.entries(values)) {
+        const location = p.uniforms[name];
+        if (!location) continue;
+        if (Array.isArray(value)) {
+          if (value.length === 2) gl.uniform2f(location, value[0], value[1]);
+          else gl.uniform3f(location, value[0], value[1], value[2]);
+        } else gl.uniform1f(location, value);
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, output ? output.framebuffer : null);
+      if (output) gl.viewport(0, 0, output.size, output.size); else gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
 
-    const u = (p: WebGLProgram, name: string) => gl.getUniformLocation(p, name);
     let visual: HTMLElement | null = null;
-    let image: HTMLImageElement | null = null;
     let hovering = false;
     let running = false;
-    let mouse = { x: .5, y: .5 };
-    let oil = { x: .5, y: .5 };
-    let last = { x: .5, y: .5 };
     let quiet = 0;
-    // Video cards: the effect runs on the video's still frame, which fades in over the video while hovered.
-    let videoCard = false;
-    // The card follows the pointer a little, with some inertia.
-    let tilt = { x: 0, y: 0, shiftX: 0, shiftY: 0 };
-    const started = performance.now();
-    const resetTilt = (element: HTMLElement | null) => {
-      if (!element) return;
-      element.style.translate = '';
-    };
+    let mouse = { x: .5, y: .5 };
+    let last = { x: .5, y: .5 };
+    let previous = 0;
 
-    const stop = () => {
-      running = false;
-      canvas.remove();
-      resetTilt(visual);
-      visual = null;
-      image = null;
-      tilt = { x: 0, y: 0, shiftX: 0, shiftY: 0 };
-    };
+    const stop = () => { running = false; previous = 0; canvas.remove(); visual = null; };
 
     const frame = (time: number) => {
       if (!visual) { stop(); return; }
-      if (!image) {
-        quiet = hovering ? 0 : quiet + 1;
-        if (quiet > 90) { stop(); return; }
-        requestAnimationFrame(frame);
-        return;
-      }
+      const dt = Math.min(previous ? (time - previous) / 1000 : 1 / 60, 1 / 30);
+      previous = time;
       const box = visual.getBoundingClientRect();
       const ratio = Math.min(devicePixelRatio || 1, 2);
       const width = Math.max(1, Math.round(box.width * ratio));
       const height = Math.max(1, Math.round(box.height * ratio));
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+      const aspect = box.width / box.height;
+      const simTexel = [1 / SETTINGS.sim, 1 / SETTINGS.sim];
 
-      // 1. Energy field, splatted at an eased point so the oil trails the pointer with some weight.
-      oil.x += (mouse.x - oil.x) * .12;
-      oil.y += (mouse.y - oil.y) * .12;
-      const velocity = { x: (oil.x - last.x) * 6, y: (oil.y - last.y) * 6 };
-      const speed = Math.hypot(velocity.x, velocity.y);
-      last = { ...oil };
-      gl.useProgram(energyProgram);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, targets[1].framebuffer);
-      gl.viewport(0, 0, FIELD, FIELD);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, targets[0].texture);
-      gl.uniform1i(u(energyProgram, 'uPrev'), 0);
-      gl.uniform2f(u(energyProgram, 'uMouse'), oil.x, oil.y);
-      gl.uniform2f(u(energyProgram, 'uVel'), velocity.x, velocity.y);
-      gl.uniform1f(u(energyProgram, 'uAspect'), box.width / box.height);
-      gl.uniform1f(u(energyProgram, 'uSplat'), hovering ? Math.min(.22, .035 + speed * 1.1) : 0);
-      gl.uniform1f(u(energyProgram, 'uDecay'), .972);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      targets = [targets[1], targets[0]];
+      // Pointer motion pushes the fluid and drops ink along the way.
+      const dx = mouse.x - last.x;
+      const dy = mouse.y - last.y;
+      last = { ...mouse };
+      if (hovering && (dx || dy)) {
+        run(P.splat, velocity.write, { uTarget: velocity.read }, { uPoint: [mouse.x, mouse.y], uValue: [dx * SETTINGS.force / dt, dy * SETTINGS.force / dt, 0], uRadius: SETTINGS.radius, uAspect: aspect });
+        velocity.swap();
+        run(P.splat, dye.write, { uTarget: dye.read }, { uPoint: [mouse.x, mouse.y], uValue: [Math.min(1, Math.hypot(dx, dy) * 18 + .12), 0, 0], uRadius: SETTINGS.radius, uAspect: aspect });
+        dye.swap();
+      }
 
-      // 2. The photo, sampled through the field, placed exactly where the <img> is (parallax and hover scale included).
-      const rect = image.getBoundingClientRect();
-      const boxAspect = rect.width / rect.height;
-      const imageAspect = image.naturalWidth / image.naturalHeight;
-      const cover = boxAspect > imageAspect ? [1, imageAspect / boxAspect] : [boxAspect / imageAspect, 1];
-      gl.useProgram(imageProgram);
+      // Make the velocity field incompressible, then carry the velocity and the ink along it.
+      run(P.divergence, divergence, { uVelocity: velocity.read }, { uTexel: simTexel });
+      for (let i = 0; i < SETTINGS.pressureIterations; i++) {
+        run(P.pressure, pressure.write, { uPressure: pressure.read, uDivergence: divergence }, { uTexel: simTexel });
+        pressure.swap();
+      }
+      run(P.gradient, velocity.write, { uPressure: pressure.read, uVelocity: velocity.read }, { uTexel: simTexel });
+      velocity.swap();
+      run(P.advect, velocity.write, { uVelocity: velocity.read, uSource: velocity.read }, { uDt: dt, uDissipation: SETTINGS.velocityDissipation });
+      velocity.swap();
+      run(P.advect, dye.write, { uVelocity: velocity.read, uSource: dye.read }, { uDt: dt, uDissipation: SETTINGS.dyeDissipation });
+      dye.swap();
+
+      // Ink in the page colour with a crisp edge; transparent elsewhere, so the photo or video shows through.
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, width, height);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, textureFor(image));
-      gl.uniform1i(u(imageProgram, 'uImage'), 0);
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, targets[0].texture);
-      gl.uniform1i(u(imageProgram, 'uEnergy'), 1);
-      gl.uniform4f(u(imageProgram, 'uRect'), (rect.left - box.left) / box.width, (rect.top - box.top) / box.height, rect.width / box.width, rect.height / box.height);
-      gl.uniform2f(u(imageProgram, 'uCover'), cover[0], cover[1]);
-      gl.uniform1f(u(imageProgram, 'uTime'), (time - started) / 1000);
-      gl.uniform2f(u(imageProgram, 'uRes'), width, height);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      run(P.display, null, { uDye: dye.read }, { uInk: INK, uReveal: SETTINGS.reveal, uEdge: SETTINGS.edge, uEdgeWidth: SETTINGS.edgeWidth });
 
-      // Once the pointer has left and the trail has faded, hand the card back to the plain <img> (or the video,
-      // which fades back in right away).
-      if (videoCard) canvas.style.opacity = hovering ? '1' : '0';
       quiet = hovering ? 0 : quiet + 1;
-      if (quiet > (videoCard ? 24 : 90)) { stop(); return; }
+      if (quiet > 240) { stop(); return; }
       requestAnimationFrame(frame);
-    };
-
-    const pointerIn = (card: Element, event: PointerEvent) => {
-      if (!finePointer.matches || calm.matches) return;
-      const nextVisual = card.querySelector<HTMLElement>(VISUALS);
-      if (!nextVisual) return;
-      const photo = nextVisual.querySelector<HTMLImageElement>('img');
-      // Vimeo frames cannot be read into WebGL, so video cards use their still frame (the <img> under the video).
-      const usable = photo?.complete && photo.naturalWidth && new URL(photo.currentSrc || photo.src, location.href).origin === location.origin;
-      const nextImage = usable ? photo : null;
-      if (nextVisual !== visual) {
-        canvas.remove();
-        resetTilt(visual);
-        tilt = { x: 0, y: 0, shiftX: 0, shiftY: 0 };
-        visual = nextVisual;
-        image = nextImage;
-        videoCard = !!nextVisual.querySelector('iframe');
-        if (image) {
-          clearField();
-          canvas.style.opacity = videoCard ? '0' : '1';
-          visual.appendChild(canvas);
-        }
-      }
-      hovering = true;
-      move(event);
-      oil = { ...mouse };
-      last = { ...mouse };
-      if (!running) { running = true; requestAnimationFrame(frame); }
     };
 
     const move = (event: PointerEvent) => {
       if (!visual) return;
       const box = visual.getBoundingClientRect();
       mouse = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height };
+    };
+
+    const pointerIn = (card: Element, event: PointerEvent) => {
+      if (!finePointer.matches || calm.matches) return;
+      const nextVisual = card.querySelector<HTMLElement>(VISUALS);
+      if (!nextVisual) return;
+      if (nextVisual !== visual) {
+        canvas.remove();
+        visual = nextVisual;
+        clearAll();
+        visual.appendChild(canvas);
+      }
+      hovering = true;
+      move(event);
+      last = { ...mouse };
+      if (!running) { running = true; requestAnimationFrame(frame); }
     };
 
     document.addEventListener('pointerover', (event) => {
