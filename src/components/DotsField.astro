@@ -1,8 +1,8 @@
 ---
-// Dark brown dots drifting over a pale pink, pink and baby-blue wash (generated, landscape). Moving the pointer (or a
-// finger) pulls nearby dots like a magnet; holding it still pushes them aside; a click or tap drops them all to the
-// floor; after 2 s without hover or drag they find their way back. With the camera on, an open hand moves like the
-// pointer and closing it is the click. With reduced motion the dots stay still.
+// Dark brown dots wandering over a field of drifting pixels in pale pink, pink and baby blue (generated, landscape).
+// Moving the pointer (or a finger) pulls nearby dots like a magnet; after 5 s holding still they part to the sides; a
+// click or tap drops them all to the floor; after 2 s without hover or drag they find their way back. With the camera
+// on, an open hand moves like the pointer and closing it is the click. With reduced motion nothing moves.
 type Props = { label: string };
 const { label } = Astro.props;
 ---
@@ -15,15 +15,18 @@ const { label } = Astro.props;
   import { loadVision, openCamera } from '@/scripts/camera';
 
   const SETTINGS = {
-    count: 340, // Dots on a 1556px-wide frame; scales with the frame's area.
+    count: 900, // Dots on a 1556px-wide frame; scales with the frame's area.
     clusters: 8, // Groups the dots gather in, like the reference.
     size: [5, 9], // Dot radius range on a 1556px-wide frame (scales with it).
-    wander: 7, // How far each dot drifts around its place, in CSS pixels.
+    wander: 26, // How far each dot drifts around its place on its own, in CSS pixels.
+    pixel: 3, // Background pixel size, in CSS pixels.
+    pixelDensity: .6, // Share of the background grid covered by drifting pixels.
+    pixelFlow: 14, // How fast the background pixels drift, in CSS px/s.
     pull: .32, // Magnet: radius (share of the frame width) and strength of the pull while the pointer moves.
     pullStrength: 2200,
     huddle: [14, 110], // Each pulled dot keeps its own distance from the pointer (CSS pixels): a loose cloud, not a ball.
     push: [.2, .38], // Holding still: the dots part like a curtain, this wide and this tall (shares of the width/height).
-    stillAfter: 280, // ms without moving before the pointer counts as still.
+    stillAfter: 5000, // ms without moving before the pointer counts as still and the dots part.
     returnAfter: 2000, // ms without hover or drag before the dots go home.
     home: 9, // Spring back home.
     gravity: 2600, // Dropped dots: CSS px/s².
@@ -46,25 +49,28 @@ const { label } = Astro.props;
     const gauss = () => { let u = 0, v = 0; while (!u) u = random(); while (!v) v = random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
 
     // The wash: long horizontal strokes of pink and baby blue on pale pink, fine lines and paper grain.
-    // Cheap on purpose: the washes are drawn small and scaled up (which softens them) and the grain is a repeated tile,
-    // so no heavy blur filter ever runs on a full-size canvas.
+    // The background is a field of scattered pixels drifting slowly, each one the colour of a pale pink, pink and
+    // baby-blue wash at its place. Drawn into a small buffer (one cell per background pixel) and scaled up crisp.
+    let buffer: HTMLCanvasElement | null = null;
+    let bufferContext: CanvasRenderingContext2D | null = null;
+    let image: ImageData | null = null;
+    let base = 0;
+    let pixels = new Float32Array(0); // x, y per pixel, in buffer cells.
+    let pixelColors = new Uint32Array(0);
+    let rowFlow = new Float32Array(0), colFlow = new Float32Array(0);
     const paint = () => {
-      const c = document.createElement('canvas');
-      c.width = Math.round(width * ratio);
-      c.height = Math.round(height * ratio);
-      const g = c.getContext('2d')!;
+      const cols = Math.max(16, Math.round(width / SETTINGS.pixel)), rows = Math.max(9, Math.round(height / SETTINGS.pixel));
+      // The wash that gives each pixel its colour: long strokes that fade in and out, drawn small.
+      const wash = document.createElement('canvas');
+      wash.width = cols; wash.height = rows;
+      const l = wash.getContext('2d', { willReadFrequently: true })!;
+      l.fillStyle = SETTINGS.background[0];
+      l.fillRect(0, 0, cols, rows);
       seed = 11;
       const pick = () => SETTINGS.background[1 + Math.floor(random() * (SETTINGS.background.length - 1))];
-      // Soft washes: long strokes that fade in and out at their ends.
-      const low = document.createElement('canvas');
-      low.width = Math.max(32, Math.round(width / 8));
-      low.height = Math.max(18, Math.round(height / 8));
-      const l = low.getContext('2d')!;
-      l.fillStyle = SETTINGS.background[0];
-      l.fillRect(0, 0, low.width, low.height);
-      l.filter = 'blur(2px)';
+      l.filter = `blur(${Math.max(2, rows * .02)}px)`;
       for (let i = 0; i < 90; i++) {
-        const x = (random() - .2) * low.width, w = low.width * (.25 + random() * .7), y = random() * low.height, h = low.height * (.04 + random() * .16);
+        const x = (random() - .2) * cols, w = cols * (.25 + random() * .7), y = random() * rows, h = rows * (.04 + random() * .16);
         const fade = l.createLinearGradient(x, 0, x + w, 0);
         const color = pick(), alpha = Math.round((.3 + random() * .4) * 255).toString(16).padStart(2, '0');
         fade.addColorStop(0, `${color}00`);
@@ -76,32 +82,53 @@ const { label } = Astro.props;
         l.ellipse(x + w / 2, y, w / 2, h / 2, 0, 0, Math.PI * 2);
         l.fill();
       }
-      g.imageSmoothingQuality = 'high';
-      g.drawImage(low, 0, 0, c.width, c.height);
-      g.scale(ratio, ratio);
-      // Dry-brush fibres: thin, slightly wavy streaks of every colour, and white highlights.
-      for (let i = 0; i < 700; i++) {
-        const y = random() * height, x = random() * width, w = width * (.03 + random() * .3);
-        g.globalAlpha = .04 + random() * .12;
-        g.strokeStyle = random() < .3 ? '#ffffff' : pick();
-        g.lineWidth = .6 + random() * 2;
-        g.beginPath();
-        g.moveTo(x, y);
-        g.bezierCurveTo(x + w * .33, y + (random() - .5) * 4, x + w * .66, y + (random() - .5) * 4, x + w, y + (random() - .5) * 3);
-        g.stroke();
+      const washData = new Uint32Array(l.getImageData(0, 0, cols, rows).data.buffer);
+      // The paper behind the pixels: the palest pink.
+      const hex = SETTINGS.background[0];
+      base = ((255 << 24) | (parseInt(hex.slice(5, 7), 16) << 16) | (parseInt(hex.slice(3, 5), 16) << 8) | parseInt(hex.slice(1, 3), 16)) >>> 0;
+      const count = Math.round(cols * rows * SETTINGS.pixelDensity);
+      pixels = new Float32Array(count * 2);
+      pixelColors = new Uint32Array(count);
+      for (let i = 0; i < count; i++) {
+        const x = random() * cols, y = random() * rows;
+        pixels[i * 2] = x; pixels[i * 2 + 1] = y;
+        // Its wash colour, a little darker or lighter, so the field reads as grain.
+        const c = washData[Math.floor(y) * cols + Math.floor(x)];
+        const k = .88 + random() * .2;
+        // Pushed away from the paper colour so the pixels read clearly against it.
+        const push = (channel: number, paper: number) => Math.max(0, Math.min(255, (paper + (channel - paper) * 1.9) * k));
+        const rr = push(c & 255, base & 255), gg = push((c >> 8) & 255, (base >> 8) & 255), bb = push((c >> 16) & 255, (base >> 16) & 255);
+        pixelColors[i] = ((255 << 24) | (bb << 16) | (gg << 8) | rr) >>> 0;
       }
-      g.globalAlpha = 1;
-      // Paper grain: a small noise tile, repeated.
-      const tile = document.createElement('canvas');
-      tile.width = tile.height = 128;
-      const t = tile.getContext('2d')!;
-      const noise = t.createImageData(128, 128);
-      for (let i = 0; i < noise.data.length; i += 4) { const v = random() * 255; noise.data[i] = noise.data[i + 1] = noise.data[i + 2] = v; noise.data[i + 3] = 18; }
-      t.putImageData(noise, 0, 0);
-      g.setTransform(1, 0, 0, 1, 0, 0);
-      g.fillStyle = g.createPattern(tile, 'repeat')!;
-      g.fillRect(0, 0, c.width, c.height);
-      background = c;
+      buffer = document.createElement('canvas');
+      buffer.width = cols; buffer.height = rows;
+      bufferContext = buffer.getContext('2d')!;
+      image = bufferContext.createImageData(cols, rows);
+      background = buffer;
+    };
+    // Each pixel drifts along a slow, swirling flow (mostly sideways, like the wash) and wraps around the edges.
+    const drift = (time: number, dt: number) => {
+      if (!buffer || !bufferContext || !image) return;
+      const cols = buffer.width, rows = buffer.height;
+      const out = new Uint32Array(image.data.buffer);
+      out.fill(base);
+      const speed = calm ? 0 : SETTINGS.pixelFlow / SETTINGS.pixel * dt;
+      const t = time / 1000;
+      // The flow, worked out once per row and column: sideways speed varies by row, a vertical sway by column.
+      if (rowFlow.length !== rows) rowFlow = new Float32Array(rows);
+      if (colFlow.length !== cols) colFlow = new Float32Array(cols);
+      for (let y = 0; y < rows; y++) rowFlow[y] = speed * (1 + .6 * Math.cos(Math.sin(y * .045 + t * .35) * 1.6));
+      for (let x = 0; x < cols; x++) colFlow[x] = speed * .45 * Math.sin(x * .021 - t * .2 + Math.sin(x * .007 + t * .1) * 2);
+      for (let i = 0; i < pixelColors.length; i++) {
+        let x = pixels[i * 2], y = pixels[i * 2 + 1];
+        x += rowFlow[y | 0];
+        y += colFlow[x | 0] || 0;
+        if (x >= cols) x -= cols; else if (x < 0) x += cols;
+        if (y >= rows) y -= rows; else if (y < 0) y += rows;
+        pixels[i * 2] = x; pixels[i * 2 + 1] = y;
+        out[(y | 0) * cols + (x | 0)] = pixelColors[i];
+      }
+      bufferContext.putImageData(image, 0, 0);
     };
 
     // A few dot sprites: irregular, slightly squared blobs with grain, like ink dots.
@@ -249,22 +276,22 @@ const { label } = Astro.props;
     let visible = false, running = false, previous = 0;
     function start() { if (!calm && !running && visible) { running = true; previous = 0; requestAnimationFrame(frame); } }
     new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) start(); }, { rootMargin: '10%' }).observe(root);
-    new ResizeObserver(() => { resize(); draw(performance.now()); }).observe(root);
+    new ResizeObserver(() => { resize(); drift(performance.now(), 0); draw(performance.now()); }).observe(root);
 
     const draw = (time: number) => {
       if (!background) return;
       context.setTransform(1, 0, 0, 1, 0, 0);
-      context.drawImage(background, 0, 0);
+      context.imageSmoothingEnabled = false;
+      context.drawImage(background, 0, 0, canvas.width, canvas.height);
+      context.imageSmoothingEnabled = true;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
       for (const d of dots) {
-        const wobble = calm ? 0 : Math.sin(time / 1700 + d.phase);
-        const size = d.r * 2;
-        context.save();
-        context.translate(d.x, d.y);
-        context.rotate(d.spin + wobble * .2);
+        const angle = d.spin + (calm ? 0 : Math.sin(time / 1700 + d.phase) * .2);
+        const cos = Math.cos(angle) * ratio, sin = Math.sin(angle) * ratio, size = d.r * 2;
+        context.setTransform(cos, sin, -sin, cos, d.x * ratio, d.y * ratio);
         context.drawImage(sprites[d.sprite], -size / 2, -size / 2, size, size);
-        context.restore();
       }
+      context.setTransform(1, 0, 0, 1, 0, 0);
     };
 
     function frame(time: number) {
@@ -298,7 +325,9 @@ const { label } = Astro.props;
         }
         if (goHome) {
           // Back home, with a gentle drift around it.
-          const tx = d.hx + Math.sin(time / 2300 + d.phase) * SETTINGS.wander, ty = d.hy + Math.cos(time / 1900 + d.phase * 1.3) * SETTINGS.wander;
+          // On their own they wander: two slow swings and a quicker one, different for every dot.
+          const tx = d.hx + (Math.sin(time / 1700 + d.phase) + .5 * Math.sin(time / 610 + d.spin * 3)) * SETTINGS.wander;
+          const ty = d.hy + (Math.cos(time / 1450 + d.phase * 1.3) + .5 * Math.cos(time / 530 + d.spin * 2)) * SETTINGS.wander * .8;
           ax += (tx - d.x) * SETTINGS.home * SETTINGS.home * .5; ay += (ty - d.y) * SETTINGS.home * SETTINGS.home * .5;
         }
         d.vx = (d.vx + ax * dt) * damping;
@@ -311,11 +340,13 @@ const { label } = Astro.props;
         if (d.x < d.r) { d.x = d.r; d.vx *= -.4; } else if (d.x > width - d.r) { d.x = width - d.r; d.vx *= -.4; }
         if (d.y < d.r) { d.y = d.r; d.vy *= -.4; }
       }
+      drift(time, dt);
       draw(time);
       requestAnimationFrame(frame);
     }
 
     resize();
+    drift(performance.now(), 0);
     draw(performance.now());
   });
 </script>
