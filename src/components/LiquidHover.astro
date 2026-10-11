@@ -1,9 +1,11 @@
 ---
-// Oil-like hover on the project covers (desktop only). One soft frosted-glass lens follows the pointer, and the
-// pointer drags the photo along its motion as if it were a thin layer of oil: the image flows, can spill past the
-// card edges, and then flows back into place. The card is always covered: no gaps or page white show through. The cover is redrawn on a fixed WebGL2 canvas a bit larger
-// than the card (so the oil can leave the card) while the original image is hidden. Video cards use their still
-// frame for the effect, since Vimeo frames cannot be read. Off for touch, reduced motion and browsers without WebGL2.
+// Hover on the project covers (desktop only). One small, soft spot follows the pointer: inside it the photo is
+// frosted (blurred, never lightened) and gently dragged along the pointer's motion, like a drop of oil on glass.
+// Blur and distortion share the same centre and falloff, so it always reads as a single point, and both relax in
+// place when the pointer stops. The cover is redrawn on a fixed WebGL2 canvas exactly over the card while the
+// original image is hidden, so nothing outside the card changes and no page background shows through. Video cards use
+// their still frame for the effect, since Vimeo frames cannot be read. Off for touch, reduced motion and browsers
+// without WebGL2.
 ---
 
 <script>
@@ -13,18 +15,14 @@
   const VISUALS = '.carousel-picture, .more-carousel-picture, .project-visual';
 
   const SETTINGS = {
-    field: 192, // Simulation grid over the canvas.
-    pad: .22, // Room around the card for the oil to spill into, as a share of the card's longer side.
-    radius: .009, // Pointer footprint, in squared canvas units: wide, so the motion is soft and broad.
-    drag: .32, // How much the pointer's motion drags the oil.
-    velocityDissipation: .93, // A long, smooth glide after each move.
-    relax: .972, // How slowly the oil flows back into place (closer to 1 = slower).
-    lens: .2, // Frosted-glass lens radius, as a share of the canvas height.
-    frost: 2.6, // Lens blur at its centre (mipmap level); it fades out smoothly toward the edge.
-    milk: .08, // Milky whitening inside the lens.
-    ease: .07, // How quickly the lens catches up with the pointer (lower = slower, more fluid).
-    fade: .05, // How quickly the lens fades in and out.
-    settle: 210, // Frames the effect keeps flowing after the pointer leaves.
+    radius: .085, // Spot radius, as a share of the card height (gaussian falloff, so its edge is very soft).
+    frost: .012, // Blur spread at the spot centre, as a share of the card height.
+    soften: 1.6, // Extra mipmap blur at the centre, so the frost is smooth rather than grainy.
+    swell: .1, // A slight lens bulge at the centre, so the spot is visible when the pointer is still.
+    drag: .07, // Seconds of pointer motion the photo is dragged by inside the spot.
+    follow: .22, // How closely the spot follows the pointer per 60 fps frame (1 = no smoothing).
+    glide: .12, // How quickly the drag responds to and relaxes after the pointer's motion.
+    fade: .08, // How quickly the spot fades in and out.
   };
 
   const canvas = document.createElement('canvas');
@@ -32,54 +30,41 @@
   canvas.setAttribute('aria-hidden', 'true');
   Object.assign(canvas.style, { position: 'fixed', left: '0', top: '0', zIndex: '1500', pointerEvents: 'none' });
   const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, alpha: true, antialias: false });
-  const floatTargets = !!gl?.getExtension('EXT_color_buffer_float');
 
   const VERT = `#version 300 es
   in vec2 aPos; out vec2 vUv;
   void main() { vUv = vec2(aPos.x * .5 + .5, .5 - aPos.y * .5); gl_Position = vec4(aPos, 0., 1.); }`;
-  const HEAD = `#version 300 es
+  // The photo with one soft spot: displacement (drag + slight bulge) and blur both follow the same gaussian.
+  const FRAG = `#version 300 es
   precision highp float;
   in vec2 vUv; out vec4 outColor;
-  `;
-  const SOURCES = {
-    // Velocity: the pointer drags the oil along its motion (uPush adds an outward push, unused now).
-    splat: `${HEAD}uniform sampler2D uTarget; uniform vec2 uPoint; uniform vec2 uDrag; uniform float uPush; uniform float uRadius; uniform float uAspect;
-      void main() { vec2 p = (vUv - uPoint) * vec2(uAspect, 1.); float g = exp(-dot(p, p) / uRadius);
-        vec2 outward = p / (length(p) + .0001) / vec2(uAspect, 1.);
-        outColor = vec4(texture(uTarget, vUv).xy + (uDrag + outward * uPush) * g, 0., 1.); }`,
-    // Carries a field along the velocity, fading it (velocity) or relaxing it (displacement).
-    advect: `${HEAD}uniform sampler2D uVelocity; uniform sampler2D uSource; uniform float uDt; uniform float uKeep; uniform float uGrow;
-      void main() { vec2 v = texture(uVelocity, vUv).xy; vec2 coord = vUv - uDt * v;
-        outColor = vec4((texture(uSource, coord).xy + v * uDt * uGrow) * uKeep, 0., 1.); }`,
-    // The photo, carried by the displacement, with a soft frosted lens under the pointer.
-    display: `${HEAD}uniform sampler2D uOffset; uniform sampler2D uImage; uniform vec4 uCard; uniform vec4 uRect; uniform vec2 uCover;
-      uniform vec2 uLens; uniform float uLensRadius; uniform float uLensOn; uniform float uAspect; uniform float uFrost; uniform float uMilk;
-      vec2 coverUv(vec2 card) { vec2 local = (card - uRect.xy) / uRect.zw; return clamp((local - .5) * uCover + .5, 0., 1.); }
-      void main() {
-        vec2 source = vUv - texture(uOffset, vUv).xy;
-        vec2 here = (vUv - uCard.xy) / uCard.zw;
-        vec2 card = (source - uCard.xy) / uCard.zw;
-        bool inCard = all(greaterThanEqual(here, vec2(0.))) && all(lessThanEqual(here, vec2(1.)));
-        bool fromCard = all(greaterThanEqual(card, vec2(0.))) && all(lessThanEqual(card, vec2(1.)));
-        // Inside the card the photo always covers it (edges stretch instead of leaving gaps); outside, only what the
-        // oil carried out of the card is drawn.
-        float alpha = inCard ? 1. : (fromCard ? 1. : 0.);
-        vec2 uv = coverUv(clamp(card, 0., 1.));
-        // One soft frosted-glass lens under the pointer: the blur and the milky tint fade out smoothly to its edge.
-        float dist = length((vUv - uLens) * vec2(uAspect, 1.));
-        float lens = uLensOn * exp(-pow(dist / (uLensRadius * .62), 2.));
-        vec3 color = textureLod(uImage, uv, uFrost * lens).rgb;
-        color = mix(color, vec3(1.), uMilk * lens);
-        outColor = vec4(color, alpha);
-      }`,
-  };
+  uniform sampler2D uImage; uniform vec4 uRect; uniform vec2 uCover; uniform float uAspect;
+  uniform vec2 uSpot; uniform vec2 uDrag; uniform float uRadius; uniform float uOn;
+  uniform float uFrost; uniform float uSoften; uniform float uSwell;
+  vec2 coverUv(vec2 card) { vec2 local = (clamp(card, 0., 1.) - uRect.xy) / uRect.zw; return clamp((local - .5) * uCover + .5, 0., 1.); }
+  void main() {
+    vec2 scale = vec2(uAspect, 1.);
+    vec2 d = (vUv - uSpot) * scale;
+    float g = uOn * exp(-dot(d, d) / (uRadius * uRadius));
+    vec2 source = vUv - uDrag * g - (vUv - uSpot) * uSwell * g;
+    // A small disc of taps, each softened by the mipmaps, spread in proportion to the spot strength.
+    vec3 color = vec3(0.);
+    float spread = uFrost * g;
+    for (int i = 0; i < 12; i++) {
+      float a = float(i) * 2.39996;
+      float r = sqrt((float(i) + .5) / 12.);
+      vec2 tap = source + vec2(cos(a), sin(a)) * r * spread / scale;
+      color += texture(uImage, coverUv(tap), uSoften * g).rgb;
+    }
+    outColor = vec4(color / 12., 1.);
+  }`;
 
-  const build = (fragment: string) => {
+  const build = () => {
     if (!gl) return null;
     const shader = (type: number, source: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, source); gl.compileShader(s); return s; };
     const p = gl.createProgram()!;
     gl.attachShader(p, shader(gl.VERTEX_SHADER, VERT));
-    gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fragment));
+    gl.attachShader(p, shader(gl.FRAGMENT_SHADER, FRAG));
     gl.bindAttribLocation(p, 0, 'aPos');
     gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) return null;
@@ -89,40 +74,16 @@
     return { program: p, uniforms };
   };
 
-  const programs = gl && floatTargets ? Object.fromEntries(Object.entries(SOURCES).map(([key, source]) => [key, build(source)])) : null;
+  const program = build();
 
-  if (gl && programs && Object.values(programs).every(Boolean)) {
-    type Program = { program: WebGLProgram; uniforms: Record<string, WebGLUniformLocation | null> };
-    type Target = { texture: WebGLTexture; framebuffer: WebGLFramebuffer };
-    const P = programs as Record<keyof typeof SOURCES, Program>;
+  if (gl && program) {
+    gl.useProgram(program.program);
     const quad = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-
-    const N = SETTINGS.field;
-    const target = (): Target => {
-      const texture = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, N, N, 0, gl.RGBA, gl.HALF_FLOAT, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      const framebuffer = gl.createFramebuffer()!;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-      return { texture, framebuffer };
-    };
-    const pair = () => ({ read: target(), write: target(), swap() { [this.read, this.write] = [this.write, this.read]; } });
-    const velocity = pair();
-    const offset = pair();
-    const clearAll = () => [velocity.read, velocity.write, offset.read, offset.write].forEach(({ framebuffer }) => {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-      gl.clearColor(0, 0, 0, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-    });
+    gl.uniform1i(program.uniforms.uImage, 0);
 
     const textures = new Map<string, WebGLTexture>();
     const textureFor = (img: HTMLImageElement) => {
@@ -142,36 +103,22 @@
       return texture;
     };
 
-    const run = (p: Program, output: Target | null, inputs: Record<string, WebGLTexture>, values: Record<string, number | number[]>) => {
-      gl.useProgram(p.program);
-      let unit = 0;
-      for (const [name, texture] of Object.entries(inputs)) {
-        gl.activeTexture(gl.TEXTURE0 + unit);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(p.uniforms[name], unit++);
-      }
-      for (const [name, value] of Object.entries(values)) {
-        const location = p.uniforms[name];
-        if (!location) continue;
-        if (!Array.isArray(value)) gl.uniform1f(location, value);
-        else if (value.length === 2) gl.uniform2f(location, value[0], value[1]);
-        else gl.uniform4f(location, value[0], value[1], value[2], value[3]);
-      }
-      gl.bindFramebuffer(gl.FRAMEBUFFER, output ? output.framebuffer : null);
-      if (output) gl.viewport(0, 0, N, N); else gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    const set = (name: string, ...value: number[]) => {
+      const location = program.uniforms[name];
+      if (value.length === 1) gl.uniform1f(location, value[0]);
+      else if (value.length === 2) gl.uniform2f(location, value[0], value[1]);
+      else gl.uniform4f(location, value[0], value[1], value[2], value[3]);
     };
 
     let visual: HTMLElement | null = null;
     let image: HTMLImageElement | null = null;
     let hovering = false;
     let running = false;
-    let quiet = 0;
-    let pointer = { x: -1, y: -1 }; // Viewport px.
-    let last = { x: -1, y: -1 };
     let previous = 0;
-    let lens = { x: .5, y: .5 };
-    let lensOn = 0;
+    let pointer = { x: -1, y: -1 }; // Viewport px.
+    let spot = { x: -1, y: -1 }; // Viewport px: the single point both the blur and the drag are centred on.
+    let motion = { x: 0, y: 0 }; // Smoothed spot velocity, px/s.
+    let on = 0;
 
     const stop = () => {
       running = false;
@@ -186,68 +133,61 @@
       if (!visual || !image) { stop(); return; }
       const dt = Math.min(previous ? (time - previous) / 1000 : 1 / 60, 1 / 30);
       previous = time;
+      const step = (rate: number) => 1 - Math.pow(1 - rate, dt * 60);
 
-      // The canvas covers the card plus a margin, following it as carousels move and pages scroll.
+      // The canvas sits exactly over the card, following it as carousels move and pages scroll.
       const box = visual.getBoundingClientRect();
-      const pad = Math.max(box.width, box.height) * SETTINGS.pad;
-      const area = { left: box.left - pad, top: box.top - pad, width: box.width + pad * 2, height: box.height + pad * 2 };
       const ratio = Math.min(devicePixelRatio || 1, 2);
-      const width = Math.round(area.width * ratio);
-      const height = Math.round(area.height * ratio);
+      const width = Math.round(box.width * ratio);
+      const height = Math.round(box.height * ratio);
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
-      canvas.style.width = `${area.width}px`;
-      canvas.style.height = `${area.height}px`;
-      canvas.style.transform = `translate3d(${area.left}px, ${area.top}px, 0)`;
-      const aspect = area.width / area.height;
-      const at = (x: number, y: number) => [(x - area.left) / area.width, (y - area.top) / area.height];
+      canvas.style.width = `${box.width}px`;
+      canvas.style.height = `${box.height}px`;
+      canvas.style.transform = `translate3d(${box.left}px, ${box.top}px, 0)`;
 
-      // 1. The pointer drags the oil along its motion.
-      const moved = Math.hypot(pointer.x - last.x, pointer.y - last.y);
-      if (hovering && moved > 0 && last.x >= 0) {
-        const [x, y] = at(pointer.x, pointer.y);
-        const [lx, ly] = at(last.x, last.y);
-        run(P.splat, velocity.write, { uTarget: velocity.read.texture }, {
-          uPoint: [x, y], uDrag: [(x - lx) / dt * SETTINGS.drag, (y - ly) / dt * SETTINGS.drag],
-          uPush: 0, uRadius: SETTINGS.radius, uAspect: aspect,
-        });
-        velocity.swap();
-      }
-      last = { ...pointer };
+      // One point: it glides after the pointer, and its own motion is what drags the photo.
+      const k = step(SETTINGS.follow);
+      const next = { x: spot.x + (pointer.x - spot.x) * k, y: spot.y + (pointer.y - spot.y) * k };
+      const g = step(SETTINGS.glide);
+      motion.x += ((next.x - spot.x) / dt - motion.x) * g;
+      motion.y += ((next.y - spot.y) / dt - motion.y) * g;
+      spot = next;
+      on += ((hovering ? 1 : 0) - on) * step(SETTINGS.fade);
 
-      // 2. Velocity flows and fades; the displacement is carried by it, grows with it, and relaxes back to zero.
-      run(P.advect, velocity.write, { uVelocity: velocity.read.texture, uSource: velocity.read.texture }, { uDt: dt, uKeep: SETTINGS.velocityDissipation, uGrow: 0 });
-      velocity.swap();
-      run(P.advect, offset.write, { uVelocity: velocity.read.texture, uSource: offset.read.texture }, { uDt: dt, uKeep: SETTINGS.relax, uGrow: 1 });
-      offset.swap();
+      // The drag is capped below the spot radius, so the photo folds smoothly and never tears.
+      const radiusPx = SETTINGS.radius * box.height;
+      let dragX = motion.x * SETTINGS.drag;
+      let dragY = motion.y * SETTINGS.drag;
+      const cap = radiusPx * .55;
+      const length = Math.hypot(dragX, dragY);
+      if (length > cap) { dragX *= cap / length; dragY *= cap / length; }
 
-      // The lens glides after the pointer and fades in and out with the hover.
-      const [px, py] = at(pointer.x, pointer.y);
-      lens.x += (px - lens.x) * SETTINGS.ease;
-      lens.y += (py - lens.y) * SETTINGS.ease;
-      lensOn += ((hovering ? 1 : 0) - lensOn) * SETTINGS.fade;
-
-      // 3. Draw the photo through the displacement, exactly where the <img> sits inside the card.
+      // Draw the photo exactly where the <img> sits inside the card.
       const rect = image.getBoundingClientRect();
       const boxAspect = rect.width / rect.height;
       const imageAspect = image.naturalWidth / image.naturalHeight;
       const cover = boxAspect > imageAspect ? [1, imageAspect / boxAspect] : [boxAspect / imageAspect, 1];
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, width, height);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      run(P.display, null, { uOffset: offset.read.texture, uImage: textureFor(image) }, {
-        uCard: [pad / area.width, pad / area.height, box.width / area.width, box.height / area.height],
-        uRect: [(rect.left - box.left) / box.width, (rect.top - box.top) / box.height, rect.width / box.width, rect.height / box.height],
-        uCover: cover,
-        uLens: [lens.x, lens.y], uLensRadius: SETTINGS.lens, uLensOn: lensOn, uAspect: aspect, uFrost: SETTINGS.frost, uMilk: SETTINGS.milk,
-      });
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, textureFor(image));
+      set('uRect', (rect.left - box.left) / box.width, (rect.top - box.top) / box.height, rect.width / box.width, rect.height / box.height);
+      set('uCover', cover[0], cover[1]);
+      set('uAspect', box.width / box.height);
+      set('uSpot', (spot.x - box.left) / box.width, (spot.y - box.top) / box.height);
+      set('uDrag', dragX / box.width, dragY / box.height);
+      set('uRadius', SETTINGS.radius);
+      set('uOn', on);
+      set('uFrost', SETTINGS.frost);
+      set('uSoften', SETTINGS.soften);
+      set('uSwell', SETTINGS.swell);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
       // The canvas now shows the cover, so the real image (or video) underneath can hide without a flash.
       if (visual.style.opacity !== '0') visual.style.opacity = '0';
 
-      // Once the pointer has left and the oil has settled, hand the card back to the real image or video.
-      quiet = hovering ? 0 : quiet + 1;
-      if (quiet > SETTINGS.settle) { stop(); return; }
+      // Once the pointer has left and the spot has faded, hand the card back to the real image or video.
+      if (!hovering && on < .002) { stop(); return; }
       requestAnimationFrame(frame);
     };
 
@@ -258,22 +198,17 @@
       // Vimeo frames cannot be read into WebGL, so video cards use their still frame (the <img> under the video).
       const usable = photo?.complete && photo.naturalWidth && new URL(photo.currentSrc || photo.src, location.href).origin === location.origin;
       if (!nextVisual || !photo || !usable) return;
+      pointer = { x: event.clientX, y: event.clientY };
       if (nextVisual !== visual) {
         if (visual) visual.style.opacity = '';
         visual = nextVisual;
         image = photo;
-        clearAll();
+        spot = { ...pointer };
+        motion = { x: 0, y: 0 };
+        on = 0;
         document.body.appendChild(canvas);
       }
       hovering = true;
-      pointer = { x: event.clientX, y: event.clientY };
-      last = { ...pointer };
-      if (!running) {
-        const box = nextVisual.getBoundingClientRect();
-        const pad = Math.max(box.width, box.height) * SETTINGS.pad;
-        lens = { x: (pointer.x - box.left + pad) / (box.width + pad * 2), y: (pointer.y - box.top + pad) / (box.height + pad * 2) };
-        lensOn = 0;
-      }
       if (!running) { running = true; requestAnimationFrame(frame); }
     };
 
