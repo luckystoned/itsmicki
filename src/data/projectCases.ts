@@ -1,5 +1,5 @@
 export type CaseMedia = {
-  type: 'image' | 'video' | 'carousel' | 'reveal' | 'dots';
+  type: 'image' | 'video' | 'carousel' | 'reveal' | 'dots' | 'souls';
   alt: string;
   /** Image file, or for a video served from the site (not Vimeo) the .mp4 file. */
   src?: string;
@@ -43,7 +43,7 @@ export type CaseBlock =
     };
 
 export type ProjectCase = {
-  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body' | 'mkp-hair' | 'general-immersive';
+  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body' | 'mkp-hair' | 'general-immersive' | 'missing-souls';
   title: string;
   year: string;
   role: string;
@@ -80,6 +80,8 @@ const reveal = (top: string, under: string, poster: string, alt: string, ratio: 
 
 /** Dots drifting over a pink wash that follow, avoid and drop with the pointer (DotsField). */
 const dots = (alt: string, ratio: string): CaseMedia => ({ type: 'dots', alt, ratio });
+/** The caregiver's place, where visitors leave their cat or dog (SoulsField). */
+const souls = (alt: string, ratio: string): CaseMedia => ({ type: 'souls', alt, ratio });
 
 const carousel = (
   slides: Array<{ src: string; alt: string }>,
@@ -473,7 +475,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
 };
 
 /** Side B cases, at /sideb/projects/{slug}, with the dark Side B page. */
-type SideBCaseSlug = 'mkp-hair' | 'general-immersive';
+type SideBCaseSlug = 'mkp-hair' | 'general-immersive' | 'missing-souls';
 export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
   'mkp-hair': {
     slug: 'mkp-hair',
@@ -509,6 +511,18 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
     blocks: [
       single(reveal('/04_SideB/Home/03_SideBProjects.mp4', '/04_SideB/Projects/03_General/01_General_Negativo.mp4', '/04_SideB/Home/03_SideBProjects.webp', 'Plants and cells under a microscope; the pointer opens a hole onto the same scene in negative.', '1556 / 870')),
       single(dots('Dark brown dots drifting over a pale pink, pink and baby-blue wash; they follow, avoid and fall with the pointer.', '1556 / 870')),
+    ],
+    credits: [],
+  },
+  'missing-souls': {
+    slug: 'missing-souls',
+    title: 'Missing souls',
+    year: '2026',
+    role: 'Art Direction,<br>Immersive Design,<br>Depressed as hell',
+    nutshell: `I created a space where those who are no longer with us can be left in the care of a caregiver. Here, our animals can find one another and keep each other company for a while, until the day we’re reunited with them.`,
+    drags: [],
+    blocks: [
+      single(souls('A soft, glowing caregiver surrounded by luminous cats and dogs that visitors have left in her care.', '1556 / 870')),
     ],
     credits: [],
   },

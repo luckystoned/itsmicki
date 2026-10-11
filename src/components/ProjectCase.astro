@@ -2,6 +2,7 @@
 import ProjectCaseFooter from '@/components/ProjectCaseFooter.astro';
 import RevealVideo from '@/components/RevealVideo.astro';
 import DotsField from '@/components/DotsField.astro';
+import SoulsField from '@/components/SoulsField.astro';
 import { imageMetadata } from '@/data/imageMetadata';
 import type { CaseMedia, ProjectCase } from '@/data/projectCases';
 
@@ -149,6 +150,8 @@ const vimeoUrl = (id: string) =>
                 <div class:list={['case-media-content', { 'is-rotated': item.rotate === 90 }]}>
                   {item.type === 'dots' ? (
                     <DotsField label={item.alt} />
+                  ) : item.type === 'souls' ? (
+                    <SoulsField label={item.alt} />
                   ) : item.type === 'reveal' && item.src && item.revealSrc && item.poster ? (
                     <RevealVideo top={item.src} under={item.revealSrc} poster={item.poster} label={item.alt} />
                   ) : item.type === 'image' && item.src && dimensions ? (
@@ -206,6 +209,13 @@ const vimeoUrl = (id: string) =>
                   </ol>
                   <p>The camera image stays on your device. Turn it off anytime above.</p>
                 </div>
+              )}
+              {item.type === 'souls' && (
+                <p class="case-media-caption case-reveal-caption" data-case-text-reveal data-souls-add-line>
+                  add your pet <button type="button" class="case-reveal-camera" data-souls-add>here</button> ↑
+                </p>
+                <input type="file" accept="image/*" data-souls-input hidden />
+                <p class="case-reveal-help case-reveal-status" data-souls-status aria-live="polite" hidden></p>
               )}
               {item.type === 'dots' && (
                 <p class="case-media-caption case-reveal-caption" data-case-text-reveal>
@@ -1427,7 +1437,7 @@ const vimeoUrl = (id: string) =>
 
   /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='missing-souls']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
       text-align: justify;
     }
   }
@@ -1598,7 +1608,7 @@ const vimeoUrl = (id: string) =>
     }
 
     /* Body copy justified on phones, as on Lumen; role and headings keep their alignment. */
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='missing-souls']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
       text-align: justify;
     }
 
