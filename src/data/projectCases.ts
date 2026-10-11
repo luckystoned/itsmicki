@@ -1,5 +1,5 @@
 export type CaseMedia = {
-  type: 'image' | 'video' | 'carousel' | 'reveal';
+  type: 'image' | 'video' | 'carousel' | 'reveal' | 'dots';
   alt: string;
   /** Image file, or for a video served from the site (not Vimeo) the .mp4 file. */
   src?: string;
@@ -77,6 +77,9 @@ const clip = (src: string, poster: string, alt: string, ratio: string, caption?:
 const reveal = (top: string, under: string, poster: string, alt: string, ratio: string): CaseMedia => ({
   type: 'reveal', src: top, revealSrc: under, poster, alt, ratio,
 });
+
+/** Dots drifting over a pink wash that follow, avoid and drop with the pointer (DotsField). */
+const dots = (alt: string, ratio: string): CaseMedia => ({ type: 'dots', alt, ratio });
 
 const carousel = (
   slides: Array<{ src: string; alt: string }>,
@@ -501,6 +504,7 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
     drags: [],
     blocks: [
       single(reveal('/04_SideB/Home/03_SideBProjects.mp4', '/04_SideB/Projects/03_General/01_General_Negativo.mp4', '/04_SideB/Home/03_SideBProjects.webp', 'Plants and cells under a microscope; the pointer opens a hole onto the same scene in negative.', '1556 / 870')),
+      single(dots('Dark brown dots drifting over a pale pink, pink and baby-blue wash; they follow, avoid and fall with the pointer.', '1556 / 870')),
     ],
     credits: [],
   },

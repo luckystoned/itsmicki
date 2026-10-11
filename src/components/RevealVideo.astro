@@ -21,6 +21,8 @@ const { top, under, poster, label } = Astro.props;
 </div>
 
 <script>
+  import { loadVision, openCamera } from '@/scripts/camera';
+
   const SETTINGS = {
     field: 200, // Simulation grid along the frame's longer side.
     radius: .085, // Brush radius, as a share of the frame height.
@@ -243,18 +245,15 @@ const { top, under, poster, label } = Astro.props;
     const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-reveal-camera]')];
     const cameraHelp = caption.querySelector<HTMLElement>('[data-reveal-camera-help]');
     const cameraStatus = caption.querySelector<HTMLElement>('[data-reveal-camera-status]');
-    const cameraVideo = document.createElement('video');
-    cameraVideo.muted = true;
-    cameraVideo.playsInline = true;
-    let stream: MediaStream | null = null;
+    let camera: Awaited<ReturnType<typeof openCamera>> | null = null;
     let detector: { detectForVideo: (video: HTMLVideoElement, time: number) => { detections: Array<{ keypoints: Array<{ x: number; y: number }> }> } } | null = null;
     let nose: { x: number; y: number } | null = null;
     let lostSince = 0;
     const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
     const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; };
     const cameraOff = () => {
-      stream?.getTracks().forEach((track) => track.stop());
-      stream = null;
+      camera?.stop();
+      camera = null;
       nose = null;
       pointer = null;
       last = null;
@@ -262,9 +261,9 @@ const { top, under, poster, label } = Astro.props;
       setLabel('turn the camera on', false);
     };
     const track = () => {
-      if (!stream) return;
-      if (detector && cameraVideo.readyState >= 2) {
-        const tip = detector.detectForVideo(cameraVideo, performance.now()).detections[0]?.keypoints[2]; // Nose tip.
+      if (!camera) return;
+      if (detector && camera.video.readyState >= 2) {
+        const tip = detector.detectForVideo(camera.video, performance.now()).detections[0]?.keypoints[2]; // Nose tip.
         if (tip) {
           // Mirrored like a selfie, and stretched so small head moves reach the whole frame.
           const target = { x: Math.min(1, Math.max(0, .5 - (tip.x - .5) * 1.8)), y: Math.min(1, Math.max(0, .5 + (tip.y - .5) * 1.8)) };
@@ -286,20 +285,16 @@ const { top, under, poster, label } = Astro.props;
     const cameraOn = async () => {
       setLabel('starting the camera…', true);
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
-        cameraVideo.srcObject = stream;
-        await cameraVideo.play();
+        camera = await openCamera();
         if (!detector) {
-          const version = '0.10.14';
-          const vision = await import(/* @vite-ignore */ `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/vision_bundle.mjs`);
-          const files = await vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/wasm`);
-          detector = await vision.FaceDetector.createFromOptions(files, {
+          const { module, files } = await loadVision();
+          detector = await module.FaceDetector.createFromOptions(files, {
             baseOptions: { modelAssetPath: '/models/blaze_face_short_range.tflite', delegate: 'GPU' },
             runningMode: 'VIDEO',
             minDetectionConfidence: .5,
           });
         }
-        if (!stream) return; // Turned off while loading.
+        if (!camera) return; // Turned off while loading.
         setLabel('turn the camera off', true);
         if (cameraHelp) cameraHelp.hidden = false;
         setStatus('Looking for your face…');
@@ -309,7 +304,7 @@ const { top, under, poster, label } = Astro.props;
         setLabel('camera unavailable', false);
       }
     };
-    cameraButtons.forEach((button) => button.addEventListener('click', () => (stream ? cameraOff() : cameraOn())));
+    cameraButtons.forEach((button) => button.addEventListener('click', () => (camera ? cameraOff() : cameraOn())));
     // The camera option only shows where the effect runs and the browser can use a camera.
     if ('mediaDevices' in navigator) (root.closest('section') ?? document).querySelectorAll<HTMLElement>('[data-reveal-camera-option]').forEach((option) => { option.hidden = false; });
     addEventListener('pagehide', cameraOff);

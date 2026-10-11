@@ -1,0 +1,326 @@
+---
+// Dark brown dots drifting over a pale pink, pink and baby-blue wash (generated, landscape). Moving the pointer (or a
+// finger) pulls nearby dots like a magnet; holding it still pushes them aside; a click or tap drops them all to the
+// floor; after 2 s without hover or drag they find their way back. With the camera on, an open hand moves like the
+// pointer and closing it is the click. With reduced motion the dots stay still.
+type Props = { label: string };
+const { label } = Astro.props;
+---
+
+<div class="dots-field" data-dots-field role="img" aria-label={label}>
+  <canvas class="dots-field-canvas" aria-hidden="true"></canvas>
+</div>
+
+<script>
+  import { loadVision, openCamera } from '@/scripts/camera';
+
+  const SETTINGS = {
+    count: 340, // Dots on a 1556px-wide frame; scales with the frame's area.
+    clusters: 8, // Groups the dots gather in, like the reference.
+    size: [5, 9], // Dot radius range on a 1556px-wide frame (scales with it).
+    wander: 7, // How far each dot drifts around its place, in CSS pixels.
+    pull: .32, // Magnet: radius (share of the frame width) and strength of the pull while the pointer moves.
+    pullStrength: 2200,
+    huddle: [14, 110], // Each pulled dot keeps its own distance from the pointer (CSS pixels): a loose cloud, not a ball.
+    push: [.2, .38], // Holding still: the dots part like a curtain, this wide and this tall (shares of the width/height).
+    stillAfter: 280, // ms without moving before the pointer counts as still.
+    returnAfter: 2000, // ms without hover or drag before the dots go home.
+    home: 9, // Spring back home.
+    gravity: 2600, // Dropped dots: CSS px/s².
+    damping: 3.2, // Per second.
+    background: ['#f3d7e0', '#eda7bf', '#f5c4d3', '#c7d3ef', '#e795b1', '#f9e6ed'], // Pale pink, pinks, baby blue, near white.
+    ink: '#3a2219',
+  };
+
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-dots-field]').forEach((root) => {
+    const canvas = root.querySelector<HTMLCanvasElement>('.dots-field-canvas')!;
+    const context = canvas.getContext('2d')!;
+    let width = 0, height = 0, ratio = 1;
+    let background: HTMLCanvasElement | null = null;
+
+    // A seeded random, so the layout is the same on every visit.
+    let seed = 7;
+    const random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    const gauss = () => { let u = 0, v = 0; while (!u) u = random(); while (!v) v = random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+
+    // The wash: long horizontal strokes of pink and baby blue on pale pink, fine lines and paper grain.
+    // Cheap on purpose: the washes are drawn small and scaled up (which softens them) and the grain is a repeated tile,
+    // so no heavy blur filter ever runs on a full-size canvas.
+    const paint = () => {
+      const c = document.createElement('canvas');
+      c.width = Math.round(width * ratio);
+      c.height = Math.round(height * ratio);
+      const g = c.getContext('2d')!;
+      seed = 11;
+      const pick = () => SETTINGS.background[1 + Math.floor(random() * (SETTINGS.background.length - 1))];
+      // Soft washes: long strokes that fade in and out at their ends.
+      const low = document.createElement('canvas');
+      low.width = Math.max(32, Math.round(width / 8));
+      low.height = Math.max(18, Math.round(height / 8));
+      const l = low.getContext('2d')!;
+      l.fillStyle = SETTINGS.background[0];
+      l.fillRect(0, 0, low.width, low.height);
+      l.filter = 'blur(2px)';
+      for (let i = 0; i < 90; i++) {
+        const x = (random() - .2) * low.width, w = low.width * (.25 + random() * .7), y = random() * low.height, h = low.height * (.04 + random() * .16);
+        const fade = l.createLinearGradient(x, 0, x + w, 0);
+        const color = pick(), alpha = Math.round((.3 + random() * .4) * 255).toString(16).padStart(2, '0');
+        fade.addColorStop(0, `${color}00`);
+        fade.addColorStop(.2 + random() * .2, color + alpha);
+        fade.addColorStop(.6 + random() * .2, color + alpha);
+        fade.addColorStop(1, `${color}00`);
+        l.fillStyle = fade;
+        l.beginPath();
+        l.ellipse(x + w / 2, y, w / 2, h / 2, 0, 0, Math.PI * 2);
+        l.fill();
+      }
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(low, 0, 0, c.width, c.height);
+      g.scale(ratio, ratio);
+      // Dry-brush fibres: thin, slightly wavy streaks of every colour, and white highlights.
+      for (let i = 0; i < 700; i++) {
+        const y = random() * height, x = random() * width, w = width * (.03 + random() * .3);
+        g.globalAlpha = .04 + random() * .12;
+        g.strokeStyle = random() < .3 ? '#ffffff' : pick();
+        g.lineWidth = .6 + random() * 2;
+        g.beginPath();
+        g.moveTo(x, y);
+        g.bezierCurveTo(x + w * .33, y + (random() - .5) * 4, x + w * .66, y + (random() - .5) * 4, x + w, y + (random() - .5) * 3);
+        g.stroke();
+      }
+      g.globalAlpha = 1;
+      // Paper grain: a small noise tile, repeated.
+      const tile = document.createElement('canvas');
+      tile.width = tile.height = 128;
+      const t = tile.getContext('2d')!;
+      const noise = t.createImageData(128, 128);
+      for (let i = 0; i < noise.data.length; i += 4) { const v = random() * 255; noise.data[i] = noise.data[i + 1] = noise.data[i + 2] = v; noise.data[i + 3] = 18; }
+      t.putImageData(noise, 0, 0);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.fillStyle = g.createPattern(tile, 'repeat')!;
+      g.fillRect(0, 0, c.width, c.height);
+      background = c;
+    };
+
+    // A few dot sprites: irregular, slightly squared blobs with grain, like ink dots.
+    const sprites = Array.from({ length: 6 }, (_, index) => {
+      const size = 32;
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const g = c.getContext('2d')!;
+      seed = 101 + index * 13;
+      g.fillStyle = SETTINGS.ink;
+      g.beginPath();
+      const sides = 9;
+      for (let i = 0; i <= sides; i++) {
+        const a = (i / sides) * Math.PI * 2, r = size * (.36 + random() * .1);
+        const x = size / 2 + Math.cos(a) * r, y = size / 2 + Math.sin(a) * r;
+        if (i) g.lineTo(x, y); else g.moveTo(x, y);
+      }
+      g.closePath();
+      g.fill();
+      const img = g.getImageData(0, 0, size, size);
+      for (let i = 0; i < img.data.length; i += 4) if (img.data[i + 3]) { const n = random(); if (n > .9) img.data[i + 3] *= .4; img.data[i] += (n - .5) * 30; }
+      g.putImageData(img, 0, 0);
+      return c;
+    });
+
+    type Dot = { hx: number; hy: number; x: number; y: number; vx: number; vy: number; r: number; sprite: number; phase: number; spin: number; huddle: number };
+    let dots: Dot[] = [];
+    const layout = () => {
+      seed = 3;
+      const count = Math.round(SETTINGS.count * (width * height) / (1556 * 870));
+      const centers = Array.from({ length: SETTINGS.clusters }, () => ({ x: random(), y: random(), sx: .03 + random() * .09, sy: .04 + random() * .14, weight: .3 + random() }));
+      const total = centers.reduce((sum, c) => sum + c.weight, 0);
+      dots = Array.from({ length: count }, () => {
+        // Most dots in clusters, a few scattered.
+        let hx: number, hy: number;
+        if (random() < .12) { hx = random(); hy = random(); } else {
+          let pick = random() * total, c = centers[0];
+          for (const center of centers) { pick -= center.weight; if (pick <= 0) { c = center; break; } }
+          do { hx = c.x + gauss() * c.sx; hy = c.y + gauss() * c.sy; } while (hx < .01 || hx > .99 || hy < .03 || hy > .97);
+        }
+        hx *= width; hy *= height;
+        return { hx, hy, x: hx, y: hy, vx: 0, vy: 0, r: (SETTINGS.size[0] + random() * (SETTINGS.size[1] - SETTINGS.size[0])) * Math.max(.45, width / 1556), sprite: Math.floor(random() * sprites.length), phase: random() * Math.PI * 2, spin: random() * Math.PI * 2, huddle: SETTINGS.huddle[0] + Math.pow(random(), 1.6) * (SETTINGS.huddle[1] - SETTINGS.huddle[0]) };
+      });
+    };
+
+    const resize = () => {
+      const rect = root.getBoundingClientRect();
+      ratio = Math.min(devicePixelRatio || 1, 2);
+      if (Math.round(rect.width) === width && Math.round(rect.height) === height) return;
+      width = Math.round(rect.width); height = Math.round(rect.height);
+      canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
+      paint();
+      dots = [];
+      layout();
+    };
+
+    // Input: the pointer (mouse, finger) or, with the camera on, an open hand. `down` drops the dots.
+    let pointer: { x: number; y: number } | null = null;
+    let lastMove = -1e9, lastInteraction = -1e9;
+    let falling = false;
+    const at = (clientX: number, clientY: number) => { const r = root.getBoundingClientRect(); return { x: clientX - r.left, y: clientY - r.top }; };
+    const move = (point: { x: number; y: number }) => {
+      if (!pointer || Math.hypot(point.x - pointer.x, point.y - pointer.y) > 1.5) lastMove = performance.now();
+      pointer = point;
+      lastInteraction = performance.now();
+      falling = false;
+      start();
+    };
+    const leave = () => { if (pointer) lastInteraction = performance.now(); pointer = null; };
+    const drop = () => { falling = true; pointer = null; lastInteraction = performance.now(); dots.forEach((d) => { d.vy += (random() - .5) * 60; }); start(); };
+
+    root.addEventListener('pointermove', (event) => { if (event.pointerType !== 'touch') move(at(event.clientX, event.clientY)); });
+    root.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') leave(); });
+    root.addEventListener('click', drop);
+    // Touch: dragging pulls (the page still scrolls); a short tap fires `click`, which drops them.
+    root.addEventListener('touchstart', (event) => { const t = event.touches[0]; if (t) move(at(t.clientX, t.clientY)); }, { passive: true });
+    root.addEventListener('touchmove', (event) => { const t = event.touches[0]; if (t) move(at(t.clientX, t.clientY)); }, { passive: true });
+    root.addEventListener('touchend', leave, { passive: true });
+
+    // Camera: an open hand is the pointer; closing it is the click.
+    const caption = root.closest('section') ?? document;
+    const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-dots-camera]')];
+    const cameraHelp = caption.querySelector<HTMLElement>('[data-dots-camera-help]');
+    const cameraStatus = caption.querySelector<HTMLElement>('[data-dots-camera-status]');
+    let camera: Awaited<ReturnType<typeof openCamera>> | null = null;
+    let hands: { detectForVideo: (video: HTMLVideoElement, time: number) => { landmarks: Array<Array<{ x: number; y: number }>> } } | null = null;
+    let handPoint: { x: number; y: number } | null = null;
+    let closed = false, lostSince = 0;
+    const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
+    const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; };
+    const cameraOff = () => { camera?.stop(); camera = null; handPoint = null; closed = false; leave(); if (cameraHelp) cameraHelp.hidden = true; setLabel('turn the camera on', false); };
+    const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+    const track = () => {
+      if (!camera) return;
+      if (hands && camera.video.readyState >= 2) {
+        const hand = hands.detectForVideo(camera.video, performance.now()).landmarks[0];
+        if (hand) {
+          lostSince = 0;
+          // Open or closed: how far the fingertips reach from the wrist, against the size of the palm.
+          const palm = distance(hand[0], hand[9]) || 1e-3;
+          const reach = [8, 12, 16, 20].reduce((sum, tip) => sum + distance(hand[tip], hand[0]), 0) / 4 / palm;
+          const isClosed = closed ? reach < 1.35 : reach < 1.05;
+          // The middle of the palm, mirrored like a selfie and stretched a little to reach the edges.
+          const target = { x: Math.min(1, Math.max(0, .5 - (hand[9].x - .5) * 1.3)) * width, y: Math.min(1, Math.max(0, .5 + (hand[9].y - .5) * 1.3)) * height };
+          handPoint = handPoint ? { x: handPoint.x + (target.x - handPoint.x) * .4, y: handPoint.y + (target.y - handPoint.y) * .4 } : target;
+          if (isClosed && !closed) drop();
+          closed = isClosed;
+          if (!closed) move(handPoint);
+          setStatus(closed ? 'Fist — the dots drop.' : 'Got your hand — move it, hold it still, or close it.');
+        } else {
+          if (handPoint) { handPoint = null; leave(); }
+          lostSince ||= performance.now();
+          if (performance.now() - lostSince > 600) setStatus('Looking for your hand… show it open, in good light.');
+        }
+      }
+      requestAnimationFrame(track);
+    };
+    const cameraOn = async () => {
+      setLabel('starting the camera…', true);
+      try {
+        camera = await openCamera();
+        if (!hands) {
+          const { module, files } = await loadVision();
+          hands = await module.HandLandmarker.createFromOptions(files, {
+            baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', delegate: 'GPU' },
+            runningMode: 'VIDEO',
+            numHands: 1,
+          });
+        }
+        if (!camera) return;
+        setLabel('turn the camera off', true);
+        if (cameraHelp) cameraHelp.hidden = false;
+        setStatus('Looking for your hand…');
+        requestAnimationFrame(track);
+      } catch {
+        cameraOff();
+        setLabel('camera unavailable', false);
+      }
+    };
+    cameraButtons.forEach((button) => button.addEventListener('click', () => (camera ? cameraOff() : cameraOn())));
+    if (!calm && 'mediaDevices' in navigator) caption.querySelectorAll<HTMLElement>('[data-dots-camera-option]').forEach((option) => { option.hidden = false; });
+    addEventListener('pagehide', cameraOff);
+
+    // Simulation and drawing.
+    let visible = false, running = false, previous = 0;
+    function start() { if (!calm && !running && visible) { running = true; previous = 0; requestAnimationFrame(frame); } }
+    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) start(); }, { rootMargin: '10%' }).observe(root);
+    new ResizeObserver(() => { resize(); draw(performance.now()); }).observe(root);
+
+    const draw = (time: number) => {
+      if (!background) return;
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.drawImage(background, 0, 0);
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      for (const d of dots) {
+        const wobble = calm ? 0 : Math.sin(time / 1700 + d.phase);
+        const size = d.r * 2;
+        context.save();
+        context.translate(d.x, d.y);
+        context.rotate(d.spin + wobble * .2);
+        context.drawImage(sprites[d.sprite], -size / 2, -size / 2, size, size);
+        context.restore();
+      }
+    };
+
+    function frame(time: number) {
+      if (!visible) { running = false; return; }
+      const dt = Math.min(previous ? (time - previous) / 1000 : 1 / 60, 1 / 30);
+      previous = time;
+      const now = performance.now();
+      const moving = pointer && now - lastMove < SETTINGS.stillAfter;
+      // Home only once nobody has hovered or dragged for a while (holding still over the frame keeps pushing).
+      const goHome = !pointer && now - lastInteraction > SETTINGS.returnAfter;
+      if (goHome) falling = false;
+      const damping = Math.exp(-SETTINGS.damping * dt);
+      for (const d of dots) {
+        let ax = 0, ay = 0;
+        if (falling) {
+          ay += SETTINGS.gravity;
+        } else if (pointer && moving) {
+          // Magnet: pulled toward the pointer, gathering in a small cloud around it.
+          const dx = pointer.x - d.x, dy = pointer.y - d.y, dist = Math.hypot(dx, dy) || 1;
+          const reach = SETTINGS.pull * width;
+          if (dist < reach) { const f = SETTINGS.pullStrength * (1 - dist / reach) * Math.max(-1, Math.min(1, (dist - d.huddle) / 30)); ax += dx / dist * f; ay += dy / dist * f; }
+        } else if (pointer) {
+          // Still: they part like a curtain. Each dot heads for its home moved sideways, away from the pointer, by
+          // how close it sits to it, so the pattern keeps its shape on both sides.
+          const side = Math.sign(d.hx - pointer.x || d.phase - Math.PI);
+          const nearY = Math.exp(-(((d.hy - pointer.y) / (SETTINGS.push[1] * height)) ** 2));
+          const nearX = Math.max(0, 1 - Math.abs(d.hx - pointer.x) / (SETTINGS.push[0] * width * 2.2));
+          const tx = d.hx + side * SETTINGS.push[0] * width * nearY * nearX;
+          ax += (tx - d.x) * SETTINGS.home * SETTINGS.home * .6;
+          ay += (d.hy - d.y) * SETTINGS.home * SETTINGS.home * .6;
+        }
+        if (goHome) {
+          // Back home, with a gentle drift around it.
+          const tx = d.hx + Math.sin(time / 2300 + d.phase) * SETTINGS.wander, ty = d.hy + Math.cos(time / 1900 + d.phase * 1.3) * SETTINGS.wander;
+          ax += (tx - d.x) * SETTINGS.home * SETTINGS.home * .5; ay += (ty - d.y) * SETTINGS.home * SETTINGS.home * .5;
+        }
+        d.vx = (d.vx + ax * dt) * damping;
+        d.vy = (d.vy + ay * dt) * (falling ? Math.exp(-.4 * dt) : damping);
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        // The floor (and walls): dropped dots bounce a little and settle in a loose pile.
+        const floor = height - d.r - (d.phase / (Math.PI * 2)) * 6;
+        if (d.y > floor) { d.y = floor; d.vy *= -.25; d.vx *= .6; }
+        if (d.x < d.r) { d.x = d.r; d.vx *= -.4; } else if (d.x > width - d.r) { d.x = width - d.r; d.vx *= -.4; }
+        if (d.y < d.r) { d.y = d.r; d.vy *= -.4; }
+      }
+      draw(time);
+      requestAnimationFrame(frame);
+    }
+
+    resize();
+    draw(performance.now());
+  });
+</script>
+
+<style>
+  .dots-field { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; cursor: crosshair; }
+  .dots-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+</style>

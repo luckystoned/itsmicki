@@ -1,6 +1,7 @@
 ---
 import ProjectCaseFooter from '@/components/ProjectCaseFooter.astro';
 import RevealVideo from '@/components/RevealVideo.astro';
+import DotsField from '@/components/DotsField.astro';
 import { imageMetadata } from '@/data/imageMetadata';
 import type { CaseMedia, ProjectCase } from '@/data/projectCases';
 
@@ -146,7 +147,9 @@ const vimeoUrl = (id: string) =>
             <section class="case-media-block case-media-single" style={mediaStyle(item)}>
               <div class="case-media-surface" data-case-media-reveal>
                 <div class:list={['case-media-content', { 'is-rotated': item.rotate === 90 }]}>
-                  {item.type === 'reveal' && item.src && item.revealSrc && item.poster ? (
+                  {item.type === 'dots' ? (
+                    <DotsField label={item.alt} />
+                  ) : item.type === 'reveal' && item.src && item.revealSrc && item.poster ? (
                     <RevealVideo top={item.src} under={item.revealSrc} poster={item.poster} label={item.alt} />
                   ) : item.type === 'image' && item.src && dimensions ? (
                     <img src={item.src} alt={item.alt} width={dimensions.width} height={dimensions.height} loading="lazy" decoding="async" draggable="false" />
@@ -200,6 +203,20 @@ const vimeoUrl = (id: string) =>
                     <li>Sit about an arm’s length from the screen, facing it, in good light.</li>
                     <li>Your nose is the brush: turn and tilt your head slowly to open the image.</li>
                     <li>Move out of view to lift the brush; the trail closes on its own.</li>
+                  </ol>
+                  <p>The camera image stays on your device. Turn it off anytime above.</p>
+                </div>
+              )}
+              {item.type === 'dots' && (
+                <p class="case-media-caption case-reveal-caption" data-case-text-reveal>
+                  hover, hold still, click<span data-dots-camera-option hidden> or <button type="button" class="case-reveal-camera" data-dots-camera aria-pressed="false">turn the camera on</button></span> for this one ↑
+                </p>
+                <div class="case-reveal-help" data-dots-camera-help hidden>
+                  <p class="case-reveal-status" data-dots-camera-status aria-live="polite"></p>
+                  <ol>
+                    <li>Show your open hand to the camera, about an arm’s length away, in good light.</li>
+                    <li>Move it to pull the dots; hold it still to push them aside.</li>
+                    <li>Close your hand to drop them to the floor. Leave them alone and they find their way back.</li>
                   </ol>
                   <p>The camera image stays on your device. Turn it off anytime above.</p>
                 </div>
