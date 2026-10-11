@@ -13,7 +13,7 @@
 import { get, list, put } from '@vercel/blob';
 
 const CAP = 42; // Souls the place holds; then it is full, for good.
-const MAX_SIDE = 160; // Largest mask side, in pixels.
+const MAX_SIDE = 240; // Largest mask side, in pixels.
 const MIN_SIDE = 16;
 const PREFIX = 'souls/';
 
