@@ -1,9 +1,8 @@
 ---
-// Dark brown dots wandering over rows of word tags that pale-blue abstract shapes show through (generated, landscape).
-// Moving the pointer (or a finger) pulls nearby dots like a magnet; after 5 s holding still they part to the sides; a
-// click or tap drops them all to the floor; after 2 s without hover or drag they find their way back. With the camera
-// on, the hand is a softer magnet: a fist gathers them, an open hand spreads them, and 5 s holding still lets them
-// go back to their flow. With reduced motion nothing moves.
+// Dark brown dots wandering over an editorial grid of word tags in flat pale blues and pale pinks (generated, landscape).
+// The same gestures everywhere, with the pointer, a finger or (camera on) a hand: moving draws the dots in like a soft
+// magnet; pressing (closing the hand) gathers them tight and letting go (opening it) spreads them; 5 s without moving,
+// or 2 s after leaving, they go back to their own flow. With reduced motion nothing moves.
 type Props = { label: string };
 const { label } = Astro.props;
 ---
@@ -20,24 +19,23 @@ const { label } = Astro.props;
     clusters: 8, // Groups the dots gather in, like the reference.
     size: [5, 9], // Dot radius range on a 1556px-wide frame (scales with it).
     wander: 26, // How far each dot drifts around its place on its own, in CSS pixels.
-    pull: .32, // Magnet: radius (share of the frame width) and strength of the pull while the pointer moves.
-    pullStrength: 2200,
-    huddle: [14, 110], // Each pulled dot keeps its own distance from the pointer (CSS pixels): a loose cloud, not a ball.
-    push: [.2, .38], // Holding still: the dots part like a curtain, this wide and this tall (shares of the width/height).
-    stillAfter: 5000, // ms without moving before the pointer counts as still and the dots part.
-    returnAfter: 2000, // ms without hover or drag before the dots go home.
-    hand: { reach: .6, pull: 26, gather: .35, spread: 2.4, still: 14 }, // Camera: how far the hand's magnet reaches (share of
-    // the width) and how hard it pulls; how tight a fist gathers them and how wide an open hand spreads them (times each
-    // dot's own distance); how far (CSS px) the hand has to move to count as moving.
+    huddle: [14, 110], // Each dot keeps its own distance from the pointer (CSS pixels): a loose cloud, not a ball.
+    magnet: { reach: .6, pull: 26, gather: .35, spread: 2.4 }, // How far the magnet reaches (share of the width) and how
+    // hard it pulls; how tight pressing gathers the dots and how wide letting go spreads them (times each dot's distance).
+    still: { pointer: 1.5, hand: 14 }, // How far (CSS px) the pointer or the hand has to move to count as moving.
+    stillAfter: 5000, // ms without moving before the dots go back to their own flow.
+    returnAfter: 2000, // ms after the pointer leaves before they do.
     home: 9, // Spring back home.
-    gravity: 2600, // Dropped dots: CSS px/s².
     damping: 3.2, // Per second.
-    paper: '#f2f6fb', // The palest blue, behind everything.
-    blues: ['#e2ecf8', '#d1e1f3', '#bfd5ee', '#a9c6e7', '#93b6df'], // Pale blues, from the faintest to the deepest.
-    blobs: 8, // Abstract shapes the background shows through its tags, drifting, merging and splitting.
-    words: ['BOOM', 'SOFT', 'HARD', 'OPEN', 'CLOSE', 'FLOW'], // Written on the tags.
-    tag: { height: 26, gap: 5, pad: 14, radius: 7, font: 11, flow: 9 }, // Tag size, spacing, padding, corner and type, in
-    // CSS px on a 1556px-wide frame; and how fast the rows slide sideways, in CSS px/s.
+    paper: '#f7f9fc', // Between the tags.
+    blues: ['#e9f0f9', '#d9e6f5', '#c5d9f0', '#adc9ea', '#93b6df'], // Tag fills, from the faintest blue to the deepest,
+    blueText: ['#9fb7d6', '#87a6cf', '#6f94c4', '#ffffff', '#ffffff'], // and the words on them.
+    pinks: ['#f8e0e7', '#f1c6d3'], // Pale pink tags where the pink shapes pass,
+    pinkText: ['#c98aa0', '#b4607e'],
+    blobs: [8, 3], // Abstract shapes behind the grid: blue ones, and a few smaller pink ones.
+    words: ['BOOM', 'SOFT', 'HARD', 'OPEN', 'CLOSE', 'FLOW'], // Written on the tags, in this order, running on.
+    tag: { height: 30, gap: 6, pad: 16, radius: 8, font: 11.5 }, // Tag size, spacing, padding, corner and type, in CSS
+    // px on a 1556px-wide frame.
     ink: '#3a2219',
   };
 
@@ -54,112 +52,75 @@ const { label } = Astro.props;
     const random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
     const gauss = () => { let u = 0, v = 0; while (!u) u = random(); while (!v) v = random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
 
-    // The background: rows of rounded tags, like bricks, with the words on them. Behind the tags, abstract shapes in
-    // pale blues (soft masses that wander, merge and split) show through them only, so the image is made of tags; where
-    // the shapes fade, the tags fade into the paper. The rows slide slowly sideways, alternating directions.
-    type Tag = { x: number; w: number; text: string };
-    type Row = { y: number; speed: number; length: number; tags: Tag[] };
-    let rows: Row[] = [];
-    let unit = 1, margin = 0;
-    const font = () => `600 ${(SETTINGS.tag.font * unit).toFixed(1)}px ui-monospace, "SF Mono", Menlo, Consolas, monospace`;
-    const stops = [SETTINGS.paper, ...SETTINGS.blues].map((hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)));
-    // The shapes, on a coarse grid (a sum of moving soft masses), painted into a small canvas that is stretched smooth.
-    let shapeW = 0, shapeH = 0, shape = new Float32Array(0);
-    let field: HTMLCanvasElement | null = null, fieldContext: CanvasRenderingContext2D | null = null, fieldImage: ImageData | null = null;
+    // The background: an editorial grid of rounded tags, like bricks, the words running on from tag to tag and row to
+    // row. Each tag is one flat colour: a pale blue, deeper where slow abstract shapes pass behind the grid, or a pale
+    // pink where a few smaller pink shapes drift through. The grid stays put; only the colours move.
+    type Tag = { x: number; y: number; w: number; text: string };
+    let tags: Tag[] = [];
+    let unit = 1;
     let layer: HTMLCanvasElement | null = null, layerContext: CanvasRenderingContext2D | null = null;
+    const font = () => `600 ${(SETTINGS.tag.font * unit).toFixed(1)}px ui-monospace, "SF Mono", Menlo, Consolas, monospace`;
     type Blob = { x: number; y: number; r: number; ax: number; ay: number; fx: number; fy: number; p: number };
-    let blobs: Blob[] = [];
+    let blueBlobs: Blob[] = [], pinkBlobs: Blob[] = [];
+    const makeBlobs = (count: number, size: number) => Array.from({ length: count }, () => ({ x: random(), y: random(), r: size * (.6 + random()), ax: .12 + random() * .25, ay: .1 + random() * .2, fx: .03 + random() * .05, fy: .025 + random() * .05, p: random() * Math.PI * 2 }));
+    // How strongly a set of shapes covers a point (u, v in 0–1) at time t (s).
+    const cover = (blobs: Blob[], u: number, v: number, t: number) => {
+      const aspect = width / Math.max(1, height);
+      let value = 0;
+      for (const b of blobs) {
+        const bx = b.x + Math.sin(t * b.fx * 2 * Math.PI + b.p) * b.ax, by = b.y + Math.cos(t * b.fy * 2 * Math.PI + b.p * 1.7) * b.ay;
+        const dx = (u - bx) * aspect, dy = v - by;
+        value += (b.r * b.r) / (dx * dx + dy * dy + .002);
+      }
+      return value;
+    };
     const paint = () => {
       seed = 11;
       unit = Math.min(1.2, Math.max(.75, width / 1556));
       const { height: tagH, gap, pad } = SETTINGS.tag;
-      margin = 220 * unit;
       layer = document.createElement('canvas');
       layer.width = canvas.width; layer.height = canvas.height;
       layerContext = layer.getContext('2d')!;
       layerContext.font = font();
-      const measure = new Map(SETTINGS.words.map((word) => [word, layerContext!.measureText(word).width]));
-      const textWidth = (text: string) => text.split(' ').reduce((sum, word) => sum + (measure.get(word) ?? 0), 0) + (text.split(' ').length - 1) * (measure.get('SOFT') ?? 0) / 4;
-      rows = [];
-      for (let y = -random() * tagH * unit, n = 0; y < height; y += (tagH + gap) * unit, n++) {
-        const tags: Tag[] = [];
-        let x = 0;
-        while (x < width + margin) {
-          // Mostly single words; now and then two or three in one long tag.
-          const many = random() < .14 ? 2 + Math.floor(random() * 2) : 1;
-          const text = Array.from({ length: many }, () => SETTINGS.words[Math.floor(random() * SETTINGS.words.length)]).join(' ');
-          const w = textWidth(text) + pad * 2 * unit;
-          tags.push({ x, w, text });
+      // The words run on like text; every so often a long tag holds three or four of them.
+      tags = [];
+      let next = 0;
+      const word = () => SETTINGS.words[next++ % SETTINGS.words.length];
+      for (let y = gap * unit; y < height; y += (tagH + gap) * unit) {
+        next += Math.floor(random() * 4);
+        for (let x = -random() * 70 * unit; x < width;) {
+          const text = random() < .1 ? Array.from({ length: 3 + Math.floor(random() * 2) }, word).join('  ') : word();
+          const w = layerContext.measureText(text).width + pad * 2 * unit;
+          tags.push({ x, y, w, text });
           x += w + gap * unit;
         }
-        rows.push({ y, speed: (n % 2 ? -1 : 1) * SETTINGS.tag.flow * unit * (.6 + random() * .8), length: x, tags });
       }
-      shapeW = 96; shapeH = Math.max(12, Math.round(96 * height / Math.max(1, width)));
-      shape = new Float32Array(shapeW * shapeH);
-      field = document.createElement('canvas');
-      field.width = shapeW; field.height = shapeH;
-      fieldContext = field.getContext('2d')!;
-      fieldImage = fieldContext.createImageData(shapeW, shapeH);
-      blobs = Array.from({ length: SETTINGS.blobs }, () => ({ x: random(), y: random(), r: .1 + random() * .16, ax: .12 + random() * .25, ay: .1 + random() * .2, fx: .03 + random() * .05, fy: .025 + random() * .05, p: random() * Math.PI * 2 }));
+      blueBlobs = makeBlobs(SETTINGS.blobs[0], .17);
+      pinkBlobs = makeBlobs(SETTINGS.blobs[1], .08);
       background = layer;
     };
-    // How deep the blue is at a point of the frame, 0 (paper) to 1 (the deepest blue).
-    const depth = (x: number, y: number) => {
-      const value = shape[Math.min(shapeH - 1, Math.max(0, Math.round(y / height * (shapeH - 1)))) * shapeW + Math.min(shapeW - 1, Math.max(0, Math.round(x / width * (shapeW - 1))))];
-      return Math.min(1, Math.max(0, (value - .5) / 2.6));
-    };
     const drift = (time: number) => {
-      if (!layer || !layerContext || !field || !fieldContext || !fieldImage) return;
+      if (!layer || !layerContext) return;
       const t = calm ? 0 : time / 1000;
-      // The shapes: soft masses on slow Lissajous paths, with a slow ripple so their outlines stay organic.
-      const aspect = width / Math.max(1, height), px = fieldImage.data;
-      for (let gy = 0; gy < shapeH; gy++) for (let gx = 0; gx < shapeW; gx++) {
-        const u = gx / (shapeW - 1), v = gy / (shapeH - 1);
-        let value = 0;
-        for (const b of blobs) {
-          const bx = b.x + Math.sin(t * b.fx * 2 * Math.PI + b.p) * b.ax, by = b.y + Math.cos(t * b.fy * 2 * Math.PI + b.p * 1.7) * b.ay;
-          const dx = (u - bx) * aspect, dy = v - by;
-          value += (b.r * b.r) / (dx * dx + dy * dy + .002);
-        }
-        value += .25 * Math.sin(u * 9 + t * .3) * Math.sin(v * 7 - t * .25);
-        const k = gy * shapeW + gx;
-        shape[k] = value;
-        // Its colour: along the paper → deepest-blue ramp.
-        const at = Math.min(1, Math.max(0, (value - .5) / 2.6)) * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(at)), f = at - i;
-        for (let c = 0; c < 3; c++) px[k * 4 + c] = stops[i][c] + (stops[i + 1][c] - stops[i][c]) * f;
-        px[k * 4 + 3] = 255;
-      }
-      fieldContext.putImageData(fieldImage, 0, 0);
-      // The tags: their outlines become a mask the shapes show through; the words go on top.
-      const g = layerContext, { radius } = SETTINGS.tag, tagH = SETTINGS.tag.height * unit;
+      const g = layerContext, tagH = SETTINGS.tag.height * unit, radius = SETTINGS.tag.radius * unit;
+      // Every tag takes one flat colour; tags of a colour are filled together.
+      const fills = [...SETTINGS.blues, ...SETTINGS.pinks], texts = [...SETTINGS.blueText, ...SETTINGS.pinkText];
+      const shapes = fills.map(() => new Path2D()), levels = new Uint8Array(tags.length);
+      tags.forEach((tag, i) => {
+        const u = (tag.x + tag.w / 2) / width, v = (tag.y + tagH / 2) / height;
+        const pink = cover(pinkBlobs, u, v, t * 1.3);
+        const level = pink > 1 ? SETTINGS.blues.length + (pink > 2.4 ? 1 : 0) : Math.min(SETTINGS.blues.length - 1, Math.max(0, Math.floor((cover(blueBlobs, u, v, t) - .3) / .6)));
+        levels[i] = level;
+        shapes[level].roundRect(tag.x, tag.y, tag.w, tagH, radius);
+      });
       g.setTransform(ratio, 0, 0, ratio, 0, 0);
       g.fillStyle = SETTINGS.paper;
       g.fillRect(0, 0, width, height);
-      const mask = new Path2D(), words: Array<[string, number, number, number]> = [];
-      for (const row of rows) {
-        const offset = row.speed * t;
-        for (const tag of row.tags) {
-          const x = ((tag.x + offset) % row.length + row.length) % row.length - margin / 2;
-          if (x > width || x + tag.w < 0) continue;
-          const d = depth(x + tag.w / 2, row.y + tagH / 2);
-          if (d < .04) continue;
-          mask.roundRect(x, row.y, tag.w, tagH, radius * unit);
-          if (d > .12) words.push([tag.text, x + tag.w / 2, row.y + tagH / 2, d]);
-        }
-      }
-      g.save();
-      g.clip(mask);
-      g.imageSmoothingEnabled = true;
-      g.drawImage(field, 0, 0, width, height);
-      g.restore();
+      shapes.forEach((shape, level) => { g.fillStyle = fills[level]; g.fill(shape); });
       g.font = font();
       g.textAlign = 'center';
       g.textBaseline = 'middle';
-      for (const [text, x, y, d] of words) {
-        // Deep tags get white words; pale ones a blue that reads on them.
-        g.fillStyle = d > .45 ? 'rgba(255, 255, 255, .92)' : `rgba(111, 149, 198, ${Math.min(1, d * 3).toFixed(2)})`;
-        g.fillText(text, x, y + .5);
-      }
+      tags.forEach((tag, i) => { g.fillStyle = texts[levels[i]]; g.fillText(tag.text, tag.x + tag.w / 2, tag.y + tagH / 2 + .5); });
       g.setTransform(1, 0, 0, 1, 0, 0);
     };
 
@@ -217,32 +178,32 @@ const { label } = Astro.props;
       layout();
     };
 
-    // Input: the pointer (mouse, finger) or, with the camera on, an open hand. `down` drops the dots.
+    // Input, the same for every way in: the pointer (mouse, finger) or, with the camera on, a hand. Moving draws the dots
+    // in; pressing (a fist) gathers them tight, letting go (an open hand) spreads them.
     let pointer: { x: number; y: number } | null = null;
-    let handShape: 'open' | 'closed' | null = null; // Set while the camera follows a hand.
+    let pressed = false;
     let lastMove = -1e9, lastInteraction = -1e9;
-    let falling = false;
     const at = (clientX: number, clientY: number) => { const r = root.getBoundingClientRect(); return { x: clientX - r.left, y: clientY - r.top }; };
-    const move = (point: { x: number; y: number }, still = 1.5) => {
+    const move = (point: { x: number; y: number }, still = SETTINGS.still.pointer) => {
       if (!pointer || Math.hypot(point.x - pointer.x, point.y - pointer.y) > still) lastMove = performance.now();
       pointer = point;
       lastInteraction = performance.now();
-      falling = false;
       start();
     };
-    const leave = () => { if (pointer) lastInteraction = performance.now(); pointer = null; };
-    const drop = () => { falling = true; pointer = null; lastInteraction = performance.now(); dots.forEach((d) => { d.vy += (random() - .5) * 60; }); start(); };
+    // Pressing or letting go counts as moving, so the dots answer it even when the pointer stays in place.
+    const press = (value: boolean) => { if (value !== pressed) { pressed = value; lastMove = lastInteraction = performance.now(); start(); } };
+    const leave = () => { if (pointer) lastInteraction = performance.now(); pointer = null; pressed = false; };
 
     root.addEventListener('pointermove', (event) => { if (event.pointerType !== 'touch') move(at(event.clientX, event.clientY)); });
+    root.addEventListener('pointerdown', (event) => { if (event.pointerType !== 'touch') { move(at(event.clientX, event.clientY)); press(true); } });
+    addEventListener('pointerup', (event) => { if (event.pointerType !== 'touch') press(false); });
     root.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') leave(); });
-    root.addEventListener('click', drop);
-    // Touch: dragging pulls (the page still scrolls); a short tap fires `click`, which drops them.
-    root.addEventListener('touchstart', (event) => { const t = event.touches[0]; if (t) move(at(t.clientX, t.clientY)); }, { passive: true });
+    // Touch: a finger down gathers them, dragging draws them along (the page still scrolls), lifting it spreads them.
+    root.addEventListener('touchstart', (event) => { const t = event.touches[0]; if (t) { move(at(t.clientX, t.clientY)); press(true); } }, { passive: true });
     root.addEventListener('touchmove', (event) => { const t = event.touches[0]; if (t) move(at(t.clientX, t.clientY)); }, { passive: true });
-    root.addEventListener('touchend', leave, { passive: true });
+    root.addEventListener('touchend', () => press(false), { passive: true });
 
-    // Camera: the hand is a soft magnet. Moving it draws the dots toward it; a fist gathers them in tight, an open hand
-    // lets them spread; held still for 5 s, they go back to their own flow.
+    // Camera: the hand is the pointer, and closing it is pressing.
     const caption = root.closest('section') ?? document;
     const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-dots-camera]')];
     const cameraHelp = caption.querySelector<HTMLElement>('[data-dots-camera-help]');
@@ -253,7 +214,7 @@ const { label } = Astro.props;
     let closed = false, lostSince = 0;
     const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
     const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; };
-    const cameraOff = () => { camera?.stop(); camera = null; handPoint = null; handShape = null; closed = false; leave(); if (cameraHelp) cameraHelp.hidden = true; setLabel('turn the camera on', false); };
+    const cameraOff = () => { camera?.stop(); camera = null; handPoint = null; closed = false; leave(); if (cameraHelp) cameraHelp.hidden = true; setLabel('turn the camera on', false); };
     const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
     const track = () => {
       if (!camera) return;
@@ -268,14 +229,12 @@ const { label } = Astro.props;
           // The middle of the palm, mirrored like a selfie and stretched a little to reach the edges.
           const target = { x: Math.min(1, Math.max(0, .5 - (hand[9].x - .5) * 1.3)) * width, y: Math.min(1, Math.max(0, .5 + (hand[9].y - .5) * 1.3)) * height };
           handPoint = handPoint ? { x: handPoint.x + (target.x - handPoint.x) * .3, y: handPoint.y + (target.y - handPoint.y) * .3 } : target;
-          // Opening or closing the hand counts as moving, so the dots answer it even when the hand stays in place.
-          if (isClosed !== closed) lastMove = performance.now();
           closed = isClosed;
-          handShape = closed ? 'closed' : 'open';
-          move(handPoint, SETTINGS.hand.still);
+          move(handPoint, SETTINGS.still.hand);
+          press(closed);
           setStatus(closed ? 'Closed — the dots gather in.' : 'Open — move your hand, close it, or hold still.');
         } else {
-          if (handPoint) { handPoint = null; handShape = null; leave(); }
+          if (handPoint) { handPoint = null; leave(); }
           lostSince ||= performance.now();
           if (performance.now() - lostSince > 600) setStatus('Looking for your hand… show it open, in good light.');
         }
@@ -336,54 +295,31 @@ const { label } = Astro.props;
       previous = time;
       const now = performance.now();
       const moving = pointer && now - lastMove < SETTINGS.stillAfter;
-      // Home only once nobody has hovered or dragged for a while (holding still over the frame keeps pushing). A hand
-      // held still lets them go straight back to their flow.
-      const goHome = (!pointer && now - lastInteraction > SETTINGS.returnAfter) || (!!handShape && !moving);
-      if (goHome) falling = false;
+      // Their own flow again once the pointer has held still for a while, or a little after it left.
+      const goHome = !moving && (!!pointer || now - lastInteraction > SETTINGS.returnAfter);
       const damping = Math.exp(-SETTINGS.damping * dt);
       for (const d of dots) {
         let ax = 0, ay = 0;
-        if (falling) {
-          ay += SETTINGS.gravity;
-        } else if (pointer && moving && handShape) {
-          // The hand: a soft, wide magnet. Each dot heads for a spot on its own side of the hand, closer in for a fist,
-          // further out for an open hand, and eases there (the damping keeps it smooth).
+        if (pointer && moving) {
+          // A soft, wide magnet. Each dot heads for a spot on its own side of the pointer, close in while pressing,
+          // further out when let go, and glides there (extra drag near the pointer, so nothing overshoots).
           const dx = d.x - pointer.x, dy = d.y - pointer.y, dist = Math.hypot(dx, dy) || 1;
-          const reach = SETTINGS.hand.reach * width;
-          const weight = Math.max(0, 1 - dist / reach) ** .5;
-          const spot = d.huddle * (handShape === 'closed' ? SETTINGS.hand.gather : SETTINGS.hand.spread);
-          ax += (pointer.x + dx / dist * spot - d.x) * SETTINGS.hand.pull * weight;
-          ay += (pointer.y + dy / dist * spot - d.y) * SETTINGS.hand.pull * weight;
-          ax -= d.vx * 5 * weight; ay -= d.vy * 5 * weight; // Extra drag near the hand: they glide in, no overshoot.
-        } else if (pointer && moving) {
-          // Magnet: pulled toward the pointer, gathering in a small cloud around it.
-          const dx = pointer.x - d.x, dy = pointer.y - d.y, dist = Math.hypot(dx, dy) || 1;
-          const reach = SETTINGS.pull * width;
-          if (dist < reach) { const f = SETTINGS.pullStrength * (1 - dist / reach) * Math.max(-1, Math.min(1, (dist - d.huddle) / 30)); ax += dx / dist * f; ay += dy / dist * f; }
-        } else if (pointer) {
-          // Still: they part like a curtain. Each dot heads for its home moved sideways, away from the pointer, by
-          // how close it sits to it, so the pattern keeps its shape on both sides.
-          const side = Math.sign(d.hx - pointer.x || d.phase - Math.PI);
-          const nearY = Math.exp(-(((d.hy - pointer.y) / (SETTINGS.push[1] * height)) ** 2));
-          const nearX = Math.max(0, 1 - Math.abs(d.hx - pointer.x) / (SETTINGS.push[0] * width * 2.2));
-          const tx = d.hx + side * SETTINGS.push[0] * width * nearY * nearX;
-          ax += (tx - d.x) * SETTINGS.home * SETTINGS.home * .6;
-          ay += (d.hy - d.y) * SETTINGS.home * SETTINGS.home * .6;
-        }
-        if (goHome) {
-          // Back home, with a gentle drift around it.
-          // On their own they wander: two slow swings and a quicker one, different for every dot.
+          const weight = Math.max(0, 1 - dist / (SETTINGS.magnet.reach * width)) ** .5;
+          const spot = d.huddle * (pressed ? SETTINGS.magnet.gather : SETTINGS.magnet.spread);
+          ax += (pointer.x + dx / dist * spot - d.x) * SETTINGS.magnet.pull * weight - d.vx * 5 * weight;
+          ay += (pointer.y + dy / dist * spot - d.y) * SETTINGS.magnet.pull * weight - d.vy * 5 * weight;
+        } else if (goHome) {
+          // On their own they wander around home: two slow swings and a quicker one, different for every dot.
           const tx = d.hx + (Math.sin(time / 1700 + d.phase) + .5 * Math.sin(time / 610 + d.spin * 3)) * SETTINGS.wander;
           const ty = d.hy + (Math.cos(time / 1450 + d.phase * 1.3) + .5 * Math.cos(time / 530 + d.spin * 2)) * SETTINGS.wander * .8;
           ax += (tx - d.x) * SETTINGS.home * SETTINGS.home * .5; ay += (ty - d.y) * SETTINGS.home * SETTINGS.home * .5;
         }
         d.vx = (d.vx + ax * dt) * damping;
-        d.vy = (d.vy + ay * dt) * (falling ? Math.exp(-.4 * dt) : damping);
+        d.vy = (d.vy + ay * dt) * damping;
         d.x += d.vx * dt;
         d.y += d.vy * dt;
-        // The floor (and walls): dropped dots bounce a little and settle in a loose pile.
-        const floor = height - d.r - (d.phase / (Math.PI * 2)) * 6;
-        if (d.y > floor) { d.y = floor; d.vy *= -.25; d.vx *= .6; }
+        // The edges of the frame.
+        if (d.y > height - d.r) { d.y = height - d.r; d.vy *= -.4; }
         if (d.x < d.r) { d.x = d.r; d.vx *= -.4; } else if (d.x > width - d.r) { d.x = width - d.r; d.vx *= -.4; }
         if (d.y < d.r) { d.y = d.r; d.vy *= -.4; }
       }
