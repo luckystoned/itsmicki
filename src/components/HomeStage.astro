@@ -43,7 +43,7 @@ const loops = [0, 1, 2];
           const cardStyle = `--card-aspect:${card.width / card.height};--card-width:${cardLength(card.width)}`;
           const content = (
             <>
-              <span class="carousel-name" aria-hidden="true"><span class="carousel-name-text">{card.label}</span></span>
+              <span class="carousel-name" aria-hidden="true" data-name-scroll><span class="carousel-name-text"><span class="name-line" data-name-line>{card.label}</span></span></span>
               <span class="carousel-picture">
                 <img src={card.src} alt={loop === 0 ? card.alt : ''} width={card.imageWidth} height={card.imageHeight} loading={index < 3 && loop === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 && loop === 0 ? 'high' : undefined} decoding="async" />
                 {card.video && <video src={card.video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
@@ -73,6 +73,9 @@ const loops = [0, 1, 2];
 
   <script>
     import { playVisibleVideos } from '@/scripts/playVisibleVideos';
+    import { scrollLongNames } from '@/scripts/scrollLongNames';
+
+    scrollLongNames();
 
     const carousel = document.querySelector<HTMLElement>('[data-carousel]');
     const track = document.querySelector<HTMLElement>('[data-carousel-track]');
@@ -297,4 +300,10 @@ const loops = [0, 1, 2];
   @media (min-width: 761px) and (not ((hover: hover) and (pointer: fine))) {
     .carousel-card { --name-size: clamp(12px, 1.25vw, 20px); }
   }
+
+  /* Names longer than their card slide back and forth to show the whole line (see scrollLongNames). */
+  .name-line { display: inline-block; }
+  [data-name-scroll].is-long .name-line { animation: name-scroll var(--name-duration, 6s) ease-in-out infinite alternate; }
+  @keyframes name-scroll { 0%, 18% { transform: none; } 82%, 100% { transform: translateX(var(--name-shift, 0)); } }
+  @media (prefers-reduced-motion: reduce) { [data-name-scroll].is-long .name-line { animation: none; } }
 </style>
