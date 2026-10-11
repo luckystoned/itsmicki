@@ -8,7 +8,7 @@ Para preparar un push o publicación, leer también `docs/flujo-de-publicacion.m
 - Mantener Astro, TypeScript, CSS nativo y salida estática.
 - No agregar React, Tailwind, CMS, base de datos o SSR sin una decisión explícita.
 - Fuentes de contenido: `src/data/projects.ts` (listado, metadatos y SEO de cada proyecto) y `src/data/projectCases.ts` (contenido de cada página de caso: bloques, imágenes, videos de Vimeo y créditos).
-- Mantener los videos en Vimeo; no incorporar archivos de video al repositorio.
+- Mantener los videos en Vimeo; no incorporar archivos de video al repositorio, excepto los videos cortos que se sirven desde el sitio: portadas del carrusel (`*_Loop.mp4`, para que el efecto de hover pueda leer sus cuadros) y clips de casos agregados con `clip()` en `projectCases.ts`, todos en `public/02_Projects/`, H.264 sin audio.
 - Guardar en `public/` solamente assets utilizados en producción.
 - No modificar `../Referencias originales`: es archivo de consulta fuera del repositorio.
 - Respetar la dirección visual del Figma, el responsive, el foco visible y `prefers-reduced-motion`.

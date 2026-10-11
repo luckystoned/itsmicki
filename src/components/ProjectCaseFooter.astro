@@ -1,7 +1,7 @@
 ---
 import { imageMetadata } from '@/data/imageMetadata';
 import { projectCases } from '@/data/projectCases';
-import { carouselProjects, desktopLength, vimeoBackground } from '@/data/carousel';
+import { carouselProjects, cardLength } from '@/data/carousel';
 import LiquidHover from '@/components/LiquidHover.astro';
 
 const { currentSlug } = Astro.props;
@@ -21,13 +21,13 @@ const loops = [0, 1, 2];
     <div class="more-carousel-track" data-more-carousel-track>
       {loops.map((loop) => carouselProjects.map((project) => {
         const dimensions = imageMetadata[project.caseCarouselCover];
-        const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${desktopLength(project.carouselLayout.width)}`;
+        const cardStyle = `--card-aspect:${project.carouselLayout.width / project.carouselLayout.height};--card-width:${cardLength(project.carouselLayout.width)}`;
         const content = (
           <>
             <span class="more-carousel-name" aria-hidden="true"><span class="more-carousel-name-text">{project.carouselLayout.label}</span></span>
             <span class="more-carousel-picture">
               <img src={project.caseCarouselCover} alt={loop === 0 ? `${project.title} project` : ''} width={dimensions?.width} height={dimensions?.height} loading="lazy" decoding="async" draggable="false" />
-              {project.carouselLayout.vimeoId && <iframe src={vimeoBackground(project.carouselLayout.vimeoId)} style={project.carouselLayout.videoRatio ? `aspect-ratio:${project.carouselLayout.videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-carousel-video></iframe>}
+              {project.carouselLayout.video && <video src={project.carouselLayout.video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
             </span>
           </>
         );
@@ -142,12 +142,12 @@ const loops = [0, 1, 2];
   .more-carousel-name-text { display: block; transform: translateY(105%); transition: transform .16s cubic-bezier(.55,0,.75,0); }
   .more-carousel-picture { position: absolute; z-index: 1; inset: 0; display: block; overflow: hidden; transition: transform .6s cubic-bezier(.65,0,.35,1) .14s; }
   .more-carousel-picture img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; transition: transform .8s cubic-bezier(.16,1,.3,1); }
-  .more-carousel-picture iframe { position: absolute; top: 50%; left: 50%; width: auto; min-width: calc(100% + 4px); height: calc(100% + 4px); /* 2px overscan per side, as on the home. */ aspect-ratio: 426 / 240; border: 0; pointer-events: none; transform: translate(-50%, -50%); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+  .more-carousel-picture video { position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); /* 2px overscan per side: the video never leaves a sliver of the poster at the edges. */ object-fit: cover; pointer-events: none; transition: transform .8s cubic-bezier(.16,1,.3,1); }
   @media (hover: hover) and (pointer: fine) {
     .more-carousel-card:is(:hover, :focus-visible) { z-index: 1000; }
     .more-carousel-card:is(:hover, :focus-visible) .more-carousel-picture { transform: translateY(calc(var(--name-size) * 1.24 + 8px)); transition: transform .6s cubic-bezier(.65,0,.35,1); }
     .more-carousel-card:is(:hover, :focus-visible) img { transform: scale(1.15); }
-    .more-carousel-card:is(:hover, :focus-visible) iframe { transform: translate(-50%, -50%) scale(1.15); }
+    .more-carousel-card:is(:hover, :focus-visible) video { transform: scale(1.15); }
     .more-carousel-card:is(:hover, :focus-visible) .more-carousel-name-text { transform: none; transition: transform .65s cubic-bezier(.22,1,.36,1) .28s; }
   }
   /* Touch screens (phones, tablets): names always sit above each photo, with no hover motion. */

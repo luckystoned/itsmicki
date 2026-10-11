@@ -5,8 +5,8 @@
 // pointer's motion only nudges the photo a little, which can spill just past the card edges and flows back quickly.
 // The head of the trail, the frost and the nudge share one point, so it never reads as two spots. The cover is redrawn
 // on a fixed WebGL2 canvas a bit larger than the card while the original image is hidden; inside the card the photo
-// always covers it, and outside only what was carried out is drawn, so no page white shows. Video cards use their
-// still frame, since Vimeo frames cannot be read. Off for reduced motion and browsers without WebGL2.
+// always covers it, and outside only what was carried out is drawn, so no page white shows. Video cards redraw the
+// playing video every frame, so it keeps moving under the effect. Off for reduced motion and browsers without WebGL2.
 ---
 
 <script>
@@ -152,23 +152,28 @@
       gl.clear(gl.COLOR_BUFFER_BIT);
     });
 
+    type Source = HTMLImageElement | HTMLVideoElement;
     const textures = new Map<string, WebGLTexture>();
-    const textureFor = (img: HTMLImageElement) => {
-      const key = img.currentSrc || img.src;
+    const upload = (texture: WebGLTexture, media: Source) => {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, media);
+      gl.generateMipmap(gl.TEXTURE_2D);
+    };
+    const textureFor = (media: Source) => {
+      const key = media.currentSrc || media.src;
       let texture = textures.get(key);
       if (!texture) {
         texture = gl.createTexture()!;
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.generateMipmap(gl.TEXTURE_2D);
+        upload(texture, media);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         textures.set(key, texture);
-      }
+      } else if (media instanceof HTMLVideoElement) upload(texture, media); // A new video frame every time.
       return texture;
     };
+    const naturalSize = (media: Source) => media instanceof HTMLVideoElement ? [media.videoWidth, media.videoHeight] : [media.naturalWidth, media.naturalHeight];
 
     const run = (p: Program, output: Target | null, inputs: Record<string, WebGLTexture>, values: Record<string, number | number[]>) => {
       gl.useProgram(p.program);
@@ -192,7 +197,7 @@
     };
 
     let visual: HTMLElement | null = null;
-    let image: HTMLImageElement | null = null;
+    let image: Source | null = null;
     let hovering = false;
     let running = false;
     let quiet = 0;
@@ -257,10 +262,11 @@
       run(P.advect, offset.write, { uVelocity: velocity.read.texture, uSource: offset.read.texture }, { uDt: dt, uKeep: [rk, rk, keep(SETTINGS.frostKeep)], uGrow: 1, uDiffuse: step(SETTINGS.diffuse) });
       offset.swap();
 
-      // 3. Draw the photo through the displacement, exactly where the <img> sits inside the card.
+      // 3. Draw the photo through the displacement, exactly where the <img> or <video> sits inside the card.
       const rect = image.getBoundingClientRect();
       const boxAspect = rect.width / rect.height;
-      const imageAspect = image.naturalWidth / image.naturalHeight;
+      const [naturalWidth, naturalHeight] = naturalSize(image);
+      const imageAspect = naturalWidth / naturalHeight;
       const cover = boxAspect > imageAspect ? [1, imageAspect / boxAspect] : [boxAspect / imageAspect, 1];
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, width, height);
@@ -288,14 +294,17 @@
       if (calm.matches || (event.pointerType !== 'touch' && !finePointer.matches)) return;
       const nextVisual = card.querySelector<HTMLElement>(VISUALS);
       const photo = nextVisual?.querySelector<HTMLImageElement>('img');
-      // Vimeo frames cannot be read into WebGL, so video cards use their still frame (the <img> under the video).
-      const usable = photo?.complete && photo.naturalWidth && new URL(photo.currentSrc || photo.src, location.href).origin === location.origin;
-      if (!nextVisual || !photo || !usable) return;
+      const video = nextVisual?.querySelector<HTMLVideoElement>('video');
+      const sameOrigin = (media: Source) => new URL(media.currentSrc || media.src, location.href).origin === location.origin;
+      // A video card draws its playing video; until the video has a frame, the still cover under it.
+      const media = video && video.readyState >= 2 && sameOrigin(video) ? video
+        : photo?.complete && photo.naturalWidth && sameOrigin(photo) ? photo : null;
+      if (!nextVisual || !media) return;
       pointer = { x: event.clientX, y: event.clientY };
       if (nextVisual !== visual) {
         if (visual) visual.style.opacity = '';
         visual = nextVisual;
-        image = photo;
+        image = media;
         spot = { ...pointer };
         on = 0;
         clearAll();
