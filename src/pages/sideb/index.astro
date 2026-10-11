@@ -4,10 +4,10 @@ import HomeStage, { type HomeCard } from '@/components/HomeStage.astro';
 
 // Side B home (Figma 922:1494): the Side A home in inverted colours. Its cards are Side B projects still to come, so
 // none of them links anywhere yet. Sizes keep each card's Figma proportion at the Side A card width.
-const figmaCards = [
+const figmaCards: Array<{ width: number; height: number; alt: string; video?: boolean }> = [
   { width: 357, height: 355, alt: 'Red-haired portrait with hair falling over one eye.' },
   { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.' },
-  { width: 355, height: 234, alt: 'Close-up of a cracked, rust-coloured texture.' },
+  { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true },
   { width: 357, height: 354, alt: 'Three caps embroidered with the Mm logo.' },
   { width: 357, height: 422, alt: 'Outliant keychain resting on brushed metal.' },
   { width: 358, height: 474, alt: 'A phone with a blue screen resting on a grey ledge.' },
@@ -24,6 +24,8 @@ const cards: HomeCard[] = figmaCards.map((card, index) => {
     height: (430 * card.height) / card.width,
     imageWidth: card.width * 2,
     imageHeight: card.height * 2,
+    // Muted loop over its first frame, like the Side A video cards.
+    video: card.video ? `/04_SideB/Home/${number}_SideBHome.mp4` : undefined,
   };
 });
 ---
