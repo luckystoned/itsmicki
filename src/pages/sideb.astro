@@ -1342,14 +1342,16 @@ const fashion = {
       overflow: hidden;
     }
 
+    /* Sitting on the bottom edge: the line height leaves the baseline (plus the overshoot of round letters) just above
+       it, so the letters are never clipped, whatever the phone width. */
     .sideb-footer-wordmark {
-      top: min(2px, .512821vw);
+      top: auto;
       right: auto;
-      bottom: auto;
-      left: -1.538462vw; /* Same position and size as the home wordmark. */
+      bottom: 0;
+      left: -1.538462vw; /* Same size as the home wordmark. */
       justify-content: flex-start;
       font-size: 46.202051vw;
-      line-height: normal;
+      line-height: .74;
       text-box-trim: none;
       width: max-content;
     }

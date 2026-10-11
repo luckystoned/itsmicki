@@ -769,14 +769,17 @@ const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody
       background: var(--projects-paper);
     }
 
+    /* Sitting on the bottom edge: the line height leaves the baseline (plus the overshoot of round letters) just above
+       it, so the letters are never clipped, whatever the phone width. */
     .projects-footer-wordmark {
       position: absolute;
-      top: min(2px, .512821cqw);
+      top: auto;
       right: auto;
-      left: -1.538462cqw; /* Same position and size as the home wordmark. */
+      bottom: 0;
+      left: -1.538462cqw; /* Same size as the home wordmark. */
       justify-content: flex-start;
       font-size: 46.202051cqw;
-      line-height: normal;
+      line-height: .74;
       width: max-content;
     }
 
