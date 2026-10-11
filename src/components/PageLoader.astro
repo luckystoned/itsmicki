@@ -1,8 +1,9 @@
 ---
-// Loading screen on every page load: two small dots spinning around each other on the page colour,
-// after hedroom.fm. It leaves (fading, blurring and rising slightly) once the page has loaded, or after a few seconds
-// at most. The `is-loading` class is set before the first paint by the inline script in BaseLayout's <head>; if this
-// script never runs, a CSS fallback hides the screen anyway.
+// Loading screen after hedroom.fm: two small dots spinning around each other on the home page colour. It always shows
+// while the home page loads (the `is-loading` class is set before the first paint by the inline script in
+// BaseLayout's <head>); on other pages it only appears if loading stalls. It leaves (fading, blurring and rising
+// slightly) once the page has loaded, or after a few seconds at most; if this script never runs, a CSS fallback hides
+// it anyway.
 ---
 
 <div class="page-loader" data-page-loader aria-hidden="true">
@@ -12,43 +13,53 @@
 <script>
   const root = document.documentElement;
   const loader = document.querySelector<HTMLElement>('[data-page-loader]');
-  const MIN = 900; // ms since navigation: at least about one turn of the dots.
-  const MAX = 3500; // ms since navigation: never wait longer than this for slow media.
+  const HOME_MIN = 900; // ms since navigation the home loader stays: at least about one turn of the dots.
+  const STALL = 1200; // ms since navigation before another page counts as stalled and shows the loader.
+  const SHOWN_MIN = 600; // ms a stalled-page loader stays once shown, so it never just flashes.
+  const MAX = 4000; // ms since navigation: never wait longer than this for slow media.
   if (loader) {
     const motion = loader.querySelector<HTMLElement>('.page-loader-motion');
-    const leave = () => {
-      loader.classList.add('is-done');
-      document.dispatchEvent(new Event('page-loader-done'));
-      setTimeout(() => root.classList.remove('is-loading'), 600);
-    };
+    let shownAt = root.classList.contains('is-loading') ? 0 : -1;
     let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      setTimeout(leave, Math.max(0, MIN - performance.now()));
-    };
-    if (document.readyState === 'complete') finish();
-    else addEventListener('load', finish, { once: true });
-    setTimeout(finish, Math.max(0, MAX - performance.now()));
-    // Pages restored by the back/forward buttons show the loader again, at once, for its minimum time.
-    addEventListener('pageshow', (event) => {
-      if (!event.persisted) return;
+    const show = () => {
       [loader, motion].forEach((node) => { if (node) node.style.transition = 'none'; });
       loader.classList.remove('is-done');
       root.classList.add('is-loading');
       void loader.offsetWidth;
       [loader, motion].forEach((node) => { if (node) node.style.transition = ''; });
-      setTimeout(leave, MIN);
+      shownAt = performance.now();
+    };
+    const leave = () => {
+      loader.classList.add('is-done');
+      document.dispatchEvent(new Event('page-loader-done'));
+      setTimeout(() => root.classList.remove('is-loading'), 600);
+    };
+    const finish = () => {
+      if (done) return;
+      done = true;
+      if (shownAt < 0) { document.dispatchEvent(new Event('page-loader-done')); return; }
+      const until = shownAt === 0 ? HOME_MIN : shownAt + SHOWN_MIN;
+      setTimeout(leave, Math.max(0, until - performance.now()));
+    };
+    if (shownAt < 0) setTimeout(() => { if (!done) show(); }, Math.max(0, STALL - performance.now()));
+    if (document.readyState === 'complete') finish();
+    else addEventListener('load', finish, { once: true });
+    setTimeout(finish, Math.max(0, MAX - performance.now()));
+    // The home page restored by the back/forward buttons shows the loader again for its minimum time.
+    addEventListener('pageshow', (event) => {
+      if (!event.persisted || location.pathname !== '/') return;
+      show();
+      setTimeout(leave, HOME_MIN);
     });
   }
 </script>
 
 <style>
-  .page-loader { position: fixed; inset: 0; z-index: 2147483646; display: none; place-items: center; background: var(--bg); transition: opacity .42s cubic-bezier(.22, 1, .36, 1) .12s; }
+  .page-loader { position: fixed; inset: 0; z-index: 2147483646; display: none; place-items: center; background: #fafafa; transition: opacity .42s cubic-bezier(.22, 1, .36, 1) .12s; }
   :global(html.is-loading) .page-loader { display: grid; animation: page-loader-fallback 0s 6s forwards; }
   .page-loader-motion { display: block; transition: opacity .42s cubic-bezier(.22, 1, .36, 1), transform .42s cubic-bezier(.22, 1, .36, 1), filter .42s cubic-bezier(.22, 1, .36, 1); }
   .page-loader-dots { position: relative; display: block; width: 6px; height: 30px; animation: page-loader-spin .92s linear infinite; }
-  .page-loader-dots span { position: absolute; left: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--fg); }
+  .page-loader-dots span { position: absolute; left: 0; width: 6px; height: 6px; border-radius: 50%; background: #2e2e2e; }
   .page-loader-dots span:first-child { top: 0; }
   .page-loader-dots span:last-child { bottom: 0; }
   .page-loader.is-done { opacity: 0; pointer-events: none; }
