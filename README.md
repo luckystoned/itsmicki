@@ -20,7 +20,7 @@ Portfolio editorial de Miki, desarrollado en Astro a partir del diseño original
 
 Esta arquitectura mantiene el portfolio rápido, estático y sencillo de mantener. No requiere React, base de datos, CMS ni renderizado del lado del servidor para el alcance actual.
 
-Única excepción, decidida para *Missing souls* (Side B): la función `api/souls.ts` de Vercel guarda en Vercel Blob los animales que suben los visitantes, compartidos por todos hasta que el espacio se llena (42). La foto se procesa en el navegador y nunca se envía; solo se guarda una descripción del animal (gato o perro, tamaño, colores y manchas), con la que se dibuja. Requiere conectar un Blob store al proyecto en Vercel (crea la variable `BLOB_READ_WRITE_TOKEN`). Sin esa función (por ejemplo con `pnpm dev`), el frame guarda los animales en el navegador de cada visitante.
+Única excepción, decidida para *Missing souls* (Side B): la función `api/souls.ts` de Vercel guarda en Vercel Blob los animales que suben los visitantes, compartidos por todos hasta que el espacio se llena (42). La foto se procesa en el navegador: se recorta alrededor del animal, se vuelve a dibujar (sin ubicación ni datos de cámara) y se rechaza si hay personas; esa foto se guarda para el listado de quiénes están, junto con una descripción del animal (gato o perro, tamaño, colores, manchas, nombre y dueño) con la que se dibuja. Requiere conectar un Blob store al proyecto en Vercel (crea la variable `BLOB_READ_WRITE_TOKEN`). Sin esa función (por ejemplo con `pnpm dev`), el frame guarda los animales en el navegador de cada visitante.
 
 ## Desarrollo local
 

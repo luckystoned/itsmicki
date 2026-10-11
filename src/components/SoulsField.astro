@@ -1,9 +1,10 @@
 ---
 // Missing souls: a warm, glowing place (coral sky, lavender ground, blurred plants swaying) where a caregiver looks
 // after the animals people leave with her. Anyone can add their cat or dog from a full-body photo. The photo is read on
-// their device (MediaPipe finds the animal and cuts it out, and reads its colours and markings), then a little form
-// asks its name, cat or dog, a few words about its coat (which win over the photo) and its size. Only that description
-// is kept: cat or dog, size, colours, markings (plain, tabby stripes or patches) and name, shown near it on hover. Each one becomes a soft,
+// their device (MediaPipe finds the animal, reads its colours and markings, and turns down photos full of people), then
+// a little form asks its name, its owner's, cat or dog, a few words about its coat (which win over the photo) and its
+// size. In the place it becomes an illustrated figure from that description, its name shown near it on hover; and its
+// photo, cropped around it and re-drawn (no location or camera details), is kept for the list of who's here. Each one becomes a soft,
 // ethereal illustrated cat or dog in its own colours, with an aura. Once here, it lives its own little life: it stands,
 // walks about on its paws, hops, stretches, grooms, lies down to nap and blinks; and a newcomer is first stroked by the
 // caregiver. The souls are shared by every visitor (api/souls.ts, Vercel Blob) and stay for good, until the place is
@@ -30,6 +31,7 @@ const { label } = Astro.props;
     <form method="dialog" class="souls-form">
       <p class="souls-form-title" id="souls-dialog-title">Who are you leaving in her care?</p>
       <label class="souls-form-field">Their name <input name="name" maxlength="20" autocomplete="off" required /></label>
+      <label class="souls-form-field">Your name <input name="owner" maxlength="20" autocomplete="name" required /></label>
       <fieldset class="souls-form-choice">
         <legend>Cat or dog</legend>
         <label><input type="radio" name="kind" value="cat" /> cat</label>
@@ -48,6 +50,15 @@ const { label } = Astro.props;
       </div>
     </form>
   </dialog>
+  <!-- Who's here: every soul's own photo, as it was, with their name and who left them. -->
+  <dialog class="souls-dialog souls-list" data-souls-list-dialog aria-labelledby="souls-list-title">
+    <div class="souls-list-head">
+      <p class="souls-form-title" id="souls-list-title">Who’s here</p>
+      <form method="dialog"><button type="submit" class="souls-list-close">close</button></form>
+    </div>
+    <p class="souls-list-empty" data-souls-list-empty>No one yet. Be the first to leave someone in her care.</p>
+    <ul class="souls-list-grid" data-souls-list-grid></ul>
+  </dialog>
 </div>
 
 <script>
@@ -60,7 +71,9 @@ const { label } = Astro.props;
     model: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite',
     // Finds the animal coarsely; then Magic Touch, given points on it, cuts it out with crisp edges.
     edges: 'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite',
-    classes: { cat: 8, dog: 12 }, // DeepLab v3 (PASCAL VOC) labels.
+    classes: { cat: 8, dog: 12, person: 15 }, // DeepLab v3 (PASCAL VOC) labels.
+    people: .2, // Photos are shown in the list: a crop where people fill more than this share is turned down.
+    photoSide: 1000, // The photo kept: cropped around the animal, at most this many pixels on its longer side.
     // The place, after the reference: a coral sky melting into a lavender-blue ground, a warm glow on the floor.
     sky: [[0, '#e46a55'], [.3, '#ec7d60'], [.45, '#f19a7c'], [.56, '#a198e2'], [.8, '#8380d8'], [1, '#716ecb']] as Array<[number, string]>,
     horizon: .5, // Where the ground starts, as a share of the height.
@@ -76,16 +89,15 @@ const { label } = Astro.props;
 
   /** What is kept of each pet: cat or dog, size (dogs: 0 small, 1 medium, 2 big), markings (0 plain, 1 tabby,
       2 patches) and its colours (light, mid, dark). It travels as a short code, e.g. "c12_f2d9b0b98a5e4a3326". */
-  type Look = { kind: 'cat' | 'dog'; size: 0 | 1 | 2; pattern: 0 | 1 | 2; colours: [string, string, string]; name?: string };
+  type Look = { kind: 'cat' | 'dog'; size: 0 | 1 | 2; pattern: 0 | 1 | 2; colours: [string, string, string]; name?: string; owner?: string };
   // Its name travels as hex of its UTF-8 bytes (up to 20), after the look: "c12_f2d9b0b98a5e4a3326_4d696c6f".
   const nameHex = (name: string) => [...new TextEncoder().encode(name.trim())].slice(0, 20).map((b) => b.toString(16).padStart(2, '0')).join('');
-  const lookCode = (look: Look) => `${look.kind[0]}${look.size}${look.pattern}_${look.colours.map((c) => c.slice(1)).join('')}${look.name ? `_${nameHex(look.name)}` : ''}`;
+  const lookCode = (look: Look) => `${look.kind[0]}${look.size}${look.pattern}_${look.colours.map((c) => c.slice(1)).join('')}${look.name ? `_${nameHex(look.name)}${look.owner ? `_${nameHex(look.owner)}` : ''}` : ''}`;
   const readLook = (id: string): Look | null => {
-    const m = /([cd])([012])([012])_([0-9a-f]{6})([0-9a-f]{6})([0-9a-f]{6})(?:_([0-9a-f]{2,40}))?(?:\.json)?$/.exec(id);
+    const m = /([cd])([012])([012])_([0-9a-f]{6})([0-9a-f]{6})([0-9a-f]{6})(?:_([0-9a-f]{2,40}))?(?:_([0-9a-f]{2,40}))?(?:\.json)?$/.exec(id);
     if (!m) return null;
-    let name: string | undefined;
-    if (m[7]) try { name = new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(m[7].match(/../g)!.map((b) => parseInt(b, 16)))); } catch { /* Not a name. */ }
-    return { kind: m[1] === 'c' ? 'cat' : 'dog', size: Number(m[2]) as 0 | 1 | 2, pattern: Number(m[3]) as 0 | 1 | 2, colours: [`#${m[4]}`, `#${m[5]}`, `#${m[6]}`], name };
+    const text = (hexText?: string) => { if (!hexText) return undefined; try { return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(hexText.match(/../g)!.map((b) => parseInt(b, 16)))); } catch { return undefined; } };
+    return { kind: m[1] === 'c' ? 'cat' : 'dog', size: Number(m[2]) as 0 | 1 | 2, pattern: Number(m[3]) as 0 | 1 | 2, colours: [`#${m[4]}`, `#${m[5]}`, `#${m[6]}`], name: text(m[7]), owner: text(m[8]) };
   };
 
   /** Colours and markings from a few words about the coat (English or Spanish), or null where the words say nothing. */
@@ -120,7 +132,7 @@ const { label } = Astro.props;
   type Leg = Layer & { pivotX: number; pivotY: number; near: boolean; front: boolean };
   type Figure = { body: Layer; legs: Leg[]; eyes: Array<{ x: number; y: number }>; eyeR: number; legLength: number; unit: number };
   type Soul = {
-    id: string; look: Look; born: number; figure?: Figure;
+    id: string; look: Look; born: number; figure?: Figure; photo?: string;
     // Life: its home, where it is (feet; shares of the frame), what it is doing and until when.
     hx: number; hy: number; x: number; y: number; fromX: number; fromY: number; toX: number; toY: number;
     act: Act; actStart: number; actEnd: number; face: number; faceShown: number; blink: number; phase: number; drawn: number;
@@ -153,15 +165,26 @@ const { label } = Astro.props;
 
   // Souls kept on this device, when the shared place cannot be reached. `?souls=reset` in the address clears them.
   try { if (new URLSearchParams(location.search).get('souls') === 'reset') localStorage.removeItem(STORE); } catch { /* No storage. */ }
-  const localSouls = (): string[] => { try { const list = JSON.parse(localStorage.getItem(STORE) ?? '[]'); return Array.isArray(list) ? list.filter((id) => typeof id === 'string') : []; } catch { return []; } };
-  const keepLocally = (id: string) => { try { localStorage.setItem(STORE, JSON.stringify([...localSouls(), id])); } catch { /* Storage full or blocked: it stays for this visit. */ } };
+  type Entry = { id: string; photo?: string };
+  const localSouls = (): Entry[] => {
+    try {
+      const list = JSON.parse(localStorage.getItem(STORE) ?? '[]');
+      return Array.isArray(list) ? list.map((item) => (typeof item === 'string' ? { id: item } : item)).filter((item) => typeof item?.id === 'string') : [];
+    } catch { return []; }
+  };
+  const keepLocally = (entry: Entry) => {
+    try { localStorage.setItem(STORE, JSON.stringify([...localSouls(), entry])); } catch {
+      // Storage full (photos are big): keep it without its photo.
+      try { localStorage.setItem(STORE, JSON.stringify([...localSouls(), { id: entry.id }])); } catch { /* Blocked: it stays for this visit. */ }
+    }
+  };
 
   /** Reads a pet from a photo: cat or dog, its colours and its markings; or why it can't. */
   type Masks = { confidenceMasks?: Array<{ width: number; height: number; getAsFloat32Array: () => Float32Array }>; close: () => void };
   type Point = { x: number; y: number };
   let segmenter: Promise<{ segment: (image: HTMLCanvasElement) => Masks }> | null = null;
   let cutter: Promise<{ segment: (image: HTMLCanvasElement, roi: { scribble: Point[] }) => Masks } | null> | null = null;
-  const readPet = async (file: File): Promise<Omit<Look, 'size'> | 'none' | 'cut'> => {
+  const readPet = async (file: File): Promise<(Omit<Look, 'size'> & { photo: string }) | 'none' | 'cut' | 'people'> => {
     segmenter ??= (async () => {
       const { module, files } = await loadVision();
       return module.ImageSegmenter.createFromOptions(files, { baseOptions: { modelAssetPath: SETTINGS.model }, runningMode: 'IMAGE', outputCategoryMask: false, outputConfidenceMasks: true });
@@ -177,11 +200,10 @@ const { label } = Astro.props;
     const scale = Math.min(1, 640 / Math.max(bitmap.width, bitmap.height));
     const photo = canvasOf(bitmap.width * scale, bitmap.height * scale);
     photo.getContext('2d')!.drawImage(bitmap, 0, 0, photo.width, photo.height);
-    bitmap.close();
     const result = model.segment(photo);
     const masks = result.confidenceMasks;
-    if (!masks) { result.close(); return 'none'; }
-    const cat = masks[SETTINGS.classes.cat].getAsFloat32Array(), dog = masks[SETTINGS.classes.dog].getAsFloat32Array();
+    if (!masks) { result.close(); bitmap.close(); return 'none'; }
+    const cat = masks[SETTINGS.classes.cat].getAsFloat32Array(), dog = masks[SETTINGS.classes.dog].getAsFloat32Array(), person = masks[SETTINGS.classes.person].getAsFloat32Array();
     const { width, height } = masks[SETTINGS.classes.cat];
     result.close();
     // The animal: wherever the model sees a cat or a dog; which of the two, by how much it sees of each.
@@ -192,10 +214,25 @@ const { label } = Astro.props;
       pet[i] = p; cats += cat[i]; dogs += dog[i];
       if (p > .5) { found++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     }
-    if (found / (width * height) < SETTINGS.minPet) return 'none';
+    if (found / (width * height) < SETTINGS.minPet) { bitmap.close(); return 'none'; }
     // Whole body only: an animal running off the sides or the bottom of the photo is cut (a close-up of a face, say).
     const m = SETTINGS.margin;
-    if (x0 < width * m || x1 > width * (1 - m) || y1 > height * (1 - m) || y0 < height * m * .5) return 'cut';
+    if (x0 < width * m || x1 > width * (1 - m) || y1 > height * (1 - m) || y0 < height * m * .5) { bitmap.close(); return 'cut'; }
+    // The photo kept for the list: the animal with some room around it; never one where people fill the crop.
+    const room = Math.max(x1 - x0, y1 - y0) * .14;
+    const cx0 = Math.max(0, Math.floor(x0 - room)), cy0 = Math.max(0, Math.floor(y0 - room)), cx1 = Math.min(width - 1, Math.ceil(x1 + room)), cy1 = Math.min(height - 1, Math.ceil(y1 + room));
+    let people = 0;
+    for (let y = cy0; y <= cy1; y++) for (let x = cx0; x <= cx1; x++) if (person[y * width + x] > .5) people++;
+    if (people / ((cx1 - cx0 + 1) * (cy1 - cy0 + 1)) > SETTINGS.people) { bitmap.close(); return 'people'; }
+    const toBitmap = bitmap.width / width, keepScale = Math.min(1, SETTINGS.photoSide / (Math.max(cx1 - cx0, cy1 - cy0) * toBitmap));
+    const kept = canvasOf((cx1 - cx0 + 1) * toBitmap * keepScale, (cy1 - cy0 + 1) * toBitmap * keepScale), keptContext = kept.getContext('2d')!;
+    keptContext.imageSmoothingQuality = 'high';
+    keptContext.fillStyle = '#f4efe8'; // Under transparent images (a sticker, say), paper rather than black.
+    keptContext.fillRect(0, 0, kept.width, kept.height);
+    keptContext.drawImage(bitmap, cx0 * toBitmap, cy0 * toBitmap, (cx1 - cx0 + 1) * toBitmap, (cy1 - cy0 + 1) * toBitmap, 0, 0, kept.width, kept.height);
+    bitmap.close();
+    // Re-drawn, so nothing of the original file travels with it (no location or camera details).
+    const keptPhoto = kept.toDataURL('image/jpeg', .82);
     // Crisp edges (Magic Touch, from points the model is surest of), so the colours are read from the animal only.
     const sure: Point[] = [];
     const step = Math.max(4, Math.round(Math.sqrt(found / 24)));
@@ -240,7 +277,7 @@ const { label } = Astro.props;
     }
     fine = counted ? fine / counted : 0;
     const pattern: 0 | 1 | 2 = contrast < 50 ? 0 : fine / contrast > .14 ? 1 : 2;
-    return { kind: dogs > cats ? 'dog' : 'cat', pattern, colours };
+    return { kind: dogs > cats ? 'dog' : 'cat', pattern, colours, photo: keptPhoto };
   };
 
   document.querySelectorAll<HTMLElement>('[data-souls-field]').forEach((root) => {
@@ -250,7 +287,6 @@ const { label } = Astro.props;
     const addButton = caption.querySelector<HTMLButtonElement>('[data-souls-add]');
     const input = caption.querySelector<HTMLInputElement>('[data-souls-input]');
     const status = caption.querySelector<HTMLElement>('[data-souls-status]');
-    const addLine = caption.querySelector<HTMLElement>('[data-souls-add-line]');
     const setStatus = (text: string) => { if (status) { status.textContent = text; status.hidden = !text; } };
 
     let width = 0, height = 0, ratio = 1;
@@ -831,21 +867,22 @@ const { label } = Astro.props;
     new ResizeObserver(() => { resize(); draw(performance.now()); }).observe(root);
 
     const full = () => souls.length >= cap;
-    const showFull = () => { if (full() && addLine) { addLine.hidden = true; setStatus('The place is full now. Every soul has company.'); } };
+    // Full: no more adding (the list stays open to see who's here).
+    const showFull = () => { if (full()) { if (addButton) { addButton.disabled = true; addButton.setAttribute('aria-disabled', 'true'); } setStatus('The place is full now. Every soul has company.'); } };
 
     // The souls already here.
     const load = async () => {
-      let ids: string[] = [];
+      let entries: Entry[] = [];
       try {
         const response = await fetch('/api/souls', { headers: { accept: 'application/json' } });
         if (!response.ok || !(response.headers.get('content-type') ?? '').includes('json')) throw new Error('No shared place');
-        const data = await response.json() as { souls: string[]; cap: number };
-        ids = data.souls; cap = data.cap;
+        const data = await response.json() as { souls: Entry[]; cap: number };
+        entries = data.souls; cap = data.cap;
       } catch {
         shared = false;
-        ids = localSouls();
+        entries = localSouls();
       }
-      souls = ids.map((id) => ({ id, look: readLook(id) })).filter((entry): entry is { id: string; look: Look } => !!entry.look).map(({ id, look }, i) => meet(id, look, i, 0));
+      souls = entries.map((entry) => ({ ...entry, look: readLook(entry.id) })).filter((entry): entry is Entry & { look: Look } => !!entry.look).map(({ id, look, photo }, i) => ({ ...meet(id, look, i, 0), photo }));
       draw(performance.now());
       showFull();
     };
@@ -853,9 +890,9 @@ const { label } = Astro.props;
 
     // Who they are: name, cat or dog, a few words about the coat, and size (a photo can't tell size).
     const dialog = root.querySelector<HTMLDialogElement>('[data-souls-dialog]');
-    const askAbout = (kind: 'cat' | 'dog') => new Promise<{ name: string; kind: 'cat' | 'dog'; coat: string; size: 0 | 1 | 2 } | null>((resolve) => {
+    const askAbout = (kind: 'cat' | 'dog') => new Promise<{ name: string; owner: string; kind: 'cat' | 'dog'; coat: string; size: 0 | 1 | 2 } | null>((resolve) => {
       const form = dialog?.querySelector('form');
-      if (!dialog || !form) { resolve({ name: '', kind, coat: '', size: 1 }); return; }
+      if (!dialog || !form) { resolve({ name: '', owner: '', kind, coat: '', size: 1 }); return; }
       form.reset();
       form.querySelector<HTMLInputElement>(`input[name="kind"][value="${kind}"]`)!.checked = true;
       dialog.addEventListener('close', () => {
@@ -863,6 +900,7 @@ const { label } = Astro.props;
         const data = new FormData(form);
         resolve({
           name: String(data.get('name') ?? '').trim().slice(0, 20),
+          owner: String(data.get('owner') ?? '').trim().slice(0, 20),
           kind: data.get('kind') === 'dog' ? 'dog' : 'cat',
           coat: String(data.get('coat') ?? ''),
           size: Number(data.get('size') ?? 1) as 0 | 1 | 2,
@@ -871,9 +909,36 @@ const { label } = Astro.props;
       dialog.showModal();
     });
 
+    // Who's here: their photos, as they are, newest first, with their names and who left them.
+    const listDialog = root.querySelector<HTMLDialogElement>('[data-souls-list-dialog]');
+    const listGrid = root.querySelector<HTMLElement>('[data-souls-list-grid]');
+    const listEmpty = root.querySelector<HTMLElement>('[data-souls-list-empty]');
+    caption.querySelector<HTMLButtonElement>('[data-souls-list]')?.addEventListener('click', () => {
+      if (!listDialog || !listGrid) return;
+      listGrid.replaceChildren(...[...souls].reverse().map((soul) => {
+        const item = document.createElement('li'), figure = document.createElement('figure'), label = document.createElement('figcaption');
+        if (soul.photo) {
+          const img = document.createElement('img');
+          img.src = soul.photo; img.alt = `${soul.look.name ?? 'A'} ${soul.look.kind}`; img.loading = 'lazy'; img.decoding = 'async';
+          figure.append(img);
+        } else {
+          const none = document.createElement('div'); none.className = 'souls-list-nophoto';
+          none.style.background = `linear-gradient(160deg, ${soul.look.colours[0]}, ${soul.look.colours[1]} 55%, ${soul.look.colours[2]})`;
+          figure.append(none);
+        }
+        const name = document.createElement('strong'); name.textContent = soul.look.name ?? (soul.look.kind === 'cat' ? 'A cat' : 'A dog');
+        label.append(name);
+        if (soul.look.owner) { const by = document.createElement('span'); by.textContent = `left by ${soul.look.owner}`; label.append(' ', by); }
+        figure.append(label); item.append(figure);
+        return item;
+      }));
+      if (listEmpty) listEmpty.hidden = souls.length > 0;
+      listDialog.showModal();
+    });
+
     // Adding a pet.
     addButton?.addEventListener('click', () => {
-      setStatus('Choose a photo of your whole cat or dog, from ears to paws. Only a description is kept (cat or dog, colours, markings); the photo never leaves your device.');
+      setStatus('Choose a photo of your whole cat or dog, from ears to paws, without people. It will be shown in the list of who’s here, cropped around your pet.');
       input?.click();
     });
     input?.addEventListener('change', async () => {
@@ -887,20 +952,22 @@ const { label } = Astro.props;
         const found = await readPet(file);
         if (found === 'none') { setStatus('I couldn’t find a cat or a dog in that photo. Try another one.'); return; }
         if (found === 'cut') { setStatus('Only whole bodies, please: a photo where all of your pet fits, from ears to paws, with a little room around.'); return; }
+        if (found === 'people') { setStatus('Just your pet, please: a photo without people in it (it will be shown in the list).'); return; }
         setStatus('');
         const about = await askAbout(found.kind);
         if (!about) { setStatus('Whenever you’re ready.'); return; }
         // Their words win over the photo where they say something.
         const coat = coatFrom(about.coat);
-        const look: Look = { kind: about.kind, size: about.size, pattern: coat.pattern ?? found.pattern, colours: coat.colours ?? found.colours, name: about.name };
+        const look: Look = { kind: about.kind, size: about.size, pattern: coat.pattern ?? found.pattern, colours: coat.colours ?? found.colours, name: about.name, owner: about.owner };
         const code = lookCode(look);
-        let id = `souls/local-${Date.now().toString(36)}_${code}`;
+        let id = `souls/local-${Date.now().toString(36)}_${code}`, photo = found.photo;
+        setStatus('Bringing them over…');
         if (shared) {
-          const response = await fetch('/api/souls', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ look: code }) }).catch(() => null);
+          const response = await fetch('/api/souls', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ look: code, photo }) }).catch(() => null);
           if (response?.status === 409) { cap = souls.length; showFull(); return; }
-          if (response?.ok) id = ((await response.json()) as { id: string }).id;
-          else { shared = false; keepLocally(id); }
-        } else keepLocally(id);
+          if (response?.ok) ({ id, photo } = (await response.json()) as { id: string; photo: string });
+          else { shared = false; keepLocally({ id, photo }); }
+        } else keepLocally({ id, photo });
         // A newcomer is welcomed under her hand, and she strokes it for a few seconds before it goes to its place.
         const newcomer = meet(id, look, souls.length, performance.now());
         const hand = handAt();
@@ -911,6 +978,7 @@ const { label } = Astro.props;
         newcomer.y = newcomer.fromY = newcomer.toY = Math.min(.97, y);
         newcomer.face = newcomer.faceShown = 1;
         newcomer.act = 'pet'; newcomer.actStart = performance.now(); newcomer.actEnd = newcomer.actStart + 5000;
+        newcomer.photo = photo;
         petting = newcomer.actEnd;
         souls.push(newcomer);
         if (calm) draw(0);
@@ -919,7 +987,7 @@ const { label } = Astro.props;
       } catch {
         setStatus('Something went wrong reading that photo. Try another one.');
       } finally {
-        if (addButton) addButton.disabled = false;
+        if (addButton) addButton.disabled = full();
       }
     });
   });
@@ -950,5 +1018,17 @@ const { label } = Astro.props;
   .souls-form-choice input { accent-color: #fafafa; }
   .souls-form-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 4px; }
   .souls-form-actions button { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .souls-list { width: min(980px, calc(100vw - 32px)); max-height: min(86vh, 900px); }
+  .souls-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 22px 22px 0; }
+  .souls-list-close { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .souls-list-empty { margin: 16px 22px 22px; }
+  .souls-list-grid { columns: 3 220px; column-gap: 12px; margin: 0; padding: 16px 22px 22px; list-style: none; }
+  .souls-list-grid li { break-inside: avoid; margin-bottom: 14px; }
+  .souls-list-grid figure { margin: 0; }
+  .souls-list-grid img { display: block; width: 100%; height: auto; border-radius: 8px; }
+  .souls-list-nophoto { aspect-ratio: 4 / 5; border-radius: 8px; filter: blur(.5px); }
+  .souls-list .souls-list-grid figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; margin-top: 6px; font-size: 14px; line-height: 1.2; }
+  .souls-list .souls-list-grid figcaption strong { font-weight: 400; }
+  .souls-list .souls-list-grid figcaption span { opacity: .6; }
   .souls-form-ok { padding: 6px 12px !important; background: #fafafa !important; color: #202020 !important; text-decoration: none !important; border-radius: 4px !important; }
 </style>
