@@ -29,7 +29,7 @@ export const sideBHref = (slug: string) => (slug in sideBCases ? `/sideb/project
 /** Cards of the Side B carousels (home and the end of every Side B case), Figma 922:1494. `width`/`height` are the
     card's Figma size; `project` is the index of the project whose name it shows. */
 const carouselCards: Array<{ width: number; height: number; alt: string; video?: boolean; project: number }> = [
-  { width: 357, height: 355, alt: 'Red-haired portrait with hair falling over one eye.', project: 0 },
+  { width: 357, height: 355, alt: 'Portrait with moss-green brows, flushed cheeks and spiky tufts tied with pink ribbon.', project: 0 },
   { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.', project: 1 },
   { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true, project: 2 },
   { width: 357, height: 354, alt: 'Three caps embroidered with the Mm logo.', project: 3 },

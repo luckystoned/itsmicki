@@ -1,8 +1,9 @@
 ---
 // Missing souls: a warm, glowing place (coral sky, lavender ground, blurred plants swaying) where a caregiver looks
 // after the animals people leave with her. Anyone can add their cat or dog from a full-body photo: the photo is read on
-// their device (MediaPipe finds the animal and cuts it out) and only its silhouette is kept, painted as a luminous
-// figure, so each one keeps its own shape and breed. Once here, each animal lives its own little life: it sits, walks
+// their device (MediaPipe finds the animal and cuts it out) and only the animal is kept (its silhouette and its own light
+// and shade, never the background), painted as a luminous figure with an aura, so each one keeps its own face, shape and
+// breed. Once here, each animal lives its own little life: it sits, walks
 // about, hops, stretches, grooms, naps and blinks. The souls are shared by every visitor (api/souls.ts, Vercel Blob) and
 // stay for good, until the place is full; without the shared store (local dev, or before it is connected) they are kept
 // on the visitor's device. With reduced motion nothing moves.
@@ -58,7 +59,7 @@ const { label } = Astro.props;
 
   type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep' | 'pet';
   type Soul = {
-    id: string; width: number; height: number; mask: Uint8Array; born: number;
+    id: string; width: number; height: number; mask: Uint8Array; light?: Uint8Array; born: number;
     sprite?: HTMLCanvasElement; spriteFor?: number; eyes?: Array<{ x: number; y: number }>; eyeR?: number; facing?: number;
     // Walking: the sprite without its legs, and each leg on its own, to swing from the hip (sprite units, CSS px).
     body?: HTMLCanvasElement; legs?: Array<{ canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number }>;
@@ -73,12 +74,19 @@ const { label } = Astro.props;
 
   const hash = (text: string) => { let h = 2166136261; for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619); return h >>> 0; };
   const canvasOf = (width: number, height: number) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(width)); c.height = Math.max(1, Math.round(height)); return c; };
-  const encode = (width: number, height: number, mask: Uint8Array) => { const out = new Uint8Array(4 + mask.length); out.set([width & 255, width >> 8, height & 255, height >> 8]); out.set(mask, 4); return out; };
+  // A soul on the wire: width and height, its silhouette (one byte per pixel) and, after it, its light and shade (the
+  // animal's own, from the photo, one grey byte per pixel; older souls have none).
+  const encode = (width: number, height: number, mask: Uint8Array, light?: Uint8Array) => {
+    const out = new Uint8Array(4 + mask.length + (light?.length ?? 0));
+    out.set([width & 255, width >> 8, height & 255, height >> 8]); out.set(mask, 4);
+    if (light) out.set(light, 4 + mask.length);
+    return out;
+  };
   const decode = (bytes: Uint8Array) => {
     if (bytes.length < 4) return null;
-    const width = bytes[0] | (bytes[1] << 8), height = bytes[2] | (bytes[3] << 8);
-    if (!width || !height || bytes.length !== 4 + width * height) return null;
-    return { width, height, mask: bytes.slice(4) };
+    const width = bytes[0] | (bytes[1] << 8), height = bytes[2] | (bytes[3] << 8), n = width * height;
+    if (!width || !height || (bytes.length !== 4 + n && bytes.length !== 4 + n * 2)) return null;
+    return { width, height, mask: bytes.slice(4, 4 + n), light: bytes.length === 4 + n * 2 ? bytes.slice(4 + n) : undefined };
   };
   const toBase64 = (bytes: Uint8Array) => { let s = ''; bytes.forEach((b) => { s += String.fromCharCode(b); }); return btoa(s); };
   const fromBase64 = (text: string) => Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
@@ -107,7 +115,7 @@ const { label } = Astro.props;
   type Point = { x: number; y: number };
   let segmenter: Promise<{ segment: (image: HTMLCanvasElement) => Masks }> | null = null;
   let cutter: Promise<{ segment: (image: HTMLCanvasElement, roi: { scribble: Point[] }) => Masks } | null> | null = null;
-  const silhouette = async (file: File): Promise<{ width: number; height: number; mask: Uint8Array } | 'none' | 'cut'> => {
+  const silhouette = async (file: File): Promise<{ width: number; height: number; mask: Uint8Array; light: Uint8Array } | 'none' | 'cut'> => {
     segmenter ??= (async () => {
       const { module, files } = await loadVision();
       return module.ImageSegmenter.createFromOptions(files, { baseOptions: { modelAssetPath: SETTINGS.model }, runningMode: 'IMAGE', outputCategoryMask: false, outputConfidenceMasks: true });
@@ -177,7 +185,18 @@ const { label } = Astro.props;
     const pixels = smallContext.getImageData(0, 0, small.width, small.height).data;
     const mask = new Uint8Array(small.width * small.height);
     for (let i = 0; i < mask.length; i++) mask[i] = pixels[i * 4 + 3];
-    return { width: small.width, height: small.height, mask };
+    // Its light and shade (fur, face, eyes, nose), from the photo but only where the animal is, in grey and stretched
+    // to its own range, so the figure keeps its real look under the colour.
+    const shade = canvasOf(small.width, small.height), shadeContext = shade.getContext('2d')!;
+    shadeContext.imageSmoothingQuality = 'high';
+    shadeContext.drawImage(photo, x0, y0, boxW, boxH, 0, 0, small.width, small.height);
+    const rgb = shadeContext.getImageData(0, 0, small.width, small.height).data;
+    const light = new Uint8Array(mask.length), seen: number[] = [];
+    for (let i = 0; i < mask.length; i++) { const l = .299 * rgb[i * 4] + .587 * rgb[i * 4 + 1] + .114 * rgb[i * 4 + 2]; light[i] = l; if (mask[i] > 160) seen.push(l); }
+    seen.sort((a, b) => a - b);
+    const lo = seen[Math.floor(seen.length * .03)] ?? 0, hi = seen[Math.floor(seen.length * .97)] ?? 255, span = Math.max(24, hi - lo);
+    for (let i = 0; i < light.length; i++) light[i] = mask[i] > 8 ? Math.round(Math.min(255, Math.max(0, (light[i] - lo) / span * 255))) : 128;
+    return { width: small.width, height: small.height, mask, light };
   };
 
   document.querySelectorAll<HTMLElement>('[data-souls-field]').forEach((root) => {
@@ -247,22 +266,39 @@ const { label } = Astro.props;
       const out = canvasOf((w + pad * 2) * ratio, (h + pad * 2) * ratio), g = out.getContext('2d')!;
       g.scale(ratio, ratio);
       g.imageSmoothingQuality = 'high';
-      g.globalAlpha = .28;
-      g.drawImage(soften(shape, 6), sx - sw * .04, sx - sh * .04, sw * 1.08, sh * 1.08);
+      // Its aura: a wide, soft halo in the lightest colour of its coat.
+      const aura = soften(shape, 10), auraContext = aura.getContext('2d')!;
+      auraContext.globalCompositeOperation = 'source-in'; auraContext.fillStyle = coat[0]; auraContext.fillRect(0, 0, aura.width, aura.height);
+      g.globalAlpha = .6; g.drawImage(aura, sx - sw * .1, sx - sh * .1, sw * 1.2, sh * 1.2);
+      g.globalAlpha = .45; g.drawImage(aura, sx - sw * .03, sx - sh * .03, sw * 1.06, sh * 1.06);
       g.globalAlpha = 1;
-      g.drawImage(soften(shape, 1.25), sx, sx, sw, sh);
-      g.drawImage(shape, sx, sx, sw, sh);
-      // The coat: light at the top, into its colour, into shadow at the bottom; a lighter glow on its back.
-      g.globalCompositeOperation = 'source-in';
-      const fill = g.createLinearGradient(pad, pad, pad + w * .3, pad + h);
+      // The body: its coat, light at the top into shadow at the bottom, then its own light and shade from the photo on
+      // top (overlay keeps the colour, multiply deepens eyes, nose and folds), so it still looks like itself.
+      const body = canvasOf(shape.width * 4, shape.height * 4), b = body.getContext('2d')!;
+      b.imageSmoothingQuality = 'high';
+      b.drawImage(soften(shape, 1.25), 0, 0, body.width, body.height);
+      b.drawImage(shape, 0, 0, body.width, body.height);
+      b.globalCompositeOperation = 'source-in';
+      const fill = b.createLinearGradient(0, body.height * .1, body.width * .3, body.height * .9);
       fill.addColorStop(0, coat[0]); fill.addColorStop(.6, coat[1]); fill.addColorStop(1, coat[2]);
-      g.fillStyle = fill;
-      g.fillRect(0, 0, out.width, out.height);
-      g.globalCompositeOperation = 'source-atop';
-      const glow = g.createRadialGradient(pad + w * .45, pad + h * .4, 0, pad + w * .45, pad + h * .4, Math.max(w, h) * .5);
-      glow.addColorStop(0, 'rgba(255, 246, 228, .35)'); glow.addColorStop(1, 'rgba(255, 246, 228, 0)');
-      g.fillStyle = glow;
-      g.fillRect(0, 0, out.width, out.height);
+      b.fillStyle = fill; b.fillRect(0, 0, body.width, body.height);
+      if (soul.light) {
+        const lit = canvasOf(soul.width + m * 2, soul.height + m * 2), l = lit.getContext('2d')!, li = l.createImageData(soul.width, soul.height);
+        for (let i = 0; i < soul.light.length; i++) { const v = soul.light[i]; li.data[i * 4] = li.data[i * 4 + 1] = li.data[i * 4 + 2] = v; li.data[i * 4 + 3] = 255; }
+        l.putImageData(li, m, m);
+        b.globalCompositeOperation = 'overlay'; b.globalAlpha = .75;
+        b.drawImage(soften(lit, 1.4), 0, 0, body.width, body.height);
+        b.globalCompositeOperation = 'multiply'; b.globalAlpha = .2;
+        b.drawImage(soften(lit, 1.4), 0, 0, body.width, body.height);
+        b.globalAlpha = 1;
+        b.globalCompositeOperation = 'destination-in';
+        b.drawImage(soften(shape, 1.25), 0, 0, body.width, body.height);
+      }
+      b.globalCompositeOperation = 'source-atop';
+      const glow = b.createRadialGradient(body.width * .45, body.height * .4, 0, body.width * .45, body.height * .4, Math.max(body.width, body.height) * .5);
+      glow.addColorStop(0, 'rgba(255, 246, 228, .3)'); glow.addColorStop(1, 'rgba(255, 246, 228, 0)');
+      b.fillStyle = glow; b.fillRect(0, 0, body.width, body.height);
+      g.drawImage(body, sx, sx, sw, sh);
       // Where its eyes are, and which way it faces in the photo (its head left or right of its body).
       let top = -1;
       for (let y = 0; y < soul.height && top < 0; y++) for (let x = 0; x < soul.width; x++) if (soul.mask[y * soul.width + x] > 160) { top = y; break; }
@@ -592,7 +628,8 @@ const { label } = Astro.props;
             context.restore();
           });
         } else context.drawImage(sprite, -w / 2, top, w, h);
-        if (soul.eyes?.length && (eyesOpen > .5 || soul.act === 'sleep') && Math.abs(soul.faceShown) > .3) {
+        // Drawn eyes (little arches) only on souls without their own face from the photo.
+        if (!soul.light && soul.eyes?.length && (eyesOpen > .5 || soul.act === 'sleep') && Math.abs(soul.faceShown) > .3) {
           const r = (soul.eyeR ?? 1.5) * k * 1.1;
           for (const eye of soul.eyes) drawEye(context, -w / 2 + eye.x * k, top + eye.y * k, r, soul.act === 'sleep');
         }
@@ -664,7 +701,7 @@ const { label } = Astro.props;
 
     // Adding a pet.
     addButton?.addEventListener('click', () => {
-      setStatus('Choose a photo of your whole cat or dog, from ears to paws. It stays on your device: only their silhouette is kept.');
+      setStatus('Choose a photo of your whole cat or dog, from ears to paws. Only your pet is kept, as a glowing figure: the rest of the photo never leaves your device.');
       input?.click();
     });
     input?.addEventListener('change', async () => {
@@ -678,7 +715,7 @@ const { label } = Astro.props;
         const found = await silhouette(file);
         if (found === 'none') { setStatus('I couldn’t find a cat or a dog in that photo. Try another one.'); return; }
         if (found === 'cut') { setStatus('Only whole bodies, please: a photo where all of your pet fits, from ears to paws, with a little room around.'); return; }
-        const bytes = encode(found.width, found.height, found.mask);
+        const bytes = encode(found.width, found.height, found.mask, found.light);
         let id = `souls/local-${Date.now().toString(36)}`;
         if (shared) {
           const response = await fetch('/api/souls', { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: bytes }).catch(() => null);
