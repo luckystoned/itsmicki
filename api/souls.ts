@@ -5,8 +5,9 @@
  *
  * Each soul is two blobs with the same stem: its photo (a JPEG the visitor's browser cropped around the animal and
  * re-drew, so no location or camera details travel with it), shown in the list of who's here; and its look, kept in
- * its own pathname: c(at) or d(og), size (0–2), markings (0 plain, 1 tabby, 2 patches), three colours, then its name
- * and its owner's (hex of their UTF-8), e.g. "souls/<stem>_c11_f2d9b0b98a5e4a3326_4d696c6f_4d69636b69.json".
+ * its own pathname: c(at) or d(og), size (0–2), markings (0 plain, 1 tabby, 2 patches), build (0 thin … 9 chubby),
+ * three colours, then its name
+ * and its owner's (hex of their UTF-8), e.g. "souls/<stem>_c114_f2d9b0b98a5e4a3326_4d696c6f_4d69636b69.json".
  *
  *   GET  /api/souls                → { souls: Array<{ id, photo? }> (oldest first), cap }
  *   POST /api/souls { look, photo } → 201 { id, photo } · 409 { full: true } when full · 400 if it is not a soul
@@ -15,7 +16,7 @@ import { list, put } from '@vercel/blob';
 
 const CAP = 42; // Souls the place holds; then it is full, for good.
 const PREFIX = 'souls/';
-const LOOK = /^[cd][012][012]_[0-9a-f]{18}_[0-9a-f]{2,40}_[0-9a-f]{2,40}$/; // Look, name, owner.
+const LOOK = /^[cd][012][012][0-9]_[0-9a-f]{18}_[0-9a-f]{2,40}_[0-9a-f]{2,40}$/; // Look (with build 0–9), name, owner.
 const MAX_PHOTO = 600_000; // Bytes of JPEG.
 
 const json = (body: unknown, status = 200, cache = 'no-store') =>
