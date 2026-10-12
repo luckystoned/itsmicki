@@ -484,7 +484,7 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
     role: 'Art Direction &amp;<br>AI Image Generation',
     nutshell: `For makeup inspiration, I use AI as an experimental tool, feeding it textures and color palettes drawn from everyday materials to generate unexpected looks. Familiar surfaces become starting points for expressive, unconventional makeup ideas.`,
     drags: [],
-    // As in Figma (930:2203): three rows of two.
+    // As in Figma (930:2203): eight rows of two.
     blocks: [
       pair(
         image('/04_SideB/Projects/01_MkpHair/01_MkpHair.webp', 'Face with a polished silver plate over one eye and lilac sheen on the skin.', '773 / 955'), '48.3125vw', '59.6875vw',
@@ -497,6 +497,26 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
       pair(
         image('/04_SideB/Projects/01_MkpHair/05_MkpHair.webp', 'Face laced with pink cords, tassels and a mesh patch over one eye.', '773 / 955'), '48.3125vw', '59.6875vw',
         image('/04_SideB/Projects/01_MkpHair/06_MkpHair.webp', 'Blonde face with a silver brow piece set with coloured beads and a beaded line under the other eye.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/04_SideB/Projects/01_MkpHair/07_MkpHair.webp', 'Flushed cheek traced with curling gold wire.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/08_MkpHair.webp', 'Close-up of matte brown lips and freckles under curls of gold wire.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/04_SideB/Projects/01_MkpHair/09_MkpHair.webp', 'Pale blue lids and glossy nude lips over a baby-blue satin collar.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/10_MkpHair.webp', 'Close-up of a glossy, pale blue lid on deep brown skin.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/04_SideB/Projects/01_MkpHair/11_MkpHair.webp', 'Yellow coiled brows and lips with a wash of violet blush.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/12_MkpHair.webp', 'The same face nearer: coiled yellow brows and lips, violet on the cheek.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/04_SideB/Projects/01_MkpHair/13_MkpHair.webp', 'Platinum fringe, pale pink lids and soft pink lips.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/14_MkpHair.webp', 'Close-up of pale pink lips wrapped in a fine clear net.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/04_SideB/Projects/01_MkpHair/15_MkpHair.webp', 'Glossy lime-green lids lined with silver studs and matching lips.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/01_MkpHair/16_MkpHair.webp', 'Close-up of a lime-green lid studded with silver beads.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
     ],
     credits: [],
