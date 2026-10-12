@@ -12,12 +12,20 @@ const carouselLayout: Record<string, { width: number; height: number; label: str
   'textures-body': { width: 430.069, height: 315.29, label: '08_Textures & Body_Art Direction+AI Image Generation', video: '/02_Projects/08_TexturesBody/01_TexturesBody_Loop.mp4' },
 };
 
+const COMING_SOON = ' — (Coming soon) !!!!!^*^';
+/** A project's name line, the same on the home, the end-of-case carousel and /projects. */
+export const projectLabel = (slug: string) => {
+  const layout = carouselLayout[slug], project = projects.find((item) => item.slug === slug);
+  if (!layout || !project) throw new Error(`Unknown project: ${slug}`);
+  return `${layout.label}${project.comingSoon ? COMING_SOON : ''}`;
+};
+
 export const carouselProjects = projects.flatMap((project) => {
   const layout = carouselLayout[project.slug];
   const carouselCover = layout?.cover ?? project.cover;
   if (!layout || !carouselCover) return [];
   // `caseCover`: the image the end-of-case carousel shows instead of the home one (same as on /projects).
-  return [{ ...project, carouselCover, caseCarouselCover: layout.caseCover ?? carouselCover, carouselLayout: layout }];
+  return [{ ...project, carouselCover, caseCarouselCover: layout.caseCover ?? carouselCover, carouselLayout: { ...layout, label: projectLabel(project.slug) } }];
 });
 
 /** Carousel card width from its Figma length on the 1600×1033 desktop frame, capped by both viewport axes. The pixel cap

@@ -3,51 +3,44 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import ProjectGridItem from '@/components/ProjectGridItem.astro';
 import ProjectsStage from '@/components/ProjectsStage.astro';
 import { projects } from '@/data/projects';
+import { projectLabel } from '@/data/carousel';
 
 const projectBySlug = new Map(projects.map((project) => [project.slug, project]));
 const definitions = [
   {
     slug: 'genova',
-    label: '01_Genova_Art Direction+Visual Design — (Coming soon) !!!!!^*^',
     width: 'calc((97.23vw - 6px) * .50047)', height: 'auto', ratio: '47.57 / 63.01', eager: true,
   },
   {
     slug: 'winona',
-    label: '02_Winona_UX—UI Lead, Visual & Motion Designer',
     width: 'calc((97.23vw - 6px) * .49953)', height: 'auto', ratio: '47.48 / 47.19', eager: true,
     cover: '/02_Projects/01_Winona/01_Winona_Projects.webp',
   },
   {
     slug: 'amazon',
-    label: '03_Amazon_UXUI Lead+Art Direction+Visual Design — (Coming soon) !!!!!^*^',
     width: '100%', height: 'auto', ratio: '97.23 / 64.22',
     vimeoId: '1215371786',
   },
   {
     slug: 'maxmaher',
-    label: '04_MaxMaher_Art Direction+Visual Design',
     width: '40.58vw', height: 'auto', ratio: '40.58 / 40.07',
   },
   {
     slug: 'outliant',
-    label: '06_Outliant_Art Direction+Visual Design+UXUI Lead',
     width: 'calc((97.23vw - 6px) * .57451)', height: 'auto', ratio: '54.67 / 63.01',
   },
   {
     slug: 'lumen',
-    label: '05_Lumen_Art Direction+Visual Design',
     width: 'calc((97.23vw - 6px) * .42549)', height: 'auto', ratio: '40.49 / 40.24',
     vimeoId: '1234293739',
   },
   {
     slug: 'blend360',
-    label: '07_Blend360_UX—UI Lead, Visual & Motion Designer — (Coming soon) !!!!!^*^',
     width: '100%', height: 'auto', ratio: '97.23 / 64.22',
     cover: '/02_Projects/07_Blend360/01_Blend360_Cover_Wide.webp',
   },
   {
     slug: 'textures-body',
-    label: '08_Textures & Body_Art Direction+AI Image Generation',
     width: 'calc(100% * 1046 / 1556)', height: 'auto', ratio: '1046 / 767',
     vimeoId: '1234326440', videoRatio: '328 / 240',
   },
@@ -59,6 +52,7 @@ const cards = definitions.map((definition) => {
   return {
     ...definition,
     project,
+    label: projectLabel(definition.slug),
     eager: 'eager' in definition ? definition.eager : false,
     cover: 'cover' in definition ? definition.cover : undefined,
     vimeoId: 'vimeoId' in definition ? definition.vimeoId : undefined,
