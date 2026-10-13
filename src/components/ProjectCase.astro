@@ -1751,6 +1751,11 @@ const vimeoUrl = (id: string) =>
       margin-left: 2.2vw;
     }
 
+    /* Side B: on phones the text columns read as one paragraph (on desktop they split it mid-sentence). */
+    .project-case-page-b .case-text-columns { display: block; }
+    .project-case-page-b .case-text-columns p { display: inline; }
+    .project-case-page-b .case-text-columns p + p::before { content: ' '; }
+
     /* Missing souls stands tall on phones, almost a story: more sky above her and more ground for the animals. */
     .case-media-single .case-media-surface:has(.souls-field) {
       aspect-ratio: 9 / 15;
