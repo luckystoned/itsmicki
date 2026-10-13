@@ -787,6 +787,7 @@ const { label } = Astro.props;
       context.restore();
     };
 
+    const HER_LINE = .86; // Feet above this line are drawn behind her, below it in front.
     // Homes: rings around the caregiver, on the ground (feet between the horizon and the bottom), nearest first.
     let homes: Array<{ x: number; y: number }> = [];
     const layout = () => {
@@ -806,10 +807,16 @@ const { label } = Astro.props;
     // How big a soul is where it stands: smaller far away (up near the horizon), larger up close; and by its kind/size.
     const kindScale = (look: Look) => SETTINGS.scale[look.kind][look.size];
     const unitAt = (soul: Soul) => soul.act === 'held' && soul.heldUnit ? soul.heldUnit : base * (.11 + Math.min(1, Math.max(0, (soul.y - SETTINGS.horizon) / (1 - SETTINGS.horizon))) * .2) * kindScale(soul.look);
+    // Behind her (her figure from head to feet, with a little room for their width): nobody should stand still there,
+    // out of sight; a spot there is moved out to the nearer side of her.
+    const herHalf = () => (.21 * K() * height) / Math.max(1, width);
+    const hidden = (x: number, y: number) => y < HER_LINE && y > 1.02 - K() && Math.abs(x - .5) < herHalf();
+    const besideHer = (x: number) => Math.min(.95, Math.max(.05, .5 + (x < .5 ? -1 : 1) * (herHalf() + .04 + Math.random() * .08)));
     const PAINT_AT = .32; // Figures are painted at the largest size they can have (share of the height), then drawn smaller.
 
     const meet = (id: string, look: Look, index: number, born: number): Soul => {
-      const home = homes[index % homes.length], h = hash(id);
+      const ring = homes[index % homes.length], h = hash(id);
+      const home = hidden(ring.x, ring.y) ? { x: besideHer(ring.x), y: ring.y } : ring;
       return { id, look, born, hx: home.x, hy: home.y, x: home.x, y: home.y, fromX: home.x, fromY: home.y, toX: home.x, toY: home.y, act: 'sit', actStart: 0, actEnd: 0, face: home.x < .5 ? 1 : -1, faceShown: home.x < .5 ? 1 : -1, blink: 0, phase: (h % 1000) / 1000 * 6.28, drawn: 0 };
     };
 
@@ -821,12 +828,17 @@ const { label } = Astro.props;
       // After her welcome, a newcomer walks off to its own place.
       const goingHome = soul.act === 'pet';
       if (goingHome) act = 'walk';
+      // Its place, never out of sight behind her; and it doesn't stay put there.
+      if (hidden(soul.hx, soul.hy)) soul.hx = besideHer(soul.hx);
+      const outOfSight = hidden(soul.x, soul.y);
+      if (outOfSight) act = 'walk';
       soul.fromX = soul.x; soul.fromY = soul.y; soul.toX = soul.x; soul.toY = soul.y;
       let length: number;
       if (act === 'walk') {
         // A short walk around its home, then it faces where it goes.
-        soul.toX = goingHome ? soul.hx : Math.min(.96, Math.max(.04, soul.hx + (Math.random() - .5) * .22));
-        soul.toY = goingHome ? soul.hy : Math.min(.98, Math.max(SETTINGS.horizon + .05, soul.hy + (Math.random() - .5) * .1));
+        soul.toX = goingHome || outOfSight ? soul.hx : Math.min(.96, Math.max(.04, soul.hx + (Math.random() - .5) * .22));
+        soul.toY = goingHome || outOfSight ? soul.hy : Math.min(.98, Math.max(SETTINGS.horizon + .05, soul.hy + (Math.random() - .5) * .1));
+        if (hidden(soul.toX, soul.toY)) soul.toX = besideHer(soul.toX);
         const distance = Math.hypot(soul.toX - soul.x, (soul.toY - soul.y) * height / width);
         length = Math.max(1.2, distance / SETTINGS.walkSpeed);
         if (Math.abs(soul.toX - soul.x) > .005) soul.face = Math.sign(soul.toX - soul.x);
@@ -1007,7 +1019,7 @@ const { label } = Astro.props;
       };
       // Further away first; those behind her before her, the rest after.
       const order = souls.filter((soul) => soul.act !== 'held' && soul.act !== 'fall').sort((a, b) => a.y - b.y);
-      const herLine = .86;
+      const herLine = HER_LINE;
       order.filter((soul) => soul.y < herLine).forEach(drawSoul);
       const sway = calm ? 0 : Math.sin(t * .5) * height * .003;
       if (keeper) {
@@ -1074,7 +1086,10 @@ const { label } = Astro.props;
     let held: { soul: Soul; offX: number; offY: number; vx: number; ax: number; lastX: number; lastT: number; id: number; startX: number; startY: number; startT: number; moved: boolean } | null = null;
     const local = (event: { clientX: number; clientY: number }) => { const rect = canvas.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };
     const grabbable = (value: boolean) => { if (root.hasAttribute('data-grab') !== value) { root.toggleAttribute('data-grab', value); document.dispatchEvent(new Event('project-preview-refresh')); } };
+    // While one of the popups is open, only the popup answers: nothing in the place behind it can be touched.
+    const busy = () => !!root.querySelector('dialog[open]');
     root.addEventListener('pointerdown', (event) => {
+      if (busy()) return;
       const soul = nearest(event);
       if (!soul) return;
       nameShown.id = soul.id; nameShown.until = performance.now() + 2500;
@@ -1102,7 +1117,7 @@ const { label } = Astro.props;
         nameShown.id = soul.id; nameShown.until = now + 900;
         return;
       }
-      const soul = nearest(event);
+      const soul = busy() ? null : nearest(event);
       grabbable(!!soul);
       if (soul) { nameShown.id = soul.id; nameShown.until = performance.now() + 900; }
     });
@@ -1121,7 +1136,7 @@ const { label } = Astro.props;
     root.addEventListener('pointercancel', release);
     root.addEventListener('pointerleave', () => grabbable(false));
     // A finger on an animal picks it up instead of scrolling the page.
-    root.addEventListener('touchstart', (event) => { const touch = event.touches[0]; if (touch && nearest(touch as unknown as PointerEvent)) event.preventDefault(); }, { passive: false });
+    root.addEventListener('touchstart', (event) => { const touch = event.touches[0]; if (touch && !busy() && nearest(touch as unknown as PointerEvent)) event.preventDefault(); }, { passive: false });
 
     let visible = false, running = false;
     const frame = (time: number) => {
