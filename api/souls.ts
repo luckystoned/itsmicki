@@ -25,6 +25,8 @@ const LOOK = /^[cd][012][012][0-9]_[0-9a-f]{18}_[0-9a-f]{2,40}_[0-9a-f]{2,40}$/;
 const MAX_PHOTO = 600_000; // Bytes of JPEG.
 // Souls taken out of the place (by their stem), without deleting their files: Lexie, who is alive.
 const HIDDEN = new Set(['mv41f4ng-3a584adb']);
+// Photos replaced by hand (by stem), served from the site: Sandia's was kept blank by the browser it was left from.
+const PHOTOS: Record<string, string> = { 'mv4c70zh-7573a7b7': '/04_SideB/Projects/04_MissingSouls/souls/sandia.jpg' };
 
 const json = (body: unknown, status = 200, cache = 'no-store') =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': cache } });
@@ -60,7 +62,7 @@ export async function GET() {
   const photos = new Map(blobs.filter((blob) => blob.pathname.endsWith('.jpg')).map((blob) => [stemOf(blob.pathname), blob.url]));
   // Oldest first, by when they were left (the stem starts with that time), so an edited soul keeps its place.
   const souls = blobs.filter((blob) => blob.pathname.endsWith('.json')).sort((a, b) => stemOf(a.pathname).localeCompare(stemOf(b.pathname)))
-    .map((blob) => ({ id: blob.pathname, photo: photos.get(stemOf(blob.pathname)) }));
+    .map((blob) => ({ id: blob.pathname, photo: PHOTOS[stemOf(blob.pathname)] ?? photos.get(stemOf(blob.pathname)) }));
   // Cached at the edge for 30 seconds: listing counts against Blob's monthly operations (2,000 on Hobby). Whoever just
   // added a soul sees it right away anyway (their browser adds it until the list catches up).
   return json({ souls, cap: CAP }, 200, 'public, max-age=0, s-maxage=30, stale-while-revalidate=120');
