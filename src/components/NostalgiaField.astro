@@ -23,7 +23,7 @@ const { label } = Astro.props;
     track: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Track.mp3', // The song (not in the site yet).
     loop: 4, // Seconds the glitch pattern takes to come round.
     hits: [[3, 2], [8, 1], [12, 9], [29, 2], [33, 1], [36, 4], [45, 2], [49, 1], [52, 3], [59, 2], [64, 14], [82, 1], [86, 2], [90, 3]] as Array<[number, number]>, // ta ta piiii tatatta… (in 24ths of a second)
-    lime: 'rgba(206,240,98,', dashes: ['#1b1580', '#26209a', '#0d0b3a', '#14123f', '#f2f0ec'],
+    lime: 'rgba(206,240,98,', dashes: ['#0b0a0a', '#151313', '#000000', '#211e1d', '#f2f0ec'], // Dead pixels: black, a near-black or two, now and then white.
     hand: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
   };
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
