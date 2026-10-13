@@ -1086,37 +1086,77 @@ const { label } = Astro.props;
       const button = document.createElement('button'); button.type = 'button'; button.className = 'souls-list-action'; button.textContent = text;
       button.addEventListener('click', action); return button;
     };
+    const listItem = (soul: Soul, copy = false) => {
+      const item = document.createElement('li'), figure = document.createElement('figure'), label = document.createElement('figcaption');
+      if (soul.photo) {
+        const img = document.createElement('img');
+        img.src = soul.photo; img.alt = copy ? '' : `${soul.look.name ?? 'A'} ${soul.look.kind}`; img.decoding = 'async';
+        figure.append(img);
+      } else {
+        const none = document.createElement('div'); none.className = 'souls-list-nophoto';
+        none.style.background = `linear-gradient(160deg, ${soul.look.colours[0]}, ${soul.look.colours[1]} 55%, ${soul.look.colours[2]})`;
+        figure.append(none);
+      }
+      const name = document.createElement('strong'); name.textContent = soul.look.name ?? (soul.look.kind === 'cat' ? 'A cat' : 'A dog');
+      label.append(name);
+      if (soul.look.owner) { const by = document.createElement('span'); by.textContent = `left by ${soul.look.owner}`; label.append(' ', by); }
+      figure.append(label);
+      if (isMine(soul)) {
+        const actions = document.createElement('p'); actions.className = 'souls-list-actions';
+        actions.append(listButton('edit', () => change(soul)), listButton('take out', () => takeOut(soul)));
+        figure.append(actions);
+      }
+      item.append(figure);
+      // The second pass that lets the strip loop: seen, but not read out or reached twice by keyboard.
+      if (copy) { item.setAttribute('aria-hidden', 'true'); item.inert = true; }
+      return item;
+    };
+    // Who's here runs as a strip, drifting on its own and looping (held still while hovered, touched or focused, and
+    // with reduced motion); it can be scrolled by hand too.
+    let drift = 0, driftPos = 0, driftHeld = false, driftLast = 0, loopWidth = 0, listDrawn = 0;
+    const DRIFT_SPEED = 32; // px per second
+    const driftFrame = (time: number) => {
+      if (!listGrid || !listDialog?.open || !loopWidth) { drift = 0; return; }
+      const dt = Math.min(.05, (time - (driftLast || time)) / 1000); driftLast = time;
+      if (!driftHeld) {
+        driftPos += DRIFT_SPEED * dt;
+        if (driftPos >= loopWidth) driftPos -= loopWidth;
+        listGrid.scrollLeft = driftPos;
+      }
+      drift = requestAnimationFrame(driftFrame);
+    };
     const renderList = () => {
       if (!listGrid) return;
-      listGrid.replaceChildren(...[...souls].reverse().map((soul) => {
-        const item = document.createElement('li'), figure = document.createElement('figure'), label = document.createElement('figcaption');
-        if (soul.photo) {
-          const img = document.createElement('img');
-          img.src = soul.photo; img.alt = `${soul.look.name ?? 'A'} ${soul.look.kind}`; img.loading = 'lazy'; img.decoding = 'async';
-          figure.append(img);
-        } else {
-          const none = document.createElement('div'); none.className = 'souls-list-nophoto';
-          none.style.background = `linear-gradient(160deg, ${soul.look.colours[0]}, ${soul.look.colours[1]} 55%, ${soul.look.colours[2]})`;
-          figure.append(none);
-        }
-        const name = document.createElement('strong'); name.textContent = soul.look.name ?? (soul.look.kind === 'cat' ? 'A cat' : 'A dog');
-        label.append(name);
-        if (soul.look.owner) { const by = document.createElement('span'); by.textContent = `left by ${soul.look.owner}`; label.append(' ', by); }
-        figure.append(label);
-        if (isMine(soul)) {
-          const actions = document.createElement('p'); actions.className = 'souls-list-actions';
-          actions.append(listButton('edit', () => change(soul)), listButton('take out', () => takeOut(soul)));
-          figure.append(actions);
-        }
-        item.append(figure);
-        return item;
-      }));
+      const order = [...souls].reverse();
+      listGrid.replaceChildren(...order.map((soul) => listItem(soul)));
       if (listEmpty) listEmpty.hidden = souls.length > 0;
+      loopWidth = 0; listGrid.scrollLeft = driftPos = 0;
+      // Measured once the photos are in (each sets its card's width).
+      const drawn = ++listDrawn;
+      Promise.all([...listGrid.querySelectorAll('img')].map((img) => img.decode().catch(() => undefined))).then(() => {
+        if (drawn !== listDrawn) return;
+        // Only when they don't all fit: a copy of the strip after it, so it can wrap around without a jump.
+        if (calm || !listDialog?.open || listGrid.scrollWidth <= listGrid.clientWidth + 4) return;
+        const first = listGrid.firstElementChild as HTMLElement;
+        listGrid.append(...order.map((soul) => listItem(soul, true)));
+        loopWidth = (listGrid.children[order.length] as HTMLElement).offsetLeft - first.offsetLeft;
+        driftLast = 0;
+        if (!drift) drift = requestAnimationFrame(driftFrame);
+      });
     };
+    if (listGrid) {
+      const hold = () => { driftHeld = true; };
+      const release = () => { driftHeld = false; driftPos = listGrid.scrollLeft; driftLast = 0; };
+      listGrid.addEventListener('pointerenter', hold); listGrid.addEventListener('pointerleave', release);
+      listGrid.addEventListener('focusin', hold); listGrid.addEventListener('focusout', release);
+      listGrid.addEventListener('touchstart', hold, { passive: true }); listGrid.addEventListener('touchend', () => setTimeout(release, 1500), { passive: true });
+      // Scrolled by hand past the first pass: back to the same spot on the first one.
+      listGrid.addEventListener('scroll', () => { if (driftHeld && loopWidth && listGrid.scrollLeft >= loopWidth) listGrid.scrollLeft -= loopWidth; }, { passive: true });
+    }
     caption.querySelector<HTMLButtonElement>('[data-souls-list]')?.addEventListener('click', () => {
       if (!listDialog || !listGrid) return;
-      renderList();
       listDialog.showModal();
+      renderList();
     });
     const reopen = () => { if (addButton) { addButton.disabled = full(); addButton.toggleAttribute('aria-disabled', full()); } };
 
@@ -1138,7 +1178,7 @@ const { label } = Astro.props;
       soul.id = id; soul.look = look; soul.figure = undefined;
       if (calm) draw(0);
       setStatus(`${look.name ?? 'They'}: saved.`);
-      renderList(); listDialog?.showModal();
+      listDialog?.showModal(); renderList();
     };
     // Taking one of theirs out, after asking.
     const takeOut = async (soul: Soul) => {
@@ -1237,16 +1277,18 @@ const { label } = Astro.props;
   .souls-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 22px 22px 0; }
   .souls-list-close { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
   .souls-list-empty { margin: 16px 22px 22px; }
-  .souls-list-grid { columns: 3 220px; column-gap: 12px; margin: 0; padding: 16px 22px 22px; list-style: none; }
-  .souls-list-grid li { break-inside: avoid; margin-bottom: 14px; }
-  .souls-list-grid figure { margin: 0; }
-  .souls-list-grid img { display: block; width: 100%; height: auto; border-radius: 8px; }
-  .souls-list-nophoto { aspect-ratio: 4 / 5; border-radius: 8px; filter: blur(.5px); }
-  .souls-list .souls-list-grid figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; margin-top: 6px; font-size: 14px; line-height: 1.2; }
-  .souls-list .souls-list-grid figcaption strong { font-weight: 400; }
-  .souls-list .souls-list-grid figcaption span { opacity: .6; }
-  .souls-list-actions { display: flex; gap: 14px; margin: 4px 0 0; font-size: 13px; }
-  .souls-list-action { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; opacity: .8; cursor: pointer; }
-  .souls-list-action:is(:hover, :focus-visible) { opacity: 1; }
+  /* A horizontal strip: every photo the same height, its own width; the caption fits under it. */
+  .souls-list-grid { display: flex; gap: 14px; margin: 0; padding: 16px 22px 22px; overflow-x: auto; list-style: none; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .souls-list-grid::-webkit-scrollbar { display: none; }
+  .souls-list-grid :global(li) { flex: none; }
+  .souls-list-grid :global(figure) { width: min-content; margin: 0; }
+  .souls-list-grid :global(img) { display: block; width: auto; max-width: none; height: min(320px, 46vh); border-radius: 8px; }
+  .souls-list-grid :global(.souls-list-nophoto) { height: min(320px, 46vh); aspect-ratio: 4 / 5; border-radius: 8px; filter: blur(.5px); }
+  .souls-list-grid :global(figcaption) { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; margin-top: 6px; font-size: 14px; line-height: 1.2; }
+  .souls-list-grid :global(figcaption strong) { font-weight: 400; }
+  .souls-list-grid :global(figcaption span) { opacity: .6; }
+  .souls-list-grid :global(.souls-list-actions) { display: flex; gap: 14px; margin: 4px 0 0; font-size: 13px; }
+  .souls-list-grid :global(.souls-list-action) { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; opacity: .8; cursor: pointer; }
+  .souls-list-grid :global(.souls-list-action:is(:hover, :focus-visible)) { opacity: 1; }
   .souls-form-ok { padding: 6px 12px !important; background: #fafafa !important; color: #202020 !important; text-decoration: none !important; border-radius: 4px !important; }
 </style>
