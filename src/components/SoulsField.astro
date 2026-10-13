@@ -87,14 +87,14 @@ const { label } = Astro.props;
     people: .2, // Photos are shown in the list: a crop where people fill more than this share is turned down.
     photoSide: 1000, // The photo kept: cropped around the animal, at most this many pixels on its longer side.
     // The place, after the reference: a coral sky melting into a lavender-blue ground, a warm glow on the floor.
-    sky: [[0, '#e46a55'], [.3, '#ec8064'], [.45, '#ec9a86'], [.53, '#cf9cb4'], [.62, '#a99ae0'], [.82, '#8582d8'], [1, '#716ecb']] as Array<[number, string]>,
+    sky: [[0, '#e46a55'], [.2, '#ec8064'], [.33, '#ec9a86'], [.41, '#cf9cb4'], [.5, '#a99ae0'], [.76, '#8582d8'], [1, '#716ecb']] as Array<[number, string]>,
     // Slow clouds of colour drifting like nebulae, lilac into the sky and orange into the ground, so the two melt into
     // each other: [colour, x, y, radius (shares of the frame), opacity, seconds per drift].
     nebulae: [
       ['#a59cf0', .2, .3, .55, .42, 70], ['#b9a6f2', .78, .22, .5, .36, 90], ['#ff9470', .3, .78, .55, .34, 80],
       ['#ff8a66', .82, .7, .5, .3, 65], ['#f3a6c4', .55, .5, .6, .3, 100], ['#9c96ea', .5, .62, .45, .3, 75],
     ] as Array<[string, number, number, number, number, number]>,
-    horizon: .5, // Where the ground starts, as a share of the height.
+    horizon: .38, // Where the ground starts, as a share of the height (high, so there's plenty of ground for them).
     plants: { back: '#98a3ee', stem: '#6f8f63', front: '#5f8456' }, // Flowers on the horizon, their stems, leaves in front.
     // Eyes are little arches (∩), smiling shut: a yellowish bone white, or black on a white coat (light enough that
     // the bone white wouldn't show).
@@ -180,12 +180,12 @@ const { label } = Astro.props;
   const rgbOf = (colour: string) => [1, 3, 5].map((i) => parseInt(colour.slice(i, i + 2), 16));
   const mix = (a: string, b: string, t: number) => { const x = rgbOf(a), y = rgbOf(b); return hex(x.map((v, i) => v + (y[i] - v) * t)); };
   /** An eye: a little arch (∩) with a soft glow; asleep, it turns into a closed curve (∪). Dark on a white coat. */
-  const drawEye = (g: CanvasRenderingContext2D, x: number, y: number, r: number, asleep = false, dark = false) => {
+  const drawEye = (g: CanvasRenderingContext2D, x: number, y: number, r: number, asleep = false, dark = false, colour?: string) => {
     g.save();
     g.lineCap = 'round';
     g.lineWidth = Math.max(.9, r * .75);
-    g.strokeStyle = dark ? SETTINGS.eyes.dark : SETTINGS.eyes.light;
-    g.shadowColor = dark ? 'rgba(29, 27, 34, .35)' : 'rgba(239, 226, 189, .8)';
+    g.strokeStyle = colour ?? (dark ? SETTINGS.eyes.dark : SETTINGS.eyes.light);
+    g.shadowColor = colour ?? (dark ? 'rgba(29, 27, 34, .35)' : 'rgba(239, 226, 189, .8)');
     g.shadowBlur = r * (dark ? 1.2 : 2.2);
     g.beginPath();
     if (asleep) g.arc(x, y - r * .5, r * 1.05, Math.PI * .15, Math.PI * .85);
@@ -421,6 +421,8 @@ const { label } = Astro.props;
       const headR = (dog ? [.18, .155, .145][look.size] : [.18, .16, .15][look.size]) * (.95 + random() * .1) * (.94 + build * .06);
       const headX = bodyCx + bodyLength / 2 + headR * .4, headY = bodyCy - bodyDepth * .5 - headR * .5;
       const eyeY = headY - headR * .1, eyeXs = dog ? [headX + headR * .05, headX + headR * .55] : [headX - headR * .15, headX + headR * .45];
+      // A floppy ear hangs from the back of the head, by the cheek.
+      const earX = headX - headR * .55, earY = headY + headR * .32;
       const legW = (dog ? [.09, .095, .1][look.size] : .08) * (.85 + build * .15);
       const pad = .3; // Room around the figure for its glow, in units.
       const W = (1.45 + pad * 2) * unit, H = (1.15 + pad * 2) * unit, ox = pad * unit, oy = (pad + .15) * unit; // Unit (0,0) → canvas (ox,oy).
@@ -449,15 +451,17 @@ const { label } = Astro.props;
         // old print slightly out of register.
         const out = canvasOf(shape.width, shape.height), g = out.getContext('2d')!;
         g.imageSmoothingQuality = 'high';
-        const soft = soften(shape, 7), shift = .026 * unit * ratio;
-        const halo = soften(shape, 16);
+        // Blur in proportion to the figure (drawn small on a phone, it would otherwise go to mush).
+        const blur = Math.max(.35, Math.min(1.3, unit / 256)) * ratio / 2;
+        const soft = soften(shape, Math.max(1.5, 7 * blur)), shift = .026 * unit * ratio;
+        const halo = soften(shape, Math.max(3, 16 * blur));
         g.globalAlpha = .5; g.drawImage(tinted(halo, mix(light, '#fff4e4', .3)), 0, 0);
         g.globalCompositeOperation = 'screen';
         g.globalAlpha = .55; g.drawImage(tinted(soft, '#7fe0a0'), -shift, -shift * .4);
         g.globalAlpha = .5; g.drawImage(tinted(soft, '#ff8a5c'), shift, shift * .4);
         g.globalCompositeOperation = 'source-over';
         g.globalAlpha = 1; g.drawImage(soft, 0, 0);
-        g.globalAlpha = .35; g.drawImage(soften(shape, 3.5), 0, 0);
+        g.globalAlpha = .35; g.drawImage(soften(shape, Math.max(1.2, 3.5 * blur)), 0, 0);
         return out;
       };
 
@@ -476,7 +480,7 @@ const { label } = Astro.props;
       }
       // Ears: floppy ones hang by the cheeks (most dogs); pointed ones stand up (cats, and dogs with pricked ears).
       if (floppy) {
-        s.beginPath(); s.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .32 * unit, headR * .7 * unit, .35, 0, Math.PI * 2); s.fill();
+        s.beginPath(); s.ellipse(X(earX), Y(earY), headR * .36 * unit, headR * .78 * unit, .35, 0, Math.PI * 2); s.fill();
       } else {
         for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
           s.beginPath();
@@ -543,8 +547,7 @@ const { label } = Astro.props;
         if (has('chest')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .34), Y(bodyCy + bodyDepth * .05), bodyDepth * .3 * unit, bodyDepth * .45 * unit, .3, 0, Math.PI * 2); c.fill(); }
         if (has('ears')) {
           c.fillStyle = dark;
-          if (floppy) { c.beginPath(); c.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .34 * unit, headR * .72 * unit, .35, 0, Math.PI * 2); c.fill(); }
-          else for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
+          if (!floppy) for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
             c.beginPath(); c.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .5)); c.lineTo(X(headX + headR * tip), Y(headY - headR * 1.6)); c.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .7)); c.closePath(); c.fill();
           }
         }
@@ -552,6 +555,20 @@ const { label } = Astro.props;
         if (has('eye')) { c.fillStyle = has('eyeLight') ? white : dark; c.beginPath(); c.ellipse(X(eyeXs[1]), Y(eyeY), headR * .36 * unit, headR * .31 * unit, -.2, 0, Math.PI * 2); c.fill(); }
         if (has('blaze')) { c.strokeStyle = white; c.lineCap = 'round'; c.lineWidth = headR * .22 * unit; c.beginPath(); c.moveTo(X(headX + headR * .12), Y(headY - headR * .85)); c.lineTo(X(headX + headR * (dog ? .7 : .35)), Y(headY + headR * .3)); c.stroke(); }
         if (has('muzzle')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(headX + headR * (dog ? .9 : .45)), Y(headY + headR * (dog ? .4 : .45)), headR * (dog ? .55 : .42) * unit, headR * .36 * unit, .1, 0, Math.PI * 2); c.fill(); }
+        // Floppy ears, shaded so they read against the head: their colour deepening towards the tip, and a soft shadow
+        // where they lie on the cheek (darker still if the details ask for dark ears).
+        if (floppy) {
+          c.save();
+          c.translate(X(earX), Y(earY)); c.rotate(.35);
+          const rx = headR * .36 * unit, ry = headR * .78 * unit;
+          c.shadowColor = 'rgba(30, 18, 24, .6)'; c.shadowBlur = headR * .3 * unit; c.shadowOffsetX = headR * .08 * unit;
+          const shade = c.createLinearGradient(0, -ry, 0, ry);
+          const deep = has('ears') ? dark : mix(mid, dark, .78);
+          shade.addColorStop(0, mix(mid, dark, has('ears') ? .6 : .3)); shade.addColorStop(.5, deep); shade.addColorStop(1, mix(deep, '#000000', .3));
+          c.fillStyle = shade;
+          c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); c.fill();
+          c.restore();
+        }
         // A lighter glow on the face and chest.
         const face = c.createRadialGradient(X(headX), Y(headY), 0, X(headX), Y(headY), headR * 1.6 * unit);
         face.addColorStop(0, 'rgba(255, 248, 236, .35)'); face.addColorStop(1, 'rgba(255, 248, 236, 0)');
@@ -601,6 +618,7 @@ const { label } = Astro.props;
     let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
     const UPPER = .13, FOREARM = .15; // Her upper arm and forearm, as shares of her height.
     const KEEPER_PAD = .55; // Room around her for her halo, as a share of her height.
+    const HANDS = '#e6d6aa'; // Her hands' bone white.
     const paintKeeper = (size: number) => {
       const w = size * .56, pad = size * KEEPER_PAD;
       const shape = canvasOf(w + pad * 2, size + pad * 2), s = shape.getContext('2d')!;
@@ -627,11 +645,13 @@ const { label } = Astro.props;
       // Ethereal: no edge anywhere. Her halo fades out in layers, wider and fainter each time, then her body, itself
       // mostly glow; all of it in her colours: warm white into a pale lime, a warm orange glow in her chest.
       // (The blur itself spreads it into the room around her; it is never scaled past her canvas, or its edge would show.)
+      // (Blurs in proportion to her size: smaller on a phone, so she stays as soft, not softer.)
+      const soft = Math.max(.45, Math.min(1.3, u / 620));
       for (const [blur, alpha] of [[90, .2], [64, .22], [40, .26], [24, .3], [12, .38]] as Array<[number, number]>) {
-        g.globalAlpha = alpha; g.drawImage(soften(shape, blur), 0, 0, W, H);
+        g.globalAlpha = alpha; g.drawImage(soften(shape, blur * soft), 0, 0, W, H);
       }
-      g.globalAlpha = .95; g.drawImage(soften(shape, 7), 0, 0, W, H);
-      g.drawImage(soften(shape, 4.5), 0, 0, W, H);
+      g.globalAlpha = .95; g.drawImage(soften(shape, Math.max(1.5, 7 * soft)), 0, 0, W, H);
+      g.drawImage(soften(shape, Math.max(1.2, 4.5 * soft)), 0, 0, W, H);
       g.globalAlpha = 1;
       g.globalCompositeOperation = 'source-in';
       const fill = g.createLinearGradient(0, top, 0, top + size);
@@ -646,7 +666,8 @@ const { label } = Astro.props;
       const face = g.createRadialGradient(cx, top + .13 * u, 0, cx, top + .13 * u, .075 * u);
       face.addColorStop(0, 'rgba(255, 150, 112, .8)'); face.addColorStop(.6, 'rgba(255, 175, 140, .35)'); face.addColorStop(1, 'rgba(255, 175, 140, 0)');
       g.fillStyle = face; g.fillRect(cx - .1 * u, top + .03 * u, .2 * u, .2 * u);
-      for (const ex of [-.026, .03]) drawEye(g, cx + ex * u, top + .135 * u, .008 * u);
+      // Her eyes, white.
+      for (const ex of [-.026, .03]) drawEye(g, cx + ex * u, top + .135 * u, .008 * u, false, false, '#ffffff');
       keeper = out;
       // Her arms, each an upper arm from the shoulder and a forearm with the hand from the elbow, tapering, soft and
       // glowing like her. The shoulder melts into her body; arms and hands are a yellowish bone white.
@@ -668,8 +689,8 @@ const { label } = Astro.props;
         }
         const done = canvasOf(form.width * ratio, form.height * ratio), d = done.getContext('2d')!;
         d.scale(ratio, ratio); d.imageSmoothingQuality = 'high';
-        d.globalAlpha = .35; d.drawImage(soften(form, 10), 0, 0, form.width, form.height);
-        d.globalAlpha = .95; d.drawImage(soften(form, 2.6), 0, 0, form.width, form.height);
+        d.globalAlpha = .35; d.drawImage(soften(form, Math.max(2, 10 * soft)), 0, 0, form.width, form.height);
+        d.globalAlpha = .95; d.drawImage(soften(form, Math.max(1.1, 2.6 * soft)), 0, 0, form.width, form.height);
         d.globalCompositeOperation = 'source-in';
         const tint = d.createLinearGradient(0, y0, 0, form.height - lp);
         colours.forEach((colour, i) => tint.addColorStop(i / (colours.length - 1), colour));
@@ -685,9 +706,9 @@ const { label } = Astro.props;
       };
       keeperArms = {
         reachUpper: limb(UPPER * u, .028 * u, .019 * u, ['#f8f0dc', '#efe3c2'], false, true),
-        reachLower: limb(FOREARM * u, .019 * u, .013 * u, ['#efe3c2', '#ebddb6', '#e6d6aa'], true, false),
+        reachLower: limb(FOREARM * u, .019 * u, .013 * u, ['#efe3c2', '#ebddb6', HANDS], true, false),
         restUpper: limb(UPPER * u, .028 * u, .019 * u, ['#f8f0dc', '#efe3c2'], false, true),
-        restLower: limb(FOREARM * u, .019 * u, .013 * u, ['#efe3c2', '#ebddb6', '#e6d6aa'], true, false),
+        restLower: limb(FOREARM * u, .019 * u, .013 * u, ['#efe3c2', '#ebddb6', HANDS], true, false),
       };
     };
     // Until when she is stroking an animal, and with which hand (-1 our left, 1 our right).
@@ -807,7 +828,7 @@ const { label } = Astro.props;
         const rx = .2 + ring * .09, ry = .15 + ring * .06;
         for (let j = 0; j < count; j++) {
           const a = Math.PI * .72 + (j + (ring % 2) * .5 + random() * .3) / count * Math.PI * 1.56;
-          homes.push({ x: Math.min(.95, Math.max(.05, .5 + Math.cos(a) * rx)), y: Math.min(.97, Math.max(SETTINGS.horizon + .06, .78 + Math.sin(a) * ry)) });
+          homes.push({ x: Math.min(.95, Math.max(.05, .5 + Math.cos(a) * rx)), y: Math.min(.97, Math.max(SETTINGS.horizon + .06, .72 + Math.sin(a) * ry * 1.3)) });
         }
       });
     };
@@ -1070,7 +1091,8 @@ const { label } = Astro.props;
 
       // Grain over everything.
       context.globalCompositeOperation = 'overlay';
-      context.globalAlpha = SETTINGS.grain;
+      // (Lighter on a phone: on a small frame the same grain reads as dirt.)
+      context.globalAlpha = SETTINGS.grain * (width < 600 ? .55 : 1);
       const shift = calm ? 0 : Math.floor(t * 12);
       context.fillStyle = context.createPattern(grain, 'repeat')!;
       context.save(); context.translate(-(shift * 37) % 160, -(shift * 53) % 160); context.fillRect(0, 0, width + 160, height + 160); context.restore();
