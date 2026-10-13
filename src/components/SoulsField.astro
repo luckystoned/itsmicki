@@ -421,6 +421,8 @@ const { label } = Astro.props;
       const headR = (dog ? [.18, .155, .145][look.size] : [.18, .16, .15][look.size]) * (.95 + random() * .1) * (.94 + build * .06);
       const headX = bodyCx + bodyLength / 2 + headR * .4, headY = bodyCy - bodyDepth * .5 - headR * .5;
       const eyeY = headY - headR * .1, eyeXs = dog ? [headX + headR * .05, headX + headR * .55] : [headX - headR * .15, headX + headR * .45];
+      // A floppy ear hangs from the back of the head, by the cheek.
+      const earX = headX - headR * .55, earY = headY + headR * .32;
       const legW = (dog ? [.09, .095, .1][look.size] : .08) * (.85 + build * .15);
       const pad = .3; // Room around the figure for its glow, in units.
       const W = (1.45 + pad * 2) * unit, H = (1.15 + pad * 2) * unit, ox = pad * unit, oy = (pad + .15) * unit; // Unit (0,0) → canvas (ox,oy).
@@ -476,7 +478,7 @@ const { label } = Astro.props;
       }
       // Ears: floppy ones hang by the cheeks (most dogs); pointed ones stand up (cats, and dogs with pricked ears).
       if (floppy) {
-        s.beginPath(); s.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .32 * unit, headR * .7 * unit, .35, 0, Math.PI * 2); s.fill();
+        s.beginPath(); s.ellipse(X(earX), Y(earY), headR * .36 * unit, headR * .78 * unit, .35, 0, Math.PI * 2); s.fill();
       } else {
         for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
           s.beginPath();
@@ -543,8 +545,7 @@ const { label } = Astro.props;
         if (has('chest')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .34), Y(bodyCy + bodyDepth * .05), bodyDepth * .3 * unit, bodyDepth * .45 * unit, .3, 0, Math.PI * 2); c.fill(); }
         if (has('ears')) {
           c.fillStyle = dark;
-          if (floppy) { c.beginPath(); c.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .34 * unit, headR * .72 * unit, .35, 0, Math.PI * 2); c.fill(); }
-          else for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
+          if (!floppy) for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
             c.beginPath(); c.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .5)); c.lineTo(X(headX + headR * tip), Y(headY - headR * 1.6)); c.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .7)); c.closePath(); c.fill();
           }
         }
@@ -552,6 +553,20 @@ const { label } = Astro.props;
         if (has('eye')) { c.fillStyle = has('eyeLight') ? white : dark; c.beginPath(); c.ellipse(X(eyeXs[1]), Y(eyeY), headR * .36 * unit, headR * .31 * unit, -.2, 0, Math.PI * 2); c.fill(); }
         if (has('blaze')) { c.strokeStyle = white; c.lineCap = 'round'; c.lineWidth = headR * .22 * unit; c.beginPath(); c.moveTo(X(headX + headR * .12), Y(headY - headR * .85)); c.lineTo(X(headX + headR * (dog ? .7 : .35)), Y(headY + headR * .3)); c.stroke(); }
         if (has('muzzle')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(headX + headR * (dog ? .9 : .45)), Y(headY + headR * (dog ? .4 : .45)), headR * (dog ? .55 : .42) * unit, headR * .36 * unit, .1, 0, Math.PI * 2); c.fill(); }
+        // Floppy ears, shaded so they read against the head: their colour deepening towards the tip, and a soft shadow
+        // where they lie on the cheek (darker still if the details ask for dark ears).
+        if (floppy) {
+          c.save();
+          c.translate(X(earX), Y(earY)); c.rotate(.35);
+          const rx = headR * .36 * unit, ry = headR * .78 * unit;
+          c.shadowColor = 'rgba(30, 18, 24, .6)'; c.shadowBlur = headR * .3 * unit; c.shadowOffsetX = headR * .08 * unit;
+          const shade = c.createLinearGradient(0, -ry, 0, ry);
+          const deep = has('ears') ? dark : mix(mid, dark, .78);
+          shade.addColorStop(0, mix(mid, dark, has('ears') ? .6 : .3)); shade.addColorStop(.5, deep); shade.addColorStop(1, mix(deep, '#000000', .3));
+          c.fillStyle = shade;
+          c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); c.fill();
+          c.restore();
+        }
         // A lighter glow on the face and chest.
         const face = c.createRadialGradient(X(headX), Y(headY), 0, X(headX), Y(headY), headR * 1.6 * unit);
         face.addColorStop(0, 'rgba(255, 248, 236, .35)'); face.addColorStop(1, 'rgba(255, 248, 236, 0)');
