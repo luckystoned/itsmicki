@@ -252,8 +252,16 @@ const { label } = Astro.props;
     keptContext.imageSmoothingQuality = 'high';
     keptContext.fillStyle = '#f4efe8'; // Under transparent images (a sticker, say), paper rather than black.
     keptContext.fillRect(0, 0, kept.width, kept.height);
-    keptContext.drawImage(bitmap, cx0 * toBitmap, cy0 * toBitmap, (cx1 - cx0 + 1) * toBitmap, (cy1 - cy0 + 1) * toBitmap, 0, 0, kept.width, kept.height);
+    // The crop, kept inside the photo (some browsers draw nothing for a source that runs past its edges).
+    const sx = Math.max(0, cx0 * toBitmap), sy = Math.max(0, cy0 * toBitmap);
+    const sw = Math.min(bitmap.width - sx, (cx1 - cx0 + 1) * toBitmap), sh = Math.min(bitmap.height - sy, (cy1 - cy0 + 1) * toBitmap);
+    keptContext.drawImage(bitmap, sx, sy, sw, sh, 0, 0, kept.width, kept.height);
     bitmap.close();
+    // If it still came out blank (a phone browser that can't draw from that file), the smaller copy already read.
+    const sample = keptContext.getImageData(0, 0, kept.width, kept.height).data;
+    let varied = false;
+    for (let i = 0; i < sample.length && !varied; i += 4 * 97) varied = Math.abs(sample[i] - 0xf4) + Math.abs(sample[i + 1] - 0xef) + Math.abs(sample[i + 2] - 0xe8) > 12;
+    if (!varied) keptContext.drawImage(photo, cx0 * photo.width / width, cy0 * photo.height / height, (cx1 - cx0 + 1) * photo.width / width, (cy1 - cy0 + 1) * photo.height / height, 0, 0, kept.width, kept.height);
     // Re-drawn, so nothing of the original file travels with it (no location or camera details).
     const keptPhoto = kept.toDataURL('image/jpeg', .82);
     // Crisp edges (Magic Touch, from points the model is surest of), so the colours are read from the animal only.
