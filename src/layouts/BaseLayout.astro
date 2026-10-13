@@ -25,6 +25,10 @@ const {
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
 const socialImageURL = new URL(image, Astro.site ?? Astro.url.origin);
+// With the default image, links first offer an animated preview: it opens on that same image, then runs through every
+// project's cover at 0.1 s a frame (apps that don't animate GIFs show its first frame). The still stays as a fallback
+// and for X, whose cards don't animate.
+const socialAnimationURL = image === DEFAULT_SOCIAL_IMAGE ? new URL('/og.gif', Astro.site ?? Astro.url.origin) : undefined;
 const globalStructuredData = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -75,6 +79,15 @@ const globalStructuredData = {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
+    {socialAnimationURL && (
+      <>
+        <meta property="og:image" content={socialAnimationURL} />
+        <meta property="og:image:type" content="image/gif" />
+        <meta property="og:image:alt" content={imageAlt} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+      </>
+    )}
     <meta property="og:image" content={socialImageURL} />
     <meta property="og:image:alt" content={imageAlt} />
     <meta property="og:image:width" content="1200" />
