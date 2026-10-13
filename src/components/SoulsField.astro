@@ -18,7 +18,8 @@ const { label } = Astro.props;
 
 <div class="souls-field" data-souls-field>
   <canvas class="souls-field-canvas" role="img" aria-label={label}></canvas>
-  <!-- Who they are: asked once the photo is read. The coat words correct the colours and markings read from the photo. -->
+  <!-- Who they are: asked once the photo is read. The colours and coat start as read from the photo and can be changed;
+       the details are drawn on them (a patch over an eye, white paws…). -->
   <dialog class="souls-dialog" data-souls-dialog aria-labelledby="souls-dialog-title">
     <form method="dialog" class="souls-form">
       <p class="souls-form-title" id="souls-dialog-title">Who are you leaving in her care?</p>
@@ -29,7 +30,20 @@ const { label } = Astro.props;
         <label><input type="radio" name="kind" value="cat" /> cat</label>
         <label><input type="radio" name="kind" value="dog" /> dog</label>
       </fieldset>
-      <label class="souls-form-field">Their coat, in a few words <input name="coat" maxlength="80" autocomplete="off" placeholder="e.g. orange tabby, black with white paws" /></label>
+      <fieldset class="souls-form-choice souls-form-colours">
+        <legend>Their colours</legend>
+        <label><input type="color" name="c0" value="#f2e6d6" /> light</label>
+        <label><input type="color" name="c1" value="#b39780" /> middle</label>
+        <label><input type="color" name="c2" value="#5c483c" /> dark</label>
+      </fieldset>
+      <fieldset class="souls-form-choice">
+        <legend>Coat</legend>
+        <label><input type="radio" name="pattern" value="0" checked /> plain</label>
+        <label><input type="radio" name="pattern" value="1" /> tabby</label>
+        <label><input type="radio" name="pattern" value="2" /> patches</label>
+        <label><input type="radio" name="pattern" value="3" /> tortoiseshell</label>
+      </fieldset>
+      <label class="souls-form-field">Details <input name="details" maxlength="120" autocomplete="off" placeholder="e.g. a patch over one eye, white paws, dark ears" /></label>
       <label class="souls-form-field souls-form-build">Build <span><small>thin</small><input type="range" name="build" min="0" max="9" step="1" value="4" /><small>chubby</small></span></label>
       <canvas class="souls-form-preview" data-souls-preview aria-hidden="true"></canvas>
       <fieldset class="souls-form-choice">
@@ -88,53 +102,56 @@ const { label } = Astro.props;
     walkSpeed: .045, // Share of the width per second.
   };
 
-  /** What is kept of each pet: cat or dog, size (dogs: 0 small, 1 medium, 2 big), markings (0 plain, 1 tabby,
-      2 patches) and its colours (light, mid, dark). It travels as a short code, e.g. "c12_f2d9b0b98a5e4a3326". */
-  type Look = { kind: 'cat' | 'dog'; size: 0 | 1 | 2; pattern: 0 | 1 | 2; build: number; colours: [string, string, string]; name?: string; owner?: string };
-  // Its name travels as hex of its UTF-8 bytes (up to 20), after the look: "c12_f2d9b0b98a5e4a3326_4d696c6f".
+  /** What is kept of each pet: cat or dog, size (dogs: 0 small, 1 medium, 2 big), coat (0 plain, 1 tabby, 2 patches,
+      3 tortoiseshell), build (0 thin … 9 chubby), its three colours (light, mid, dark) and its markings (bits of MARKS).
+      It travels as a short code, e.g. "c12_f2d9b0b98a5e4a3326". */
+  type Look = { kind: 'cat' | 'dog'; size: 0 | 1 | 2; pattern: 0 | 1 | 2 | 3; build: number; colours: [string, string, string]; marks?: number; name?: string; owner?: string };
+  // Its name travels as hex of its UTF-8 bytes (up to 20), after the look: "c12_f2d9b0b98a5e4a3326_4d696c6f"; its
+  // markings, last, as "_x" and their bits in hex.
   const nameHex = (name: string) => [...new TextEncoder().encode(name.trim())].slice(0, 20).map((b) => b.toString(16).padStart(2, '0')).join('');
-  const lookCode = (look: Look) => `${look.kind[0]}${look.size}${look.pattern}${look.build}_${look.colours.map((c) => c.slice(1)).join('')}${look.name ? `_${nameHex(look.name)}${look.owner ? `_${nameHex(look.owner)}` : ''}` : ''}`;
+  const lookCode = (look: Look) => `${look.kind[0]}${look.size}${look.pattern}${look.build}_${look.colours.map((c) => c.slice(1)).join('')}${look.name ? `_${nameHex(look.name)}${look.owner ? `_${nameHex(look.owner)}` : ''}` : ''}${look.marks ? `_x${look.marks.toString(16)}` : ''}`;
   const readLook = (id: string): Look | null => {
-    // Kind, size, markings, build (0 thin … 9 chubby; older souls have none), colours, name, owner.
-    const m = /([cd])([012])([012])([0-9])?_([0-9a-f]{6})([0-9a-f]{6})([0-9a-f]{6})(?:_([0-9a-f]{2,40}))?(?:_([0-9a-f]{2,40}))?(?:\.json)?$/.exec(id);
+    // Kind, size, coat, build (0 thin … 9 chubby; older souls have none), colours, name, owner, markings.
+    const m = /([cd])([012])([0-3])([0-9])?_([0-9a-f]{6})([0-9a-f]{6})([0-9a-f]{6})(?:_([0-9a-f]{2,40}))?(?:_([0-9a-f]{2,40}))?(?:_x([0-9a-f]{1,4}))?(?:\.json)?$/.exec(id);
     if (!m) return null;
     const text = (hexText?: string) => { if (!hexText) return undefined; try { return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(hexText.match(/../g)!.map((b) => parseInt(b, 16)))); } catch { return undefined; } };
-    return { kind: m[1] === 'c' ? 'cat' : 'dog', size: Number(m[2]) as 0 | 1 | 2, pattern: Number(m[3]) as 0 | 1 | 2, build: m[4] ? Number(m[4]) : 4, colours: [`#${m[5]}`, `#${m[6]}`, `#${m[7]}`], name: text(m[8]), owner: text(m[9]) };
+    return { kind: m[1] === 'c' ? 'cat' : 'dog', size: Number(m[2]) as 0 | 1 | 2, pattern: Number(m[3]) as 0 | 1 | 2 | 3, build: m[4] ? Number(m[4]) : 4, colours: [`#${m[5]}`, `#${m[6]}`, `#${m[7]}`], name: text(m[8]), owner: text(m[9]), marks: m[10] ? parseInt(m[10], 16) : 0 };
   };
 
-  /** Colours and markings from a few words about the coat (English or Spanish), or null where the words say nothing. */
-  const COAT_COLOURS: Array<[RegExp, string]> = [
-    [/\b(black|negr[oa]s?)\b/, '#2c2a33'], [/\b(white|blanc[oa]s?)\b/, '#f6f3ee'], [/\b(gr[ae]y|gris)\b/, '#9b9aa3'],
-    [/\b(silver|platead[oa])\b/, '#c5c7ce'], [/\b(blue|azul)\b/, '#8e98ae'], [/\b(orange|ginger|red|naranja|rojiz[oa]|colorad[oa])\b/, '#e8914a'],
-    [/\b(cream|beige|crema)\b/, '#f1dcbc'], [/\b(brown|chocolate|marr[oó]n|caf[eé])\b/, '#7a5236'], [/\b(golden|gold|yellow|dorad[oa]|amarill[oa]|rubi[oa])\b/, '#e3b765'],
-    [/\b(tan|fawn|canela|leonad[oa])\b/, '#c9925a'],
+  /** Markings asked for in a few words (English or Spanish), each one drawn: a patch over an eye, white paws… */
+  const MARKS = { eye: 1, eyeLight: 2, mask: 4, paws: 8, chest: 16, tailTip: 32, ears: 64, blaze: 128, saddle: 256, muzzle: 512 };
+  const MARK_WORDS: Array<[keyof typeof MARKS, RegExp, string]> = [
+    ['eye', /(mancha|manchita|parche|patch|spot)[^,.;]{0,24}(ojo|eye)|(ojo|eye)[^,.;]{0,16}(mancha|parche|patch|spot)/, 'a patch over one eye'],
+    ['mask', /(antifaz|m[aá]scara|mask|cara (negra|oscura)|dark face)/, 'a mask'],
+    ['paws', /(patas|patitas|pies|manos|paws|feet|legs)[^,.;]{0,16}(blanc|white)|(blanc|white)[^,.;]{0,16}(patas|paws|feet|socks)|medias|botitas|guantes|socks|mittens/, 'white paws'],
+    ['chest', /(pecho|panza|pechera|chest|belly)[^,.;]{0,16}(blanc|white)|(blanc|white)[^,.;]{0,16}(pecho|chest|belly|panza)|babero|corbata|bib/, 'a white chest'],
+    ['tailTip', /(punta|tip)[^,.;]{0,20}(cola|tail)[^,.;]{0,12}(blanc|white)|(cola|tail)[^,.;]{0,12}(blanc|white)|white[^,.;]{0,6}tip/, 'a white tail tip'],
+    ['ears', /(orejas|ears)[^,.;]{0,16}(negr|oscur|black|dark)|(black|dark)[^,.;]{0,8}ears/, 'dark ears'],
+    ['blaze', /(lista|franja|raya|l[ií]nea|stripe|blaze)[^,.;]{0,24}(blanc|white|cara|frente|face|nariz|nose)/, 'a white stripe down the face'],
+    ['saddle', /(mancha|manch[oó]n|patch|spot|saddle|montura)[^,.;]{0,24}(espalda|lomo|back)/, 'a patch on the back'],
+    ['muzzle', /(hocico|trompa|nariz|morro|boca|muzzle|snout|nose)[^,.;]{0,16}(blanc|white)|(white|blanc)[^,.;]{0,8}(muzzle|snout|hocico)/, 'a white muzzle'],
   ];
+  const marksFrom = (text: string) => {
+    const words = text.toLowerCase();
+    let marks = 0;
+    for (const [mark, words_] of MARK_WORDS) {
+      const found = words_.exec(words);
+      if (!found) continue;
+      marks |= MARKS[mark];
+      // A white (light) patch over the eye, if the words say so.
+      if (mark === 'eye' && /(blanc|white|clar|light)/.test(words.slice(Math.max(0, found.index - 12), found.index + found[0].length + 16))) marks |= MARKS.eyeLight;
+    }
+    return marks;
+  };
+  const marksText = (marks = 0) => MARK_WORDS.filter(([mark]) => marks & MARKS[mark]).map(([mark, , label]) => (mark === 'eye' && marks & MARKS.eyeLight ? 'a white patch over one eye' : label)).join(', ');
   const lum = (colour: string) => { const [r, g, b] = rgbOf(colour); return .299 * r + .587 * g + .114 * b; };
   /** A white (or near-white) coat, by its middle colour: their eyes are drawn dark so they show. */
   const whiteCoat = (look: Look) => lum(look.colours[1]) > SETTINGS.eyes.whiteCoat;
-  const coatFrom = (text: string): { colours?: [string, string, string]; pattern?: 0 | 1 | 2 } => {
-    const words = text.toLowerCase();
-    let pattern: 0 | 1 | 2 | undefined;
-    if (/(tabby|stripe|atigrad|rayad|rayas)/.test(words)) pattern = 1;
-    else if (/(patch|spot|tuxedo|bicolou?r|manch|calico|tricolou?r|carey|tortoise|y blanc|and white|with white|con blanc)/.test(words)) pattern = 2;
-    else if (/(solid|plain|lis[oa]|entero|entera)/.test(words)) pattern = 0;
-    let found = COAT_COLOURS.map(([re, colour]) => ({ at: words.search(re), colour })).filter((c) => c.at >= 0).sort((a, b) => a.at - b.at).map((c) => c.colour);
-    if (/(calico|tricolou?r|carey|tortoise)/.test(words) && found.length < 3) found = ['#e8914a', '#2c2a33', '#f6f3ee'];
-    if (!found.length) return { pattern };
-    let colours: [string, string, string];
-    if (found.length === 1) colours = [mix(found[0], '#ffffff', .45), found[0], mix(found[0], '#000000', .35)];
-    else {
-      const byLight = [...found].sort((a, b) => lum(b) - lum(a));
-      colours = [byLight[0], found[0] === byLight[0] ? mix(byLight[0], byLight[byLight.length - 1], .45) : found[0], byLight[byLight.length - 1]];
-    }
-    // Lifted a little to glow, like the colours read from photos.
-    return { colours: colours.map((c) => mix(c, '#ffffff', .1)) as [string, string, string], pattern };
-  };
 
   type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep' | 'pet' | 'held' | 'fall';
   type Layer = { canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number };
   type Leg = Layer & { pivotX: number; pivotY: number; near: boolean; front: boolean };
-  type Figure = { body: Layer; tail: Layer & { pivotX: number; pivotY: number }; legs: Leg[]; eyes: Array<{ x: number; y: number }>; eyeR: number; legLength: number; unit: number };
+  type Figure = { body: Layer; tail: Layer & { pivotX: number; pivotY: number }; legs: Leg[]; eyes: Array<{ x: number; y: number; dark: boolean }>; eyeR: number; legLength: number; unit: number };
   type Soul = {
     id: string; look: Look; born: number; figure?: Figure; photo?: string;
     // Picked up: where its feet are in the air (px), how fast it falls, its legs' pendulum and its lean; when it landed.
@@ -210,7 +227,9 @@ const { label } = Astro.props;
   type Point = { x: number; y: number };
   let segmenter: Promise<{ segment: (image: HTMLCanvasElement) => Masks }> | null = null;
   let cutter: Promise<{ segment: (image: HTMLCanvasElement, roi: { scribble: Point[] }) => Masks } | null> | null = null;
-  const readPet = async (file: File): Promise<(Omit<Look, 'size' | 'build'> & { photo: string }) | 'none' | 'people'> => {
+  // When the photo can't be read (no animal found in it), the form starts from these and the whole photo is kept.
+  const UNREAD: [string, string, string] = ['#f2e6d6', '#b39780', '#5c483c'];
+  const readPet = async (file: File): Promise<(Omit<Look, 'size' | 'build'> & { photo: string; guessed?: boolean }) | 'none' | 'people'> => {
     segmenter ??= (async () => {
       const { module, files } = await loadVision();
       return module.ImageSegmenter.createFromOptions(files, { baseOptions: { modelAssetPath: SETTINGS.model }, runningMode: 'IMAGE', outputCategoryMask: false, outputConfidenceMasks: true });
@@ -240,7 +259,18 @@ const { label } = Astro.props;
       pet[i] = p; cats += cat[i]; dogs += dog[i];
       if (p > .5) { found++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     }
-    if (found / (width * height) < SETTINGS.minPet) { bitmap.close(); return 'none'; }
+    if (found / (width * height) < SETTINGS.minPet) {
+      // No animal read: still fine (its look is set in the form), the whole photo kept, unless it is mostly people.
+      let people = 0;
+      for (let i = 0; i < person.length; i++) if (person[i] > .5) people++;
+      if (people / person.length > SETTINGS.people) { bitmap.close(); return 'people'; }
+      const keep = Math.min(1, SETTINGS.photoSide / Math.max(bitmap.width, bitmap.height));
+      const whole = canvasOf(bitmap.width * keep, bitmap.height * keep), w = whole.getContext('2d')!;
+      w.fillStyle = '#f4efe8'; w.fillRect(0, 0, whole.width, whole.height);
+      w.drawImage(bitmap, 0, 0, whole.width, whole.height);
+      bitmap.close();
+      return { kind: dogs > cats ? 'dog' : 'cat', pattern: 0, colours: UNREAD, photo: whole.toDataURL('image/jpeg', .82), guessed: true };
+    }
     // The photo kept for the list: the animal with some room around it; never one where people fill the crop.
     const room = Math.max(x1 - x0, y1 - y0) * .14;
     const cx0 = Math.max(0, Math.floor(x0 - room)), cy0 = Math.max(0, Math.floor(y0 - room)), cx1 = Math.min(width - 1, Math.ceil(x1 + room)), cy1 = Math.min(height - 1, Math.ceil(y1 + room));
@@ -285,7 +315,7 @@ const { label } = Astro.props;
     const rgb = photo.getContext('2d')!.getImageData(0, 0, width, height).data;
     const luma = new Float32Array(width * height), inside: number[] = [];
     for (let i = 0; i < luma.length; i++) { luma[i] = .299 * rgb[i * 4] + .587 * rgb[i * 4 + 1] + .114 * rgb[i * 4 + 2]; if (pet[i] > .6) inside.push(i); }
-    if (inside.length < 50) return 'none';
+    if (inside.length < 50) return { kind: dogs > cats ? 'dog' : 'cat', pattern: 0, colours: UNREAD, photo: keptPhoto, guessed: true };
     inside.sort((a, b) => luma[a] - luma[b]);
     const average = (from: number, to: number) => {
       const slice = inside.slice(Math.floor(inside.length * from), Math.max(Math.floor(inside.length * from) + 1, Math.floor(inside.length * to)));
@@ -382,6 +412,7 @@ const { label } = Astro.props;
       const bodyCx = .56, bodyCy = legTop - bodyDepth * .28;
       const headR = (dog ? [.18, .155, .145][look.size] : [.18, .16, .15][look.size]) * (.95 + random() * .1) * (.94 + build * .06);
       const headX = bodyCx + bodyLength / 2 + headR * .4, headY = bodyCy - bodyDepth * .5 - headR * .5;
+      const eyeY = headY - headR * .1, eyeXs = dog ? [headX + headR * .05, headX + headR * .55] : [headX - headR * .15, headX + headR * .45];
       const legW = (dog ? [.09, .095, .1][look.size] : .08) * (.85 + build * .15);
       const pad = .3; // Room around the figure for its glow, in units.
       const W = (1.45 + pad * 2) * unit, H = (1.15 + pad * 2) * unit, ox = pad * unit, oy = (pad + .15) * unit; // Unit (0,0) → canvas (ox,oy).
@@ -451,14 +482,29 @@ const { label } = Astro.props;
       const tailShape = canvasOf(W * ratio, H * ratio), ts = tailShape.getContext('2d')!;
       ts.scale(ratio, ratio); ts.strokeStyle = '#fff'; ts.lineCap = 'round'; ts.lineWidth = (dog ? .05 : .045) * unit;
       ts.beginPath(); ts.moveTo(X(tailBaseX + .03), Y(tailBaseY + .01));
-      if (dog) ts.quadraticCurveTo(X(tailBaseX - .12), Y(tailBaseY - .02), X(tailBaseX - .14), Y(tailBaseY - .2));
-      else ts.quadraticCurveTo(X(tailBaseX - .2), Y(tailBaseY - .02), X(tailBaseX - .16), Y(tailBaseY - .34 - random() * .06));
+      const tipX = tailBaseX - (dog ? .14 : .16), tipY = tailBaseY - (dog ? .2 : .34 + random() * .06);
+      if (dog) ts.quadraticCurveTo(X(tailBaseX - .12), Y(tailBaseY - .02), X(tipX), Y(tipY));
+      else ts.quadraticCurveTo(X(tailBaseX - .2), Y(tailBaseY - .02), X(tipX), Y(tipY));
       ts.stroke();
+      // Tortoiseshell: blotches of its two darker colours, all over (the same scatter for body, tail and legs).
+      const blotches = (c: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, count: number) => {
+        let b = hash(soul.id + 'carey') || 7;
+        const next = () => { b = (b * 16807) % 2147483647; return (b - 1) / 2147483646; };
+        for (let i = 0; i < count; i++) {
+          c.fillStyle = next() < .55 ? dark : mix(mid, '#e8914a', .35); c.globalAlpha = .55 + next() * .3;
+          c.beginPath(); c.ellipse(X(x0 + next() * (x1 - x0)), Y(y0 + next() * (y1 - y0)), (.025 + next() * .05) * unit, (.02 + next() * .04) * unit, next() * Math.PI, 0, Math.PI * 2); c.fill();
+        }
+        c.globalAlpha = 1;
+      };
+      const marks = look.marks ?? 0, has = (mark: keyof typeof MARKS) => (marks & MARKS[mark]) !== 0;
+      const white = mix(light, '#ffffff', .55);
       const tail = finish(tailShape, (c) => {
         c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
         coat(c, W, H);
         if (look.pattern === 1) { c.strokeStyle = dark; c.globalAlpha = .55; c.lineWidth = .028 * unit; for (let i = 1; i <= 3; i++) { c.beginPath(); c.arc(X(tailBaseX - .05 - i * .035), Y(tailBaseY - i * .08), .03 * unit, 0, Math.PI * 2); c.stroke(); } c.globalAlpha = 1; }
         if (look.pattern === 2) { c.fillStyle = dark; c.globalAlpha = .6; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
+        if (look.pattern === 3) blotches(c, tipX - .06, tipY - .02, tailBaseX + .04, tailBaseY + .04, 6);
+        if (has('tailTip')) { c.fillStyle = white; c.beginPath(); c.arc(X(tipX), Y(tipY), .06 * unit, 0, Math.PI * 2); c.fill(); }
       });
       const body = finish(shape, (c) => {
         c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
@@ -483,6 +529,21 @@ const { label } = Astro.props;
           c.beginPath(); c.ellipse(X(headX + headR * .3), Y(headY + headR * .45), headR * .5 * unit, headR * .4 * unit, 0, 0, Math.PI * 2); c.fill();
           c.globalAlpha = 1;
         }
+        if (look.pattern === 3) blotches(c, bodyCx - bodyLength * .55, headY - headR * 1.2, headX + headR * 1.2, bodyCy + bodyDepth * .5, 34);
+        // Markings asked for in the form.
+        if (has('saddle')) { c.fillStyle = dark; c.globalAlpha = .8; c.beginPath(); c.ellipse(X(bodyCx - bodyLength * .08), Y(bodyCy - bodyDepth * .32), bodyLength * .24 * unit, bodyDepth * .22 * unit, -.1, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; }
+        if (has('chest')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .34), Y(bodyCy + bodyDepth * .05), bodyDepth * .3 * unit, bodyDepth * .45 * unit, .3, 0, Math.PI * 2); c.fill(); }
+        if (has('ears')) {
+          c.fillStyle = dark;
+          if (dog) { c.beginPath(); c.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .34 * unit, headR * .72 * unit, .35, 0, Math.PI * 2); c.fill(); }
+          else for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
+            c.beginPath(); c.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .5)); c.lineTo(X(headX + headR * tip), Y(headY - headR * 1.6)); c.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .7)); c.closePath(); c.fill();
+          }
+        }
+        if (has('mask')) { c.fillStyle = dark; c.globalAlpha = .9; c.beginPath(); c.ellipse(X((eyeXs[0] + eyeXs[1]) / 2), Y(eyeY), (eyeXs[1] - eyeXs[0]) * .5 * unit + headR * .3 * unit, headR * .34 * unit, 0, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; }
+        if (has('eye')) { c.fillStyle = has('eyeLight') ? white : dark; c.beginPath(); c.ellipse(X(eyeXs[1]), Y(eyeY), headR * .36 * unit, headR * .31 * unit, -.2, 0, Math.PI * 2); c.fill(); }
+        if (has('blaze')) { c.strokeStyle = white; c.lineCap = 'round'; c.lineWidth = headR * .22 * unit; c.beginPath(); c.moveTo(X(headX + headR * .12), Y(headY - headR * .85)); c.lineTo(X(headX + headR * (dog ? .7 : .35)), Y(headY + headR * .3)); c.stroke(); }
+        if (has('muzzle')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(headX + headR * (dog ? .9 : .45)), Y(headY + headR * (dog ? .4 : .45)), headR * (dog ? .55 : .42) * unit, headR * .36 * unit, .1, 0, Math.PI * 2); c.fill(); }
         // A lighter glow on the face and chest.
         const face = c.createRadialGradient(X(headX), Y(headY), 0, X(headX), Y(headY), headR * 1.6 * unit);
         face.addColorStop(0, 'rgba(255, 248, 236, .35)'); face.addColorStop(1, 'rgba(255, 248, 236, 0)');
@@ -505,12 +566,18 @@ const { label } = Astro.props;
           fill.addColorStop(0, mid); fill.addColorStop(1, near ? dark : mix(dark, '#1a1530', .3));
           c.fillStyle = fill; c.fillRect(0, 0, lw, lh);
           if (look.pattern === 2) { c.fillStyle = mix(light, '#ffffff', .4); c.globalAlpha = .85; c.fillRect(0, top + legLength * unit * .72, lw, lh); c.globalAlpha = 1; }
+          if (has('paws')) { c.fillStyle = white; c.fillRect(0, top + legLength * unit * .6, lw, lh); }
+          if (look.pattern === 3) { c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio); c.translate(-X(lx) + cx, -Y(legTop) + top); blotches(c, lx - legW, legTop, lx + legW, legTop + legLength * .6, 3); c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio); }
           if (look.pattern === 1) { c.strokeStyle = dark; c.globalAlpha = .45; c.lineWidth = .022 * unit; for (let i = 1; i <= 2; i++) { c.beginPath(); c.moveTo(cx - legW * unit, top + legLength * unit * i * .3); c.lineTo(cx + legW * unit, top + legLength * unit * i * .3 + .01 * unit); c.stroke(); } c.globalAlpha = 1; }
         });
         // In figure space (origin at the middle of its feet): where the leg hangs from.
         legs.push({ canvas: painted, x: (lx - bodyCx) * unit, y: (legTop - 1) * unit, w: lw, h: lh, pivotX: cx, pivotY: top, near, front });
       }
-      const eyeY = headY - headR * .1, eyes = (dog ? [headX + headR * .05, headX + headR * .55] : [headX - headR * .15, headX + headR * .45]).map((ex) => ({ x: (ex - bodyCx) * unit, y: (eyeY - 1) * unit }));
+      // Eyes drawn dark where what is under them is light (a white coat, a white patch), light where it is dark.
+      const eyes = eyeXs.map((ex, i) => {
+        const under = (i === 1 && has('eye')) ? (has('eyeLight') ? 'light' : 'dark') : has('mask') ? 'dark' : whiteCoat(look) ? 'light' : 'coat';
+        return { x: (ex - bodyCx) * unit, y: (eyeY - 1) * unit, dark: under === 'light' };
+      });
       return {
         body: { canvas: body, x: -X(bodyCx), y: -Y(1), w: W, h: H },
         tail: { canvas: tail, x: -X(bodyCx), y: -Y(1), w: W, h: H, pivotX: X(tailBaseX), pivotY: Y(tailBaseY) },
@@ -935,7 +1002,7 @@ const { label } = Astro.props;
         figure.legs.filter((leg) => !leg.near).forEach(drawLeg);
         context.drawImage(figure.body.canvas, figure.body.x, figure.body.y + drop, figure.body.w, figure.body.h);
         figure.legs.filter((leg) => leg.near).forEach(drawLeg);
-        if (eyesOpen > .5 || soul.act === 'sleep') for (const eye of figure.eyes) drawEye(context, eye.x, eye.y + drop, figure.eyeR, soul.act === 'sleep', whiteCoat(soul.look));
+        if (eyesOpen > .5 || soul.act === 'sleep') for (const eye of figure.eyes) drawEye(context, eye.x, eye.y + drop, figure.eyeR, soul.act === 'sleep', eye.dark);
         context.restore();
       };
       // Further away first; those behind her before her, the rest after.
@@ -1100,10 +1167,12 @@ const { label } = Astro.props;
     // A live preview of them in the form, redrawn as the answers change.
     const preview = root.querySelector<HTMLCanvasElement>('[data-souls-preview]');
     const lookFromForm = (form: HTMLFormElement, found: Omit<Look, 'size' | 'build'>): Look => {
-      const data = new FormData(form), coat = coatFrom(String(data.get('coat') ?? ''));
+      const data = new FormData(form), colour = (name: string, fallback: string) => { const value = String(data.get(name) ?? '').toLowerCase(); return /^#[0-9a-f]{6}$/.test(value) ? value : fallback; };
       return {
         kind: data.get('kind') === 'dog' ? 'dog' : 'cat', size: Number(data.get('size') ?? 1) as 0 | 1 | 2, build: Number(data.get('build') ?? 4),
-        pattern: coat.pattern ?? found.pattern, colours: coat.colours ?? found.colours,
+        pattern: Math.min(3, Math.max(0, Number(data.get('pattern') ?? found.pattern))) as 0 | 1 | 2 | 3,
+        colours: [colour('c0', found.colours[0]), colour('c1', found.colours[1]), colour('c2', found.colours[2])],
+        marks: marksFrom(String(data.get('details') ?? '')),
         name: String(data.get('name') ?? '').trim().slice(0, 20), owner: String(data.get('owner') ?? '').trim().slice(0, 20),
       };
     };
@@ -1119,7 +1188,7 @@ const { label } = Astro.props;
       figure.legs.filter((leg) => !leg.near).forEach((leg) => g.drawImage(leg.canvas, leg.x - leg.pivotX, leg.y - leg.pivotY, leg.w, leg.h));
       g.drawImage(figure.body.canvas, figure.body.x, figure.body.y, figure.body.w, figure.body.h);
       figure.legs.filter((leg) => leg.near).forEach((leg) => g.drawImage(leg.canvas, leg.x - leg.pivotX, leg.y - leg.pivotY, leg.w, leg.h));
-      for (const eye of figure.eyes) drawEye(g, eye.x, eye.y, figure.eyeR, false, whiteCoat(look));
+      for (const eye of figure.eyes) drawEye(g, eye.x, eye.y, figure.eyeR, false, eye.dark);
     };
     // Asked when adding; when changing one of theirs (`current`), it comes filled in with what it has.
     const formTitle = dialog?.querySelector<HTMLElement>('#souls-dialog-title'), formOk = dialog?.querySelector<HTMLButtonElement>('.souls-form-ok');
@@ -1128,6 +1197,11 @@ const { label } = Astro.props;
       if (!dialog || !form) { resolve(current ?? { ...found, size: 1, build: 4 }); return; }
       form.reset();
       form.querySelector<HTMLInputElement>(`input[name="kind"][value="${found.kind}"]`)!.checked = true;
+      // Colours and coat as read from the photo (or as they are, when changing one).
+      const start = current ?? found;
+      start.colours.forEach((colour, i) => { form.querySelector<HTMLInputElement>(`input[name="c${i}"]`)!.value = colour; });
+      form.querySelector<HTMLInputElement>(`input[name="pattern"][value="${start.pattern}"]`)!.checked = true;
+      form.querySelector<HTMLInputElement>('input[name="details"]')!.value = marksText(current?.marks);
       if (formTitle) formTitle.textContent = current ? `Change ${current.name ?? 'them'}` : 'Who are you leaving in her care?';
       if (formOk) formOk.textContent = current ? 'save' : 'leave them with her';
       if (current) {
@@ -1308,9 +1382,9 @@ const { label } = Astro.props;
       setStatus('Looking for your pet…');
       try {
         const found = await readPet(file);
-        if (found === 'none') { setStatus('I couldn’t find a cat or a dog in that photo. Try another one.'); return; }
+        if (found === 'none') { setStatus('Something went wrong reading that photo. Try another one.'); return; }
         if (found === 'people') { setStatus('Just your pet, please: a photo without people in it (it will be shown in the list).'); return; }
-        setStatus('');
+        setStatus(found.guessed ? 'I couldn’t read them from the photo: pick their colours and coat in the form.' : '');
         // Their words win over the photo where they say something (the form reads them as they type).
         const look = await askAbout(found);
         if (!look) { setStatus('Whenever you’re ready.'); return; }
@@ -1357,6 +1431,7 @@ const { label } = Astro.props;
   .souls-form-field input { width: 100%; padding: 8px 0; border: 0; border-bottom: 1px solid rgb(250 250 250 / .4); background: transparent; color: inherit; font: inherit; font-size: 16px; }
   .souls-form-field input:focus-visible { outline: none; border-bottom-color: #fafafa; }
   .souls-form-field input::placeholder { color: rgb(250 250 250 / .4); }
+  .souls-form-colours input[type='color'] { width: 34px; height: 26px; padding: 0; border: 1px solid rgb(250 250 250 / .4); border-radius: 4px; background: none; cursor: pointer; }
   .souls-form-choice { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; border: 0; font-size: 16px; }
   .souls-form-choice legend { width: 100%; margin-bottom: 6px; padding: 0; font-size: 13px; }
   .souls-form-choice label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
