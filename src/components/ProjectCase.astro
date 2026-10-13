@@ -3,6 +3,7 @@ import ProjectCaseFooter from '@/components/ProjectCaseFooter.astro';
 import RevealVideo from '@/components/RevealVideo.astro';
 import DotsField from '@/components/DotsField.astro';
 import SoulsField from '@/components/SoulsField.astro';
+import NostalgiaField from '@/components/NostalgiaField.astro';
 import { imageMetadata } from '@/data/imageMetadata';
 import type { CaseMedia, ProjectCase } from '@/data/projectCases';
 
@@ -152,6 +153,8 @@ const vimeoUrl = (id: string) =>
                     <DotsField label={item.alt} />
                   ) : item.type === 'souls' ? (
                     <SoulsField label={item.alt} />
+                  ) : item.type === 'nostalgia' ? (
+                    <NostalgiaField label={item.alt} />
                   ) : item.type === 'reveal' && item.src && item.revealSrc && item.poster ? (
                     <RevealVideo top={item.src} under={item.revealSrc} poster={item.poster} label={item.alt} />
                   ) : item.type === 'image' && item.src && dimensions ? (
@@ -216,6 +219,20 @@ const vimeoUrl = (id: string) =>
                 </p>
                 <input type="file" accept="image/*" data-souls-input hidden />
                 <p class="case-reveal-help case-reveal-status" data-souls-status aria-live="polite" hidden></p>
+              )}
+              {item.type === 'nostalgia' && (
+                <p class="case-media-caption case-reveal-caption" data-case-text-reveal>
+                  move over it, press and hold to break it<span data-nostalgia-camera-option hidden> or <button type="button" class="case-reveal-camera" data-nostalgia-camera aria-pressed="false">turn the camera on</button></span><span data-nostalgia-sound-option hidden>, <button type="button" class="case-reveal-camera" data-nostalgia-sound aria-pressed="false">sound on</button></span> ↑
+                </p>
+                <div class="case-reveal-help" data-nostalgia-camera-help hidden>
+                  <p class="case-reveal-status" data-nostalgia-status aria-live="polite"></p>
+                  <ol>
+                    <li>Show your open hand to the camera, about an arm’s length away, in good light.</li>
+                    <li>Move it and the image opens up where it is.</li>
+                    <li>Close your hand and everything breaks: bring the fist nearer for a sharper break, farther for a lower, distant one.</li>
+                  </ol>
+                  <p>The camera image stays on your device. Turn it off anytime above.</p>
+                </div>
               )}
               {item.type === 'dots' && (
                 <p class="case-media-caption case-reveal-caption" data-case-text-reveal>
@@ -1435,14 +1452,14 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='textures-body'] .case-text-content > .case-text-lead { width: 77.06vw; margin-bottom: 2.5vw; font-size: 4.03vw; line-height: .868; letter-spacing: -.03em; }
     /* Contained Alienation, "(art direction)": title and opening sentence at the large copy size, the two columns
        below (Figma 950:3076). */
-    .project-case-page[data-case='contained-alienation'] .case-text-lead > h2 { font-size: 4.03vw; line-height: .868; letter-spacing: -.03em; }
-    .project-case-page[data-case='contained-alienation'] .case-text-content > .case-text-lead { margin-bottom: 2.5vw; font-size: 4.03vw; line-height: .868; letter-spacing: -.03em; }
-    .project-case-page[data-case='contained-alienation'] .case-text-content > .case-text-columns { gap: 1.5vw; }
+    :is(.project-case-page[data-case='contained-alienation'], .project-case-page[data-case='nostalgia-as-agony']) .case-text-lead > h2 { font-size: 4.03vw; line-height: .868; letter-spacing: -.03em; }
+    :is(.project-case-page[data-case='contained-alienation'], .project-case-page[data-case='nostalgia-as-agony']) .case-text-content > .case-text-lead { margin-bottom: 2.5vw; font-size: 4.03vw; line-height: .868; letter-spacing: -.03em; }
+    :is(.project-case-page[data-case='contained-alienation'], .project-case-page[data-case='nostalgia-as-agony']) .case-text-content > .case-text-columns { gap: 1.5vw; }
   }
 
   /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='contained-alienation'], .project-case-page[data-case='missing-souls']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='contained-alienation'], .project-case-page[data-case='missing-souls'], .project-case-page[data-case='nostalgia-as-agony']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
       text-align: justify;
     }
   }
@@ -1767,7 +1784,7 @@ const vimeoUrl = (id: string) =>
     }
 
     /* General's two pieces (the microscope reveal and the dots) take a 4:5 portrait frame on phones (1080 × 1350). */
-    .case-media-single .case-media-surface:has(.reveal-video, .dots-field) {
+    .case-media-single .case-media-surface:has(.reveal-video, .dots-field, .nostalgia-field) {
       aspect-ratio: 1080 / 1350;
     }
 

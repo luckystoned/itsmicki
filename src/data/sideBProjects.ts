@@ -13,7 +13,6 @@ export type SideBProject = {
   gridVideo?: string;
 };
 
-const coming = ' — (Coming soon) !!!!!^*^';
 /** Mkp & Hair's muted 5-second loop (square), on its carousel card (the larger grid card keeps the sharper photo). */
 const MKP_LOOP = '/04_SideB/Projects/01_MkpHair/00_MkpHair_Loop.mp4';
 /** Missing souls' muted 6-second loop (square): a detail of its lilac flowers swaying, the sky melting from orange into lilac. */
@@ -29,7 +28,7 @@ export const sideBProjects: SideBProject[] = [
   { slug: 'contained-alienation', title: 'Contained Alienation', label: '02_Contained Alienation_Art Direction+Photography+Mkp & Styling', gridCover: '/04_SideB/Home/02_SideBProjects.webp' },
   { slug: 'general-immersive', title: 'General', label: '03_General_Art Direction+Immersive Interaction Design', gridCover: '/04_SideB/Home/03_SideBProjects.webp', gridVideo: '/04_SideB/Home/03_SideBProjects.mp4' },
   { slug: 'missing-souls', title: 'Missing souls', label: '04_Missing souls_Art Direction+Immersive Design', gridCover: '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Cover.webp', gridVideo: SOULS_LOOP },
-  { slug: 'nostalgia-as-agony', title: 'Nostalgia as Agony', label: `05_Nostalgia as Agony_Concept & Art direction${coming}`, comingSoon: true, gridCover: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Cover.webp', gridVideo: NOSTALGIA_LOOP },
+  { slug: 'nostalgia-as-agony', title: 'Nostalgia as Agony', label: '05_Nostalgia as Agony_Concept & Art direction', gridCover: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Cover.webp', gridVideo: NOSTALGIA_LOOP },
 ];
 
 /** Case page of a Side B project, if it has one. */

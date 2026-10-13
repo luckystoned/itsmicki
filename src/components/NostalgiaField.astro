@@ -1,0 +1,316 @@
+---
+// Nostalgia as Agony: a memory that won't hold still. The footage (for now a still) is pixel-stretched into vertical
+// streaks, with two clusters of tracking boxes where it shows clean and, in hits, thin slices slipping sideways and
+// dashed rows of dead pixels, as in the cover. A hand in front of the camera (or the pointer) draws the tracking to
+// it and the image opens up there; a closed fist (or a held press) breaks everything, image and sound: near the
+// camera (or high in the frame) the song breaks higher and harsher, far (or low) lower and ethereal. The camera image
+// stays on the device; the sound only starts when asked for. With reduced motion only the still shows.
+type Props = { label: string };
+const { label } = Astro.props;
+---
+
+<div class="nostalgia-field" data-nostalgia-field role="img" aria-label={label}>
+  <canvas class="nostalgia-field-canvas" aria-hidden="true"></canvas>
+</div>
+
+<script>
+  import { loadVision, openCamera } from '@/scripts/camera';
+
+  const SETTINGS = {
+    // The footage: a wide and a tall cut (the tall one for phone frames). Videos can take their place later.
+    stills: { wide: '/04_SideB/Projects/05_Nostalgia/01_Nostalgia_Still.webp', tall: '/04_SideB/Projects/05_Nostalgia/02_Nostalgia_Still_Tall.webp' },
+    track: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Track.mp3', // The song (not in the site yet).
+    loop: 4, // Seconds the glitch pattern takes to come round.
+    hits: [[3, 2], [8, 1], [12, 9], [29, 2], [33, 1], [36, 4], [45, 2], [49, 1], [52, 3], [59, 2], [64, 14], [82, 1], [86, 2], [90, 3]] as Array<[number, number]>, // ta ta piiii tatatta… (in 24ths of a second)
+    lime: 'rgba(206,240,98,', dashes: ['#1b1580', '#26209a', '#0d0b3a', '#14123f', '#f2f0ec'],
+    hand: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+  };
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hash = (a: number, b: number, c = 0) => { let h = Math.imul(a * 374761393 + b * 668265263 + c * 2147483647, 1274126177); h ^= h >>> 13; h = Math.imul(h, 1103515245); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+  const canvasOf = (w: number, h: number) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; };
+  const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const TAU = Math.PI * 2;
+
+  /** The song, broken by the hand: pitch and speed, distortion with a bit-crush, a low-pass and a long, cold echo. */
+  const makeSound = (src: string) => {
+    const audio = new Audio(src);
+    audio.loop = true; audio.preload = 'none';
+    (audio as HTMLAudioElement & { preservesPitch?: boolean; webkitPreservesPitch?: boolean }).preservesPitch = false;
+    (audio as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = false;
+    let graph: { ctx: AudioContext; shaper: WaveShaperNode; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; chop: GainNode; master: GainNode } | null = null;
+    let lastCurve = -1;
+    const curve = (amount: number) => {
+      // Soft clipping that hardens and coarsens (fewer steps) as it breaks.
+      const n = 2048, c = new Float32Array(n), drive = 1 + amount * 40, steps = Math.round(256 - amount * 240);
+      for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; const y = Math.tanh(x * drive) / Math.tanh(drive); c[i] = Math.round(y * steps) / steps; }
+      return c;
+    };
+    const build = () => {
+      const ctx = new AudioContext();
+      const source = ctx.createMediaElementSource(audio);
+      const shaper = ctx.createWaveShaper(); shaper.curve = curve(0); shaper.oversample = '2x';
+      const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 20000; filter.Q.value = .7;
+      const echo = ctx.createConvolver();
+      const length = Math.round(ctx.sampleRate * 3.2), ir = ctx.createBuffer(2, length, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3); }
+      echo.buffer = ir;
+      const dry = ctx.createGain(), wet = ctx.createGain(), chop = ctx.createGain(), master = ctx.createGain();
+      wet.gain.value = 0; master.gain.value = 0;
+      source.connect(shaper).connect(filter);
+      filter.connect(dry).connect(chop);
+      filter.connect(echo).connect(wet).connect(chop);
+      chop.connect(master).connect(ctx.destination);
+      graph = { ctx, shaper, filter, wet, dry, chop, master };
+    };
+    let on = false;
+    return {
+      get on() { return on; },
+      available: async () => { try { const r = await fetch(src, { method: 'HEAD' }); return r.ok; } catch { return false; } },
+      start: async () => {
+        if (!graph) build();
+        await graph!.ctx.resume();
+        await audio.play();
+        graph!.master.gain.setTargetAtTime(.9, graph!.ctx.currentTime, .4);
+        on = true;
+      },
+      stop: () => { if (!graph) return; graph.master.gain.setTargetAtTime(0, graph.ctx.currentTime, .15); setTimeout(() => audio.pause(), 500); on = false; },
+      /** fist 0–1, near 0 (far) – 1 (near), t in seconds. */
+      shape: (fist: number, near: number, t: number) => {
+        if (!graph || !on) return;
+        const now = graph.ctx.currentTime;
+        audio.playbackRate = clamp(1 + fist * (near * .65 - (1 - near) * .45), .5, 1.8);
+        const broken = fist * (.25 + .75 * near);
+        if (Math.abs(broken - lastCurve) > .04) { graph.shaper.curve = curve(broken); lastCurve = broken; }
+        graph.filter.frequency.setTargetAtTime(20000 - fist * (1 - near) * 19200, now, .08);
+        graph.wet.gain.setTargetAtTime(fist * (1 - near) * .85, now, .15);
+        graph.dry.gain.setTargetAtTime(1 - fist * (1 - near) * .45, now, .15);
+        // Stutter: the sound drops out in quick bursts, harder the nearer the fist.
+        const gate = fist > .2 && Math.sin(t * TAU * (9 + near * 9)) > .55 - fist * near * .9 ? 1 - fist * (.35 + near * .6) : 1;
+        graph.chop.gain.setTargetAtTime(gate, now, .008);
+      },
+    };
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-nostalgia-field]').forEach((root) => {
+    const canvas = root.querySelector<HTMLCanvasElement>('.nostalgia-field-canvas')!;
+    const context = canvas.getContext('2d')!;
+    const caption = root.closest('section') ?? document;
+    let width = 0, height = 0, ratio = 1, U = 1;
+    const stills: Record<'wide' | 'tall', HTMLImageElement> = { wide: new Image(), tall: new Image() };
+    stills.wide.src = SETTINGS.stills.wide; stills.tall.src = SETTINGS.stills.tall;
+    const tall = () => height > width * 1.05;
+    // The footage at the frame's size (cover-fitted), its squashed copy (the soft smear) and the frame grabbed for slicing.
+    let footage = canvasOf(1, 1), smear = canvasOf(1, 24), grab = canvasOf(1, 1), grain = canvasOf(1, 1);
+    const paintFootage = () => {
+      const img = tall() ? stills.tall : stills.wide;
+      if (!img.complete || !img.naturalWidth) return false;
+      footage = canvasOf(canvas.width, canvas.height);
+      const f = footage.getContext('2d')!, sc = Math.max(footage.width / img.naturalWidth, footage.height / img.naturalHeight);
+      f.drawImage(img, (footage.width - img.naturalWidth * sc) / 2, (footage.height - img.naturalHeight * sc) / 2, img.naturalWidth * sc, img.naturalHeight * sc);
+      smear = canvasOf(canvas.width, 24); smear.getContext('2d')!.drawImage(footage, 0, 0, smear.width, 24);
+      grab = canvasOf(canvas.width, canvas.height);
+      grain = canvasOf(canvas.width, canvas.height);
+      const g = grain.getContext('2d')!, d = g.createImageData(grain.width, grain.height);
+      for (let n = 0; n < d.data.length; n += 4) { const v = 128 + (hash(n, 7) - .5) * 60; d.data[n] = d.data[n + 1] = d.data[n + 2] = v; d.data[n + 3] = 255; }
+      g.putImageData(d, 0, 0);
+      return true;
+    };
+    const resize = () => {
+      const rect = root.getBoundingClientRect();
+      ratio = Math.min(devicePixelRatio || 1, 1.5);
+      width = rect.width; height = rect.height;
+      canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
+      U = canvas.width / 1560;
+      paintFootage();
+    };
+
+    // The hand (camera or pointer), as shares of the frame; how closed (fist 0–1) and how near (0–1) it is.
+    let hand: { x: number; y: number } | null = null, handShown = 0, fistTarget = 0, fist = 0, near = .5;
+
+    // Drawing: one frame of the cover's glitch, live.
+    let beatSeed = 0;
+    const draw = (time: number) => {
+      const W = canvas.width, H = canvas.height, t = time / 1000;
+      if (footage.width !== W && !paintFootage()) return;
+      context.imageSmoothingEnabled = true;
+      // Streaks: the soft smear, and a scan line stretched down every column.
+      context.drawImage(smear, 0, 0, W, 24, 0, 0, W, H);
+      const phase = TAU * ((t % SETTINGS.loop) / SETTINGS.loop), y = Math.round(H * (.5 + .38 * Math.sin(phase) + .08 * Math.sin(3 * phase + 1)));
+      context.globalAlpha = .62; context.drawImage(footage, 0, Math.min(H - 2, Math.max(0, y)), W, 2, 0, 0, W, H);
+      context.globalAlpha = .35; context.drawImage(footage, 0, Math.min(H - 1, Math.max(0, Math.round(H * .5 + (y - H * .5) * -.7))), W, 1, 0, 0, W, H);
+      context.globalAlpha = 1;
+
+      // Tracking: two groups drifting on their own paths; the first one goes to the hand when there is one, and the
+      // image opens up around it.
+      const beat = Math.floor(t * 12);
+      const auto = (g: number) => g === 0
+        ? [W * (.5 + .3 * Math.sin(phase * 2 + .3) + .1 * Math.sin(phase * 5)), H * (.55 + .25 * Math.cos(phase * 3 + 1) + .08 * Math.sin(phase * 7))]
+        : [W * (.5 + .32 * Math.sin(phase * 3 + 2.4) + .08 * Math.cos(phase * 4)), H * (.45 + .28 * Math.sin(phase * 2 + 4) + .06 * Math.cos(phase * 6))];
+      const targets = [auto(0), auto(1)];
+      if (hand) { const a = auto(0); targets[0] = [a[0] + (hand.x * W - a[0]) * handShown, a[1] + (hand.y * H - a[1]) * handShown]; }
+      const groups = targets.map(([cx, cy], g) => {
+        const b = beat * 2 + g * 1009, open = g === 0 ? handShown : 0;
+        const quiet = hash(b, 1) < .12 && !open;
+        const count = quiet ? 3 : Math.round(9 + hash(b, 2) * 12 + open * 10);
+        const boxes: Array<[number, number, number, number, number]> = [];
+        for (let n = 0; n < count; n++) {
+          const big = n === 0 && (hash(b, 3) < .5 || open > .3), mid = n < 3 + open * 4 && !big && hash(b, n, 4) < .6;
+          const s = big ? (220 + hash(b, 5) * 320) * (1 + open * .6) : mid ? 80 + hash(b, n, 6) * 140 : 10 + hash(b, n, 7) * 46;
+          const w = Math.round(s * U * (.6 + hash(b, n, 8) * .8)), h = Math.round(s * U * (.8 + hash(b, n, 9) * 1.2));
+          const spread = big ? .15 : .55 - open * .2;
+          const x = Math.round(cx + (hash(b, n, 10) - .5) * W * spread - w / 2), yy = Math.round(cy + (hash(b, n, 11) - .5) * H * spread - h / 2);
+          boxes.push([clamp(x, 0, W - w), clamp(yy, 0, H - h), w, h, n]);
+        }
+        return { boxes, quiet, b, cx, cy };
+      });
+      for (const { boxes } of groups) for (const [x, yy, w, h] of boxes) if (w > 0 && h > 0) context.drawImage(footage, x, yy, w, h, x, yy, w, h);
+      context.lineWidth = Math.max(1, U * .9);
+      for (const { boxes, quiet, b, cx, cy } of groups) {
+        context.strokeStyle = SETTINGS.lime + '.55)'; context.beginPath();
+        for (let n = 1; n < boxes.length; n++) if (hash(b, n, 12) < .45) { const p = boxes[n], q = boxes[Math.floor(hash(b, n, 13) * boxes.length)]; context.moveTo(p[0] + p[2] / 2, p[1] + p[3] / 2); context.lineTo(q[0] + q[2] / 2, q[1] + q[3] / 2); }
+        context.stroke();
+        if (!quiet) { context.strokeStyle = 'rgba(255,255,255,.55)'; context.beginPath(); const p = boxes[0], q = boxes[boxes.length - 1];
+          context.moveTo(p[0] + p[2] / 2, p[1] + p[3]); context.bezierCurveTo(cx + (hash(b, 14) - .5) * W * .6, cy - H * (.2 + hash(b, 15) * .4), cx + (hash(b, 16) - .5) * W * .6, cy + H * .3, q[0], q[1] + q[3] / 2); context.stroke(); }
+      }
+      context.font = `${Math.round(12 * Math.max(U, .85))}px ui-monospace, Menlo, monospace`; context.textBaseline = 'top';
+      for (const { boxes, b } of groups) for (const [x, yy, w, h, n] of boxes) {
+        context.strokeStyle = SETTINGS.lime + '.85)'; context.strokeRect(x + .5, yy + .5, w - 1, h - 1);
+        if (hash(b, n, 17) < .7) { const label = `(loop (format t "~%"))  ${(2179000 + Math.floor(hash(b, n, 18) * 9999)).toFixed(1)}`, lx = x - (hash(b, n, 19) < .5 ? context.measureText(label).width + 6 : -w - 6);
+          context.fillStyle = 'rgba(255,255,255,.8)'; context.fillText(label, clamp(lx, 4, W - 200 * U), yy + Math.min(h - 4, 4)); }
+      }
+
+      // Slices: in hits (echoed), and all the time while the fist is closed, more and wilder the nearer it is.
+      const k = Math.floor((t % SETTINGS.loop) * 24);
+      let hit = -1, f = 0;
+      SETTINGS.hits.forEach(([s, l], n) => { if (k >= s && k < s + l) { hit = n; f = k - s; } const e = s + l + 2 + (n % 2); if (k >= e && k < e + (l > 4 ? 3 : 1)) { hit = n + 50; f = k - e; } });
+      const breaking = fist > .05;
+      if (hit >= 0 || breaking) {
+        if (breaking) beatSeed = Math.floor(t * (12 + near * 24));
+        const seed = breaking ? beatSeed * 7 + 3 : hit * 97 + (f >> 1);
+        grab.getContext('2d')!.drawImage(canvas, 0, 0);
+        context.imageSmoothingEnabled = false;
+        const clusters = Math.round(4 + hash(seed, 1) * 5 + fist * (6 + near * 10));
+        for (let c = 0; c < clusters; c++) {
+          const nearHand = hash(seed, c, 2) < .65, tr = groups[c % 2];
+          const cy = nearHand ? tr.cy + (hash(seed, c, 3) - .5) * H * .6 : hash(seed, c, 3) * H, cx = nearHand ? tr.cx + (hash(seed, c, 4) - .5) * W * .4 : hash(seed, c, 4) * W;
+          const cw = W * (.18 + hash(seed, c, 5) * .32 + fist * .2), ch = H * (.04 + hash(seed, c, 6) * .12 + fist * .1);
+          const x0 = Math.round(cx - cw / 2);
+          let yy = Math.round(cy - ch / 2);
+          while (yy < cy + ch / 2) {
+            const h = Math.max(1, Math.round((3 + hash(seed, c, yy) * 26) * U)), r = hash(seed, yy, 7);
+            const xs = Math.round(x0 + (hash(seed, yy, 8) - .5) * cw * .4), w = Math.round(cw * (.4 + hash(seed, yy, 9) * .7));
+            const dx = Math.round((hash(seed, yy, 10) - .5) * cw * (.5 + fist * near));
+            if (w > 0) {
+              if (r < .55) context.drawImage(grab, xs, yy, w, h, xs + dx, yy, w, h);
+              else if (r < .8) { const col = clamp(xs + Math.round(hash(seed, yy, 11) * w), 0, W - 2); context.drawImage(grab, col, yy, 2, h, xs + dx, yy, w * (.4 + hash(seed, yy, 12) * .6), h); }
+            }
+            yy += h + (hash(seed, yy, 13) < .6 ? 0 : Math.round(hash(seed, yy, 14) * 14 * U));
+          }
+          if (hash(seed, c, 15) < .85) for (let l = 0; l < 1 + Math.floor(hash(seed, c, 16) * 3); l++) {
+            const ly = Math.round(cy + (hash(seed, c, l + 17) - .5) * ch * 1.4), lh = Math.max(1, Math.round((4 + hash(seed, c, l + 20) * 6) * U));
+            let x = Math.round(x0 - cw * .3 * hash(seed, c, l + 22)); const end = x + cw * (1 + hash(seed, c, l + 23) * .6);
+            while (x < end) { const dw = Math.max(1, Math.round((2 + hash(x, ly, seed) * 12) * U));
+              if (hash(x, ly, seed + 1) < .55) { context.fillStyle = SETTINGS.dashes[Math.floor(hash(x, ly, seed + 2) * SETTINGS.dashes.length)]; context.fillRect(x, ly, dw, lh); }
+              x += dw + Math.round(hash(x, ly, seed + 3) * 16 * U); }
+          }
+        }
+      }
+      // Grain over everything.
+      context.save(); context.globalCompositeOperation = 'overlay'; context.globalAlpha = .12; context.drawImage(grain, 0, 0); context.restore();
+    };
+
+    // The pointer stands in for the hand: over the frame it draws the tracking; pressed and held, it is a fist (high
+    // in the frame = near, low = far).
+    let cameraOn = false;
+    const local = (event: PointerEvent) => { const r = canvas.getBoundingClientRect(); return { x: clamp((event.clientX - r.left) / r.width), y: clamp((event.clientY - r.top) / r.height) }; };
+    root.addEventListener('pointermove', (event) => { if (cameraOn) return; hand = local(event); if (fistTarget) near = 1 - hand.y; });
+    root.addEventListener('pointerleave', () => { if (cameraOn) return; hand = null; fistTarget = 0; });
+    root.addEventListener('pointerdown', (event) => { if (cameraOn) return; hand = local(event); near = 1 - hand.y; fistTarget = 1; root.setPointerCapture(event.pointerId); });
+    const release = () => { if (!cameraOn) fistTarget = 0; };
+    root.addEventListener('pointerup', release); root.addEventListener('pointercancel', release);
+
+    // Sound: off until asked for (a click on "sound on", or turning the camera on).
+    const sound = makeSound(SETTINGS.track);
+    const soundButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-nostalgia-sound]')];
+    const status = caption.querySelector<HTMLElement>('[data-nostalgia-status]');
+    const setStatus = (text: string) => { if (status && status.textContent !== text) status.textContent = text; };
+    let hasSound = false;
+    sound.available().then((ok) => { hasSound = ok; soundButtons.forEach((b) => { b.closest<HTMLElement>('[data-nostalgia-sound-option]')?.toggleAttribute('hidden', !ok); }); });
+    const setSoundLabel = () => soundButtons.forEach((b) => { b.textContent = sound.on ? 'sound off' : 'sound on'; b.setAttribute('aria-pressed', String(sound.on)); });
+    const soundOn = async () => { if (!hasSound || sound.on) return; try { await sound.start(); } catch { /* Blocked: it waits for the next click. */ } setSoundLabel(); };
+    soundButtons.forEach((b) => b.addEventListener('click', async () => { if (sound.on) sound.stop(); else await soundOn(); setSoundLabel(); }));
+
+    // Camera: the open hand draws the tracking; a fist breaks everything, its distance bends the sound.
+    const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-nostalgia-camera]')];
+    const cameraHelp = caption.querySelector<HTMLElement>('[data-nostalgia-camera-help]');
+    let camera: Awaited<ReturnType<typeof openCamera>> | null = null;
+    let hands: { detectForVideo: (video: HTMLVideoElement, time: number) => { landmarks: Array<Array<{ x: number; y: number }>> } } | null = null;
+    let closed = false, lostSince = 0;
+    const setCameraLabel = (text: string, on: boolean) => cameraButtons.forEach((b) => { b.textContent = text; b.setAttribute('aria-pressed', String(on)); });
+    const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+    const stopCamera = () => { camera?.stop(); camera = null; cameraOn = false; hand = null; fistTarget = 0; closed = false; if (cameraHelp) cameraHelp.hidden = true; setCameraLabel('turn the camera on', false); };
+    const track = () => {
+      if (!camera) return;
+      if (hands && camera.video.readyState >= 2) {
+        const h = hands.detectForVideo(camera.video, performance.now()).landmarks[0];
+        if (h) {
+          lostSince = 0;
+          const palm = distance(h[0], h[9]) || 1e-3;
+          const reach = [8, 12, 16, 20].reduce((sum, tip) => sum + distance(h[tip], h[0]), 0) / 4 / palm;
+          closed = closed ? reach < 1.35 : reach < 1.05;
+          const target = { x: clamp(.5 - (h[9].x - .5) * 1.3), y: clamp(.5 + (h[9].y - .5) * 1.3) };
+          hand = hand ? { x: hand.x + (target.x - hand.x) * .3, y: hand.y + (target.y - hand.y) * .3 } : target;
+          fistTarget = closed ? 1 : 0;
+          // Near or far: the size of the palm in the camera image.
+          near += (clamp((palm - .07) / .16) - near) * .2;
+          setStatus(closed ? (near > .6 ? 'Closed and near — it breaks, sharp.' : near < .35 ? 'Closed and far — it sinks, low and distant.' : 'Closed — it breaks. Move it nearer or farther.') : 'Open — move your hand; close it to break everything.');
+        } else {
+          hand = null; fistTarget = 0;
+          lostSince ||= performance.now();
+          if (performance.now() - lostSince > 600) setStatus('Looking for your hand… show it open, in good light.');
+        }
+      }
+      requestAnimationFrame(track);
+    };
+    const startCamera = async () => {
+      setCameraLabel('starting the camera…', true);
+      soundOn(); // The click that turns the camera on also starts the sound (browsers need one).
+      try {
+        camera = await openCamera();
+        if (!hands) {
+          const { module, files } = await loadVision();
+          hands = await module.HandLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: SETTINGS.hand, delegate: 'GPU' }, runningMode: 'VIDEO', numHands: 1 });
+        }
+        if (!camera) return;
+        cameraOn = true;
+        setCameraLabel('turn the camera off', true);
+        if (cameraHelp) cameraHelp.hidden = false;
+        setStatus('Looking for your hand…');
+        requestAnimationFrame(track);
+      } catch { stopCamera(); setCameraLabel('camera unavailable', false); }
+    };
+    cameraButtons.forEach((b) => b.addEventListener('click', () => (camera ? stopCamera() : startCamera())));
+    if (!calm && 'mediaDevices' in navigator) caption.querySelectorAll<HTMLElement>('[data-nostalgia-camera-option]').forEach((o) => { o.hidden = false; });
+    addEventListener('pagehide', () => { stopCamera(); sound.stop(); });
+
+    // Running while on screen.
+    let visible = false, running = false;
+    const frame = (time: number) => {
+      if (!visible) { running = false; if (sound.on) { sound.stop(); setSoundLabel(); } return; }
+      fist += (fistTarget - fist) * .18;
+      handShown += ((hand ? 1 : 0) - handShown) * .08;
+      draw(time);
+      sound.shape(fist, near, time / 1000);
+      requestAnimationFrame(frame);
+    };
+    const start = () => { if (!running && visible && !calm) { running = true; requestAnimationFrame(frame); } };
+    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) start(); }, { rootMargin: '10%' }).observe(root);
+    new ResizeObserver(() => { resize(); if (calm) { context.drawImage(footage, 0, 0); } }).observe(root);
+    Object.values(stills).forEach((img) => img.addEventListener('load', () => { if (paintFootage() && calm) context.drawImage(footage, 0, 0); }));
+  });
+</script>
+
+<style>
+  .nostalgia-field { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; background: #202020; }
+  .nostalgia-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+</style>
