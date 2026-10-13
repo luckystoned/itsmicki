@@ -30,6 +30,11 @@ const { label } = Astro.props;
         <label><input type="radio" name="kind" value="cat" /> cat</label>
         <label><input type="radio" name="kind" value="dog" /> dog</label>
       </fieldset>
+      <fieldset class="souls-form-choice" data-souls-ears>
+        <legend>Ears</legend>
+        <label><input type="radio" name="ears" value="floppy" checked /> floppy</label>
+        <label><input type="radio" name="ears" value="pointed" /> pointed</label>
+      </fieldset>
       <fieldset class="souls-form-choice souls-form-colours">
         <legend>Their colours</legend>
         <label><input type="color" name="c0" value="#f2e6d6" /> light</label>
@@ -119,7 +124,8 @@ const { label } = Astro.props;
   };
 
   /** Markings asked for in a few words (English or Spanish), each one drawn: a patch over an eye, white paws… */
-  const MARKS = { eye: 1, eyeLight: 2, mask: 4, paws: 8, chest: 16, tailTip: 32, ears: 64, blaze: 128, saddle: 256, muzzle: 512 };
+  // (pointedEars: a dog's ears standing up like a cat's instead of floppy; chosen in the form, not written.)
+  const MARKS = { eye: 1, eyeLight: 2, mask: 4, paws: 8, chest: 16, tailTip: 32, ears: 64, blaze: 128, saddle: 256, muzzle: 512, pointedEars: 1024 };
   const MARK_WORDS: Array<[keyof typeof MARKS, RegExp, string]> = [
     ['eye', /(mancha|manchita|parche|patch|spot)[^,.;]{0,24}(ojo|eye)|(ojo|eye)[^,.;]{0,16}(mancha|parche|patch|spot)/, 'a patch over one eye'],
     ['mask', /(antifaz|m[aá]scara|mask|cara (negra|oscura)|dark face)/, 'a mask'],
@@ -190,7 +196,7 @@ const { label } = Astro.props;
 
   // Souls kept on this device, when the shared place cannot be reached. `?souls=reset` in the address clears them.
   try { if (new URLSearchParams(location.search).get('souls') === 'reset') localStorage.removeItem(STORE); } catch { /* No storage. */ }
-  type Entry = { id: string; photo?: string };
+  type Entry = { id: string; photo?: string; marks?: number };
   const localSouls = (): Entry[] => {
     try {
       const list = JSON.parse(localStorage.getItem(STORE) ?? '[]');
@@ -400,6 +406,8 @@ const { label } = Astro.props;
         Everything is drawn crisp in unit space (feet at y = 1, about one unit tall), then blurred into a glow. */
     const paintFigure = (soul: Soul, unit: number): Figure => {
       const { look } = soul, dog = look.kind === 'dog';
+      const marks = look.marks ?? 0, has = (mark: keyof typeof MARKS) => (marks & MARKS[mark]) !== 0;
+      const floppy = dog && !has('pointedEars');
       let n = hash(soul.id) || 1;
       const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
       const [light, mid, dark] = look.colours;
@@ -465,10 +473,11 @@ const { label } = Astro.props;
       s.beginPath(); s.arc(X(headX), Y(headY), headR * unit, 0, Math.PI * 2); s.fill();
       if (dog) {
         s.beginPath(); s.ellipse(X(headX + headR * .85), Y(headY + headR * .35), headR * .62 * unit, headR * .45 * unit, .1, 0, Math.PI * 2); s.fill();
-        // Floppy ears, hanging by the cheeks.
+      }
+      // Ears: floppy ones hang by the cheeks (most dogs); pointed ones stand up (cats, and dogs with pricked ears).
+      if (floppy) {
         s.beginPath(); s.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .32 * unit, headR * .7 * unit, .35, 0, Math.PI * 2); s.fill();
       } else {
-        // Pointed ears.
         for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
           s.beginPath();
           s.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .55));
@@ -496,7 +505,6 @@ const { label } = Astro.props;
         }
         c.globalAlpha = 1;
       };
-      const marks = look.marks ?? 0, has = (mark: keyof typeof MARKS) => (marks & MARKS[mark]) !== 0;
       const white = mix(light, '#ffffff', .55);
       const tail = finish(tailShape, (c) => {
         c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
@@ -535,7 +543,7 @@ const { label } = Astro.props;
         if (has('chest')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .34), Y(bodyCy + bodyDepth * .05), bodyDepth * .3 * unit, bodyDepth * .45 * unit, .3, 0, Math.PI * 2); c.fill(); }
         if (has('ears')) {
           c.fillStyle = dark;
-          if (dog) { c.beginPath(); c.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .34 * unit, headR * .72 * unit, .35, 0, Math.PI * 2); c.fill(); }
+          if (floppy) { c.beginPath(); c.ellipse(X(headX - headR * .55), Y(headY + headR * .25), headR * .34 * unit, headR * .72 * unit, .35, 0, Math.PI * 2); c.fill(); }
           else for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
             c.beginPath(); c.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .5)); c.lineTo(X(headX + headR * tip), Y(headY - headR * 1.6)); c.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .7)); c.closePath(); c.fill();
           }
@@ -1171,7 +1179,8 @@ const { label } = Astro.props;
         shared = false;
         entries = localSouls();
       }
-      souls = entries.map((entry) => ({ ...entry, look: readLook(entry.id) })).filter((entry): entry is Entry & { look: Look } => !!entry.look).map(({ id, look, photo }, i) => ({ ...meet(id, look, i, 0), photo }));
+      // Markings the server adds by hand (to souls left before they could be chosen) join their own.
+      souls = entries.map((entry) => { const look = readLook(entry.id); if (look && entry.marks) look.marks = (look.marks ?? 0) | entry.marks; return { ...entry, look }; }).filter((entry): entry is Entry & { look: Look } => !!entry.look).map(({ id, look, photo }, i) => ({ ...meet(id, look, i, 0), photo }));
       draw(performance.now());
       showFull();
     };
@@ -1187,7 +1196,7 @@ const { label } = Astro.props;
         kind: data.get('kind') === 'dog' ? 'dog' : 'cat', size: Number(data.get('size') ?? 1) as 0 | 1 | 2, build: Number(data.get('build') ?? 4),
         pattern: Math.min(3, Math.max(0, Number(data.get('pattern') ?? found.pattern))) as 0 | 1 | 2 | 3,
         colours: [colour('c0', found.colours[0]), colour('c1', found.colours[1]), colour('c2', found.colours[2])],
-        marks: marksFrom(String(data.get('details') ?? '')),
+        marks: marksFrom(String(data.get('details') ?? '')) | (data.get('kind') === 'dog' && data.get('ears') === 'pointed' ? MARKS.pointedEars : 0),
         name: String(data.get('name') ?? '').trim().slice(0, 20), owner: String(data.get('owner') ?? '').trim().slice(0, 20),
       };
     };
@@ -1217,6 +1226,7 @@ const { label } = Astro.props;
       start.colours.forEach((colour, i) => { form.querySelector<HTMLInputElement>(`input[name="c${i}"]`)!.value = colour; });
       form.querySelector<HTMLInputElement>(`input[name="pattern"][value="${start.pattern}"]`)!.checked = true;
       form.querySelector<HTMLInputElement>('input[name="details"]')!.value = marksText(current?.marks);
+      form.querySelector<HTMLInputElement>(`input[name="ears"][value="${(current?.marks ?? 0) & MARKS.pointedEars ? 'pointed' : 'floppy'}"]`)!.checked = true;
       if (formTitle) formTitle.textContent = current ? `Change ${current.name ?? 'them'}` : 'Who are you leaving in her care?';
       if (formOk) formOk.textContent = current ? 'save' : 'leave them with her';
       if (current) {
@@ -1224,7 +1234,9 @@ const { label } = Astro.props;
         field('name').value = current.name ?? ''; field('owner').value = current.owner ?? ''; field('build').value = String(current.build);
         form.querySelector<HTMLInputElement>(`input[name="size"][value="${current.size}"]`)!.checked = true;
       }
-      const update = () => drawPreview(lookFromForm(form, found));
+      // The ears are a dog's choice (a cat's are always pointed).
+      const ears = form.querySelector<HTMLElement>('[data-souls-ears]');
+      const update = () => { if (ears) ears.hidden = new FormData(form).get('kind') !== 'dog'; drawPreview(lookFromForm(form, found)); };
       form.addEventListener('input', update);
       requestAnimationFrame(update);
       dialog.addEventListener('close', () => {
@@ -1447,6 +1459,7 @@ const { label } = Astro.props;
   .souls-form-field input:focus-visible { outline: none; border-bottom-color: #fafafa; }
   .souls-form-field input::placeholder { color: rgb(250 250 250 / .4); }
   .souls-form-colours input[type='color'] { width: 34px; height: 26px; padding: 0; border: 1px solid rgb(250 250 250 / .4); border-radius: 4px; background: none; cursor: pointer; }
+  .souls-form-choice[hidden] { display: none; }
   .souls-form-choice { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; border: 0; font-size: 16px; }
   .souls-form-choice legend { width: 100%; margin-bottom: 6px; padding: 0; font-size: 13px; }
   .souls-form-choice label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
