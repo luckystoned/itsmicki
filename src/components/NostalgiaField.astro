@@ -33,12 +33,12 @@ const { label } = Astro.props;
   const TAU = Math.PI * 2;
 
   // The glitch itself, sample by sample (an AudioWorklet): while `amount` is up, bits of what just played are caught
-  // and repeated (a scratched CD), the sound is crushed to fewer bits and a lower rate (harsh, metallic) and drops out
-  // for an instant now and then. `near` makes it all faster, shorter and harsher.
+  // and repeated (a scratched CD), the sound is crushed and overdriven and buried in noise (hiss and crackle) without
+  // losing the song under it. `near` makes it all faster, shorter and harsher.
   const GLITCH = `
     class Glitch extends AudioWorkletProcessor {
       static get parameterDescriptors() { return [{ name: 'amount', defaultValue: 0, minValue: 0, maxValue: 1 }, { name: 'near', defaultValue: .5, minValue: 0, maxValue: 1 }]; }
-      constructor() { super(); this.size = sampleRate | 0; this.buf = [new Float32Array(this.size), new Float32Array(this.size)]; this.w = 0; this.hold = [0, 0]; this.count = 0; this.rep = null; this.drop = 0; }
+      constructor() { super(); this.size = sampleRate | 0; this.buf = [new Float32Array(this.size), new Float32Array(this.size)]; this.w = 0; this.hold = [0, 0]; this.count = 0; this.rep = null; this.drop = 0; this.crackle = 0; }
       process(inputs, outputs, params) {
         const input = inputs[0], output = outputs[0];
         if (!input || !input.length) return true;
@@ -46,11 +46,15 @@ const { label } = Astro.props;
         if (a > .02) {
           if (!this.rep && Math.random() < a * (.03 + near * .08)) {
             const len = Math.max(64, Math.floor(sampleRate * (.025 + (1 - near) * .1) * (.5 + Math.random())));
-            this.rep = { start: (this.w - len + this.size) % this.size, len, pos: 0, left: 2 + Math.floor(Math.random() * (3 + near * 9)) };
+            this.rep = { start: (this.w - len + this.size) % this.size, len, pos: 0, left: 1 + Math.floor(Math.random() * (2 + near * 5)) };
           }
-          if (this.drop <= 0 && Math.random() < a * .025 * (.4 + near)) this.drop = Math.floor(sampleRate * (.008 + Math.random() * .04));
+          if (this.drop <= 0 && Math.random() < a * .004 * (.4 + near)) this.drop = Math.floor(sampleRate * (.004 + Math.random() * .012));
+          // Bursts of crackle now and then, on top of a steady hiss.
+          if (this.crackle <= 0 && Math.random() < a * (.02 + near * .05)) this.crackle = Math.floor(sampleRate * (.02 + Math.random() * .12));
         } else this.rep = null;
-        const bits = 16 - a * (8 + 4 * near), q = Math.pow(2, Math.max(4, bits) - 1), holdN = 1 + Math.floor(a * (2 + near * 26)), wet = Math.min(1, a * 1.6);
+        const bits = 16 - a * (6 + 4 * near), q = Math.pow(2, Math.max(6, bits) - 1), holdN = 1 + Math.floor(a * (1 + near * 10)), wet = Math.min(.8, a * 1.2);
+        const drive = 1 + a * (2.5 + near * 4), hiss = a * (.025 + near * .03), crack = a * (.12 + near * .18);
+        const level = 1 / (1 + a * .75); // Louder when broken: brought back to about the song's level.
         for (let i = 0; i < n; i++) {
           for (let c = 0; c < 2; c++) this.buf[c][this.w] = (input[c] || input[0])[i];
           const take = this.count++ % holdN === 0;
@@ -58,12 +62,15 @@ const { label } = Astro.props;
             const dry = (input[c] || input[0])[i];
             const x = this.rep ? this.buf[c % 2][(this.rep.start + this.rep.pos) % this.size] : dry;
             if (take) this.hold[c % 2] = x;
-            let y = Math.round(this.hold[c % 2] * q) / q;
-            if (this.drop > 0) y = 0;
-            output[c][i] = dry * (1 - wet) + y * wet;
+            // Crushed, overdriven, and buried in noise: a steady hiss plus crackle bursts that follow the music's level.
+            let y = Math.tanh(Math.round(this.hold[c % 2] * q) / q * drive) / Math.tanh(drive) * .9;
+            y += (Math.random() * 2 - 1) * hiss + (this.crackle > 0 && Math.random() < .3 ? (Math.random() * 2 - 1) * crack * (.3 + Math.abs(x)) : 0);
+            if (this.drop > 0) y *= .15;
+            output[c][i] = (dry * (1 - wet) + y * wet) * level;
           }
           this.w = (this.w + 1) % this.size;
           if (this.drop > 0) this.drop--;
+          if (this.crackle > 0) this.crackle--;
           if (this.rep && ++this.rep.pos >= this.rep.len) { this.rep.pos = 0; if (--this.rep.left <= 0) this.rep = null; }
         }
         return true;
@@ -124,9 +131,9 @@ const { label } = Astro.props;
           graph.glitch.parameters.get('near')!.setTargetAtTime(near, now, .05);
         }
         // Far: muffled and drowned in a long echo (ethereal).
-        graph.filter.frequency.setTargetAtTime(20000 - fist * (1 - near) * 19300, now, .08);
-        graph.wet.gain.setTargetAtTime(fist * (.25 + (1 - near) * .9), now, .15);
-        graph.dry.gain.setTargetAtTime(1 - fist * (1 - near) * .55, now, .15);
+        graph.filter.frequency.setTargetAtTime(20000 - fist * (1 - near) * 17500, now, .08);
+        graph.wet.gain.setTargetAtTime(fist * (.2 + (1 - near) * .6), now, .15);
+        graph.dry.gain.setTargetAtTime(1 - fist * (1 - near) * .25, now, .15);
       },
     };
   };
