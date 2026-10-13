@@ -3,7 +3,7 @@
 // screens), a liquid, grainy hole opens onto `under`. The hole follows the pointer's motion, leaves a trail that
 // slowly closes, and every edge of it (islands included) is drawn with a thin red stroke. Drawn with WebGL2; without
 // it the top video plays on its own, and with reduced motion only the still frame shows. Through the hole, the video
-// underneath is drawn like a printed contour map: thin outlines of its shapes on white, sparse digits inside them.
+// underneath is drawn like a printed contour map: thin outlines of its shapes on ivory, sparse digits inside them.
 type Props = {
   top: string;
   under: string;
@@ -41,7 +41,7 @@ const { top, under, poster, label } = Astro.props;
     asciiGlyphs: '014', // 0 along the outlines, 1 in the mid tones, 4 in the dark ones.
     asciiContrast: [.04, .52], // Brightness range stretched to full, so the shapes read clearly.
     contours: [.3, .58], // Brightness levels traced as outlines.
-    paper: [.985, .985, .98], // White paper, dark grey ink.
+    paper: [.96, .935, .87], // Ivory paper, dark grey ink.
     ink: [.2, .2, .2],
     particles: 1, // How many small islands the fading trail leaves behind (0 = none).
   };
@@ -80,7 +80,7 @@ const { top, under, poster, label } = Astro.props;
         return smoothstep(uContrast.x, uContrast.y, dot(sum / 6., vec3(.299, .587, .114)));
       }
       // The negative, printed like a contour map: thin dark outlines where the image crosses two levels of brightness,
-      // and sparse digits inside the shapes (4 in the dark, 1 in the mid tones, 0 hugging the outlines), on white.
+      // and sparse digits inside the shapes (4 in the dark, 1 in the mid tones, 0 hugging the outlines), on ivory.
       vec3 ascii() {
         float lum = lightAt(gl_FragCoord.xy);
         float w = max(fwidth(lum), 1e-4) * 1.1;
