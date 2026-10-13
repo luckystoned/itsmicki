@@ -77,8 +77,9 @@ const { label } = Astro.props;
     ] as Array<[string, number, number, number, number, number]>,
     horizon: .5, // Where the ground starts, as a share of the height.
     plants: { back: '#98a3ee', stem: '#6f8f63', front: '#5f8456' }, // Flowers on the horizon, their stems, leaves in front.
-    // Eyes are little arches (∩), smiling shut: white, or black on a white coat (light enough that white wouldn't show).
-    eyes: { light: '#ffffff', dark: '#1d1b22', whiteCoat: 205 },
+    // Eyes are little arches (∩), smiling shut: a yellowish bone white, or black on a white coat (light enough that
+    // the bone white wouldn't show).
+    eyes: { light: '#efe2bd', dark: '#1d1b22', whiteCoat: 205 },
     grain: .17, // Strength of the film grain over everything.
     // How big each kind is next to the others (a medium dog is 1).
     scale: { cat: [.6, .78, .9], dog: [.66, .92, 1.2] },
@@ -133,11 +134,13 @@ const { label } = Astro.props;
   type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep' | 'pet' | 'held' | 'fall';
   type Layer = { canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number };
   type Leg = Layer & { pivotX: number; pivotY: number; near: boolean; front: boolean };
-  type Figure = { body: Layer; legs: Leg[]; eyes: Array<{ x: number; y: number }>; eyeR: number; legLength: number; unit: number };
+  type Figure = { body: Layer; tail: Layer & { pivotX: number; pivotY: number }; legs: Leg[]; eyes: Array<{ x: number; y: number }>; eyeR: number; legLength: number; unit: number };
   type Soul = {
     id: string; look: Look; born: number; figure?: Figure; photo?: string;
     // Picked up: where its feet are in the air (px), how fast it falls, its legs' pendulum and its lean; when it landed.
     air?: number; airV?: number; swing?: number; swingV?: number; hang?: number; landed?: number; heldUnit?: number;
+    // Clicked: when (a cat raises its tail, a dog wags it).
+    happy?: number;
     // Life: its home, where it is (feet; shares of the frame), what it is doing and until when.
     hx: number; hy: number; x: number; y: number; fromX: number; fromY: number; toX: number; toY: number;
     act: Act; actStart: number; actEnd: number; face: number; faceShown: number; blink: number; phase: number; drawn: number;
@@ -159,7 +162,7 @@ const { label } = Astro.props;
     g.lineCap = 'round';
     g.lineWidth = Math.max(.9, r * .75);
     g.strokeStyle = dark ? SETTINGS.eyes.dark : SETTINGS.eyes.light;
-    g.shadowColor = dark ? 'rgba(29, 27, 34, .35)' : 'rgba(255, 255, 255, .8)';
+    g.shadowColor = dark ? 'rgba(29, 27, 34, .35)' : 'rgba(239, 226, 189, .8)';
     g.shadowBlur = r * (dark ? 1.2 : 2.2);
     g.beginPath();
     if (asleep) g.arc(x, y - r * .5, r * 1.05, Math.PI * .15, Math.PI * .85);
@@ -435,26 +438,32 @@ const { label } = Astro.props;
           s.closePath(); s.fill();
         }
       }
-      // Tail: a cat's rises in a soft curve; a dog's is shorter and wags up.
+      // Tail, on its own so it can move: a cat's rises in a soft curve; a dog's is shorter and points up.
       const tailBaseX = bodyCx - bodyLength / 2 + .03, tailBaseY = bodyCy - bodyDepth * .2;
-      s.lineWidth = (dog ? .05 : .045) * unit;
-      s.beginPath(); s.moveTo(X(tailBaseX), Y(tailBaseY));
-      if (dog) s.quadraticCurveTo(X(tailBaseX - .12), Y(tailBaseY - .02), X(tailBaseX - .14), Y(tailBaseY - .2));
-      else s.quadraticCurveTo(X(tailBaseX - .2), Y(tailBaseY - .02), X(tailBaseX - .16), Y(tailBaseY - .34 - random() * .06));
-      s.stroke();
+      const tailShape = canvasOf(W * ratio, H * ratio), ts = tailShape.getContext('2d')!;
+      ts.scale(ratio, ratio); ts.strokeStyle = '#fff'; ts.lineCap = 'round'; ts.lineWidth = (dog ? .05 : .045) * unit;
+      ts.beginPath(); ts.moveTo(X(tailBaseX + .03), Y(tailBaseY + .01));
+      if (dog) ts.quadraticCurveTo(X(tailBaseX - .12), Y(tailBaseY - .02), X(tailBaseX - .14), Y(tailBaseY - .2));
+      else ts.quadraticCurveTo(X(tailBaseX - .2), Y(tailBaseY - .02), X(tailBaseX - .16), Y(tailBaseY - .34 - random() * .06));
+      ts.stroke();
+      const tail = finish(tailShape, (c) => {
+        c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
+        coat(c, W, H);
+        if (look.pattern === 1) { c.strokeStyle = dark; c.globalAlpha = .55; c.lineWidth = .028 * unit; for (let i = 1; i <= 3; i++) { c.beginPath(); c.arc(X(tailBaseX - .05 - i * .035), Y(tailBaseY - i * .08), .03 * unit, 0, Math.PI * 2); c.stroke(); } c.globalAlpha = 1; }
+        if (look.pattern === 2) { c.fillStyle = dark; c.globalAlpha = .6; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
+      });
       const body = finish(shape, (c) => {
         c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
         coat(c, W, H);
         // Markings.
         if (look.pattern === 1) {
-          // Tabby: soft curved stripes across the back, a few on the forehead, rings on the tail.
+          // Tabby: soft curved stripes across the back, a few on the forehead (rings on the tail, painted with it).
           c.strokeStyle = dark; c.globalAlpha = .55; c.lineCap = 'round'; c.lineWidth = .028 * unit;
           for (let i = 0; i < 6; i++) {
             const x = bodyCx - bodyLength * .38 + i * bodyLength * .15;
             c.beginPath(); c.moveTo(X(x - .02), Y(bodyCy - bodyDepth * .55)); c.quadraticCurveTo(X(x + .03), Y(bodyCy), X(x - .01), Y(bodyCy + bodyDepth * .3)); c.stroke();
           }
           for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(X(headX + i * headR * .3), Y(headY - headR * .85)); c.lineTo(X(headX + i * headR * .25), Y(headY - headR * .4)); c.stroke(); }
-          for (let i = 1; i <= 3; i++) { c.beginPath(); c.arc(X(tailBaseX - .05 - i * .035), Y(tailBaseY - i * .08), .03 * unit, 0, Math.PI * 2); c.stroke(); }
           c.globalAlpha = 1;
         } else if (look.pattern === 2) {
           // Patches: the darkest colour on the back and head, the lightest on the chest, belly and muzzle.
@@ -496,6 +505,7 @@ const { label } = Astro.props;
       const eyeY = headY - headR * .1, eyes = (dog ? [headX + headR * .05, headX + headR * .55] : [headX - headR * .15, headX + headR * .45]).map((ex) => ({ x: (ex - bodyCx) * unit, y: (eyeY - 1) * unit }));
       return {
         body: { canvas: body, x: -X(bodyCx), y: -Y(1), w: W, h: H },
+        tail: { canvas: tail, x: -X(bodyCx), y: -Y(1), w: W, h: H, pivotX: X(tailBaseX), pivotY: Y(tailBaseY) },
         legs, eyes, eyeR: headR * .16 * unit, legLength: legLength * unit, unit,
       };
     };
@@ -556,7 +566,7 @@ const { label } = Astro.props;
       for (const ex of [-.026, .03]) drawEye(g, cx + ex * u, top + .135 * u, .008 * u);
       keeper = out;
       // Her arms, each an upper arm from the shoulder and a forearm with the hand from the elbow, tapering, soft and
-      // glowing like her. The shoulder melts into her body; arms and hands are white.
+      // glowing like her. The shoulder melts into her body; arms and hands are a yellowish bone white.
       // Like the reference: a puffed sleeve at the shoulder, a slender arm, and a hand with soft fingers; pale at the
       // sleeve, turning lilac-blue towards the hand.
       const limb = (length: number, from: number, to: number, colours: string[], hand: boolean, sleeve: boolean): Limb => {
@@ -591,22 +601,39 @@ const { label } = Astro.props;
         return { canvas: done, w: form.width, h: form.height, pivotX: ax, pivotY: y0, length };
       };
       keeperArms = {
-        reachUpper: limb(UPPER * u, .028 * u, .019 * u, ['#fcf8ec', '#fcfbf6'], false, true),
-        reachLower: limb(FOREARM * u, .019 * u, .013 * u, ['#fcfbf6', '#fefefe', '#ffffff'], true, false),
-        restUpper: limb(UPPER * u, .028 * u, .019 * u, ['#fcf8ec', '#fcfbf6'], false, true),
-        restLower: limb(FOREARM * u, .019 * u, .013 * u, ['#fcfbf6', '#fefefe', '#ffffff'], true, false),
+        reachUpper: limb(UPPER * u, .028 * u, .019 * u, ['#f8f0dc', '#efe3c2'], false, true),
+        reachLower: limb(FOREARM * u, .019 * u, .013 * u, ['#efe3c2', '#ebddb6', '#e6d6aa'], true, false),
+        restUpper: limb(UPPER * u, .028 * u, .019 * u, ['#f8f0dc', '#efe3c2'], false, true),
+        restLower: limb(FOREARM * u, .019 * u, .013 * u, ['#efe3c2', '#ebddb6', '#e6d6aa'], true, false),
       };
     };
-    let petting = 0; // Until when she is stroking a newcomer.
-    // Her shoulders and her reaching hand, in the frame (shares of width and height).
+    // Until when she is stroking an animal, and with which hand (-1 our left, 1 our right).
+    let petting = 0, pettingSide: -1 | 1 = -1;
+    // Her shoulders and her hands, in the frame (shares of width and height).
     const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.09 * K() * height) / width, y: 1.02 - K() + .245 * K() });
-    // At rest (angles from straight down; positive swings to her right, our left): the reaching arm hangs a little out
-    // with the elbow softly bent towards the animals; the other one hangs along her side.
-    const UPPER_ANGLE = .26, FOREARM_ANGLE = .5, REST_UPPER = -.14, REST_FOREARM = -.05;
-    const handAt = () => {
-      const sh = shoulder(-1);
-      const dx = -(Math.sin(UPPER_ANGLE) * UPPER + Math.sin(FOREARM_ANGLE) * FOREARM) * K(), dy = (Math.cos(UPPER_ANGLE) * UPPER + Math.cos(FOREARM_ANGLE) * FOREARM) * K();
+    // At rest (angles from straight down; positive swings to her right, our left): both arms hang a little out with the
+    // elbows softly bent towards the animals, one to each side, the second a touch closer to her.
+    const UPPER_ANGLE = .26, FOREARM_ANGLE = .5, REST_UPPER = -.22, REST_FOREARM = -.4;
+    const handAt = (side: -1 | 1 = -1) => {
+      const sh = shoulder(side), upper = side < 0 ? UPPER_ANGLE : REST_UPPER, lower = side < 0 ? FOREARM_ANGLE : REST_FOREARM;
+      const dx = -(Math.sin(upper) * UPPER + Math.sin(lower) * FOREARM) * K(), dy = (Math.cos(upper) * UPPER + Math.cos(lower) * FOREARM) * K();
       return { x: sh.x + dx * height / width, y: sh.y + dy };
+    };
+    /** Where an animal stands to be stroked by that hand: its head comes up to it (bigger ones a little further down). */
+    const underHand = (soul: Soul, side: -1 | 1) => {
+      const hand = handAt(side), x = Math.min(.94, Math.max(.06, hand.x + side * .03)), keepY = soul.y;
+      let y = hand.y + .2;
+      for (let i = 0; i < 4; i++) { soul.y = y; y = hand.y + unitAt(soul) * .85 / height; }
+      soul.y = keepY;
+      return { x, y: Math.min(.97, y) };
+    };
+    /** She strokes it for a few seconds; then it walks back to its place. */
+    const stroke = (soul: Soul, side: -1 | 1, now: number) => {
+      const spot = underHand(soul, side);
+      soul.x = soul.fromX = soul.toX = spot.x; soul.y = soul.fromY = soul.toY = spot.y;
+      soul.face = soul.faceShown = side < 0 ? 1 : -1;
+      soul.act = 'pet'; soul.actStart = now; soul.actEnd = now + 5000; soul.air = undefined;
+      petting = soul.actEnd; pettingSide = side;
     };
     const drawArm = (from: { x: number; y: number }, upperAngle: number, lowerAngle: number, upperLimb: Limb, lowerLimb: Limb, sway: number) => {
       context.save();
@@ -789,7 +816,12 @@ const { label } = Astro.props;
         // Its pose for what it is doing, eased in and out so one thing flows into the next.
         const into = ease(Math.min(1, (now - soul.actStart) / 700)) * ease(Math.min(1, Math.max(0, (soul.actEnd - now) / 700)));
         const breath = Math.sin(t * 1.5 + soul.phase);
-        let lift = 0, sx = 1, sy = 1 + breath * .008, tilt = 0, eyesOpen = 1, stride = 0, pace = 0, fold = 0;
+        let lift = 0, sx = 1, sy = 1 + breath * .008, tilt = 0, eyesOpen = 1, stride = 0, pace = 0, fold = 0, frontFold = 0, bow = 0;
+        // How glad it is (0–1): for about three seconds after a click, and all the while she strokes it.
+        const since = soul.happy ? (now - soul.happy) / 1000 : Infinity;
+        const clicked = calm || since >= 2.8 || soul.act === 'held' || soul.act === 'fall' ? 0 : ease(Math.min(1, since / .3, (2.8 - since) / .5));
+        const stroked = !calm && soul.act === 'pet' ? ease(Math.min(1, (now - soul.actStart) / 400, Math.max(0, (soul.actEnd - now) / 500))) : 0;
+        const glad = Math.max(clicked, stroked), gladFor = stroked > clicked ? (now - soul.actStart) / 1000 : since;
         if (!calm) {
           if (soul.act === 'walk') {
             // Steps follow the ground actually covered, so the legs slow down as it starts and stops.
@@ -814,6 +846,8 @@ const { label } = Astro.props;
           if (soul.act === 'pet') { tilt = -soul.face * .025 * into; fold = .15 * into; }
           // Landing after a drop: a little crouch.
           if (soul.landed && now - soul.landed < 320) { const c = 1 - (now - soul.landed) / 320; fold = Math.max(fold, c * .3); sy *= 1 - c * .04; }
+          // Clicked, a cat bows: front paws down and forward, rear up (its tail rises, below), as when it likes a stroke.
+          if (soul.look.kind === 'cat' && glad) { bow = .32 * glad; frontFold = .55 * glad; }
           // Blinks.
           if (now > soul.blink + 4200 + (soul.phase * 600)) soul.blink = now;
           if (now - soul.blink < 140) eyesOpen = 0;
@@ -829,7 +863,12 @@ const { label } = Astro.props;
               soul.air = soul.y * height;
               soul.landed = now;
               if (soul.airV > 260) soul.airV *= -.28;
-              else { soul.act = 'sit'; soul.actStart = now; soul.actEnd = now + 2500; soul.hx = soul.x; soul.hy = soul.y; soul.air = undefined; }
+              else {
+                // Set down by one of her hands, she strokes it; anywhere else, that becomes its place.
+                const side = ([-1, 1] as const).find((hand) => { const spot = underHand(soul, hand); return Math.abs(soul.x - spot.x) < .09 && Math.abs(soul.y - spot.y) < .12; });
+                if (side && now >= petting) stroke(soul, side, now);
+                else { soul.act = 'sit'; soul.actStart = now; soul.actEnd = now + 2500; soul.hx = soul.x; soul.hy = soul.y; soul.air = undefined; }
+              }
             }
           }
           const shake = soul.act === 'held' && held ? held.ax : 0;
@@ -854,6 +893,8 @@ const { label } = Astro.props;
         const shade = context.createRadialGradient(0, 0, 0, 0, 0, unit * .55); shade.addColorStop(0, '#2b2166'); shade.addColorStop(1, 'rgba(43, 33, 102, 0)');
         context.fillStyle = shade; context.fillRect(-unit, -unit, unit * 2, unit * 2); context.restore();
         context.rotate(tilt);
+        // Bowing pivots on its back paws, so its body goes diagonal: chest low, rear and tail up.
+        if (bow) { const back = -facing * unit * .2; context.translate(back, 0); context.rotate(facing * bow); context.translate(-back, 0); }
         context.scale(soul.faceShown * sx * k, sy * k);
         // Folded legs lower the body by as much.
         const drop = figure.legLength * fold;
@@ -867,10 +908,22 @@ const { label } = Astro.props;
           context.save();
           context.translate(leg.x, leg.y + drop);
           context.rotate(swing);
-          context.scale(1, 1 - fold);
+          context.scale(1, 1 - Math.max(fold, leg.front ? frontFold : 0));
           context.drawImage(leg.canvas, -leg.pivotX, -leg.pivotY, leg.w, leg.h);
           context.restore();
         };
+        // Its tail, behind it: a little sway of its own; clicked, a cat raises it straight up with the tip quivering (as
+        // when it likes being stroked) and a dog wags it.
+        const tailAngle = (() => {
+          if (calm) return 0;
+          const idle = Math.sin(t * 1.1 + soul.phase) * .04;
+          return soul.look.kind === 'cat' ? idle * (1 - glad) + glad * (.44 + Math.sin(gladFor * 14) * .035) : idle * (1 - glad) + glad * Math.sin(gladFor * 2 * Math.PI * 3.2) * .5;
+        })();
+        context.save();
+        context.translate(figure.tail.x + figure.tail.pivotX, figure.tail.y + figure.tail.pivotY + drop);
+        context.rotate(tailAngle);
+        context.drawImage(figure.tail.canvas, -figure.tail.pivotX, -figure.tail.pivotY, figure.tail.w, figure.tail.h);
+        context.restore();
         figure.legs.filter((leg) => !leg.near).forEach(drawLeg);
         context.drawImage(figure.body.canvas, figure.body.x, figure.body.y + drop, figure.body.w, figure.body.h);
         figure.legs.filter((leg) => leg.near).forEach(drawLeg);
@@ -882,22 +935,22 @@ const { label } = Astro.props;
       const herLine = .86;
       order.filter((soul) => soul.y < herLine).forEach(drawSoul);
       const sway = calm ? 0 : Math.sin(t * .5) * height * .003;
-      if (keeperArms) {
-        // The arm along her side, behind her glow, swaying a little.
-        const idle = calm ? 0 : Math.sin(t * .7 + 1) * .02;
-        drawArm(shoulder(1), REST_UPPER + idle, REST_FOREARM + idle * 1.4, keeperArms.restUpper, keeperArms.restLower, sway);
-      }
       if (keeper) {
         const w = keeper.width / ratio, h = keeper.height / ratio, size = base * KEEPER;
         context.drawImage(keeper, width * .5 - w / 2, height * 1.02 - (size * KEEPER_PAD + size) + sway, w, h);
       }
       order.filter((soul) => soul.y >= herLine).forEach(drawSoul);
       if (keeperArms) {
-        // Her reaching arm: resting, it sways a little; stroking a newcomer, it goes back and forth along its back. The
+        // Her two arms: resting, they sway a little; the one stroking an animal goes back and forth along its back. The
         // stroke comes from the elbow and wrist, the shoulder barely moves: slow, even, like a real caress.
         const stroking = !calm && now < petting ? ease(Math.min(1, (petting - now) / 600, (now - petting + 5000) / 600)) : 0;
-        const idle = calm ? 0 : Math.sin(t * .8) * .02, stroke = Math.sin(t * 2 * Math.PI * .65);
-        drawArm(shoulder(-1), UPPER_ANGLE + idle + stroking * (.06 + stroke * .05), FOREARM_ANGLE + idle * 1.5 + stroking * (.12 + stroke * .2), keeperArms.reachUpper, keeperArms.reachLower, sway);
+        const motion = Math.sin(t * 2 * Math.PI * .65);
+        for (const side of [-1, 1] as const) {
+          const idle = calm ? 0 : Math.sin(t * (side < 0 ? .8 : .7) + (side < 0 ? 0 : 1)) * .02, k = side === pettingSide ? stroking : 0;
+          const upper = side < 0 ? UPPER_ANGLE : REST_UPPER, lower = side < 0 ? FOREARM_ANGLE : REST_FOREARM;
+          drawArm(shoulder(side), upper + idle - side * k * (.06 + motion * .05), lower + idle * 1.5 - side * k * (.12 + motion * .2),
+            side < 0 ? keeperArms.reachUpper : keeperArms.restUpper, side < 0 ? keeperArms.reachLower : keeperArms.restLower, sway);
+        }
       }
       plants.front.forEach((plant) => drawPlant(plant, t, .8));
       // Whoever is in the air, over everything.
@@ -943,7 +996,7 @@ const { label } = Astro.props;
       return best;
     };
     // Picking them up: press on one (or touch it) and drag; let go and it falls back down.
-    let held: { soul: Soul; offX: number; offY: number; vx: number; ax: number; lastX: number; lastT: number; id: number } | null = null;
+    let held: { soul: Soul; offX: number; offY: number; vx: number; ax: number; lastX: number; lastT: number; id: number; startX: number; startY: number; startT: number; moved: boolean } | null = null;
     const local = (event: { clientX: number; clientY: number }) => { const rect = canvas.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };
     const grabbable = (value: boolean) => { if (root.hasAttribute('data-grab') !== value) { root.toggleAttribute('data-grab', value); document.dispatchEvent(new Event('project-preview-refresh')); } };
     root.addEventListener('pointerdown', (event) => {
@@ -952,7 +1005,7 @@ const { label } = Astro.props;
       nameShown.id = soul.id; nameShown.until = performance.now() + 2500;
       if (calm) return;
       const { x, y } = local(event), feet = soul.air ?? soul.y * height;
-      held = { soul, offX: soul.x * width - x, offY: feet - y, vx: 0, ax: 0, lastX: x, lastT: performance.now(), id: event.pointerId };
+      held = { soul, offX: soul.x * width - x, offY: feet - y, vx: 0, ax: 0, lastX: x, lastT: performance.now(), id: event.pointerId, startX: x, startY: y, startT: performance.now(), moved: false };
       // It keeps its size while held (lifted up close, not sent far away).
       soul.heldUnit = unitAt(soul);
       soul.act = 'held'; soul.actStart = performance.now(); soul.actEnd = Infinity; soul.air = feet; soul.airV = 0;
@@ -964,6 +1017,7 @@ const { label } = Astro.props;
       if (held && event.pointerId === held.id) {
         const { x, y } = local(event), now = performance.now(), dt = Math.max(.008, (now - held.lastT) / 1000);
         const vx = (x - held.lastX) / dt;
+        if (Math.hypot(x - held.startX, y - held.startY) > 6) held.moved = true;
         held.ax = (vx - held.vx) / dt; held.vx = vx; held.lastX = x; held.lastT = now;
         const soul = held.soul, feet = Math.min(height * .99, y + held.offY);
         soul.x = Math.min(.97, Math.max(.03, (x + held.offX) / width));
@@ -979,7 +1033,11 @@ const { label } = Astro.props;
     });
     const release = (event: PointerEvent) => {
       if (!held || event.pointerId !== held.id) return;
-      held.soul.act = 'fall'; held.soul.airV = 0; held.soul.actEnd = Infinity;
+      // A click (pressed and let go without dragging): it stays where it is and answers with its tail (and a cat bows).
+      if (!held.moved && performance.now() - held.startT < 450) {
+        const now = performance.now(), soul = held.soul;
+        soul.happy = now; soul.act = 'sit'; soul.actStart = now; soul.actEnd = now + 3200; soul.air = undefined; soul.heldUnit = undefined;
+      } else { held.soul.act = 'fall'; held.soul.airV = 0; held.soul.actEnd = Infinity; }
       held = null;
       root.removeAttribute('data-grab-active');
       document.dispatchEvent(new Event('project-preview-refresh'));
@@ -1049,6 +1107,7 @@ const { label } = Astro.props;
       const figure = paintFigure({ id: 'preview', look } as Soul, Math.round(unit));
       g.setTransform(ratio, 0, 0, ratio, 0, 0);
       g.translate(w / 2 - unit * .05, h * .94);
+      g.drawImage(figure.tail.canvas, figure.tail.x, figure.tail.y, figure.tail.w, figure.tail.h);
       figure.legs.filter((leg) => !leg.near).forEach((leg) => g.drawImage(leg.canvas, leg.x - leg.pivotX, leg.y - leg.pivotY, leg.w, leg.h));
       g.drawImage(figure.body.canvas, figure.body.x, figure.body.y, figure.body.w, figure.body.h);
       figure.legs.filter((leg) => leg.near).forEach((leg) => g.drawImage(leg.canvas, leg.x - leg.pivotX, leg.y - leg.pivotY, leg.w, leg.h));
@@ -1258,16 +1317,8 @@ const { label } = Astro.props;
         } else keepLocally({ id, photo });
         // A newcomer is welcomed under her hand, and she strokes it for a few seconds before it goes to its place.
         const newcomer = meet(id, look, souls.length, performance.now());
-        const hand = handAt();
-        newcomer.x = newcomer.fromX = newcomer.toX = Math.max(.06, hand.x - .03);
-        // Standing where its head comes up to her hand (bigger animals stand a little further down).
-        let y = hand.y + .2;
-        for (let i = 0; i < 4; i++) { newcomer.y = y; y = hand.y + unitAt(newcomer) * .85 / height; }
-        newcomer.y = newcomer.fromY = newcomer.toY = Math.min(.97, y);
-        newcomer.face = newcomer.faceShown = 1;
-        newcomer.act = 'pet'; newcomer.actStart = performance.now(); newcomer.actEnd = newcomer.actStart + 5000;
+        stroke(newcomer, -1, performance.now());
         newcomer.photo = photo;
-        petting = newcomer.actEnd;
         souls.push(newcomer);
         if (calm) draw(0);
         setStatus(shared ? 'Welcome. They’re in good company now, for good.' : 'Welcome. They’re in good company now (kept on this device).');
