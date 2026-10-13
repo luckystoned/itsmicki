@@ -23,7 +23,8 @@ const { label } = Astro.props;
     track: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Track.mp3', // The song (not in the site yet).
     loop: 4, // Seconds the glitch pattern takes to come round.
     hits: [[3, 2], [8, 1], [12, 9], [29, 2], [33, 1], [36, 4], [45, 2], [49, 1], [52, 3], [59, 2], [64, 14], [82, 1], [86, 2], [90, 3]] as Array<[number, number]>, // ta ta piiii tatatta… (in 24ths of a second)
-    lime: 'rgba(206,240,98,', dashes: ['#0b0a0a', '#151313', '#000000', '#211e1d', '#f2f0ec'], // Dead pixels: black, a near-black or two, now and then white.
+    line: 'rgba(146,168,196,', // The tracking boxes and their wires: a muted blue.
+    dashes: ['#0b0a0a', '#151313', '#000000', '#211e1d', '#f2f0ec'], // Dead pixels: black, a near-black or two, now and then white.
     hand: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
   };
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -215,7 +216,7 @@ const { label } = Astro.props;
       for (const { boxes } of groups) for (const [x, yy, w, h] of boxes) if (w > 0 && h > 0) context.drawImage(footage, x, yy, w, h, x, yy, w, h);
       context.lineWidth = Math.max(1, U * .9);
       for (const { boxes, quiet, b, cx, cy } of groups) {
-        context.strokeStyle = SETTINGS.lime + '.55)'; context.beginPath();
+        context.strokeStyle = SETTINGS.line + '.55)'; context.beginPath();
         for (let n = 1; n < boxes.length; n++) if (hash(b, n, 12) < .45) { const p = boxes[n], q = boxes[Math.floor(hash(b, n, 13) * boxes.length)]; context.moveTo(p[0] + p[2] / 2, p[1] + p[3] / 2); context.lineTo(q[0] + q[2] / 2, q[1] + q[3] / 2); }
         context.stroke();
         if (!quiet) { context.strokeStyle = 'rgba(255,255,255,.55)'; context.beginPath(); const p = boxes[0], q = boxes[boxes.length - 1];
@@ -223,7 +224,7 @@ const { label } = Astro.props;
       }
       context.font = `${Math.round(12 * Math.max(U, .85))}px ui-monospace, Menlo, monospace`; context.textBaseline = 'top';
       for (const { boxes, b } of groups) for (const [x, yy, w, h, n] of boxes) {
-        context.strokeStyle = SETTINGS.lime + '.85)'; context.strokeRect(x + .5, yy + .5, w - 1, h - 1);
+        context.strokeStyle = SETTINGS.line + '.85)'; context.strokeRect(x + .5, yy + .5, w - 1, h - 1);
         if (hash(b, n, 17) < .7) { const label = `(loop (format t "~%"))  ${(2179000 + Math.floor(hash(b, n, 18) * 9999)).toFixed(1)}`, lx = x - (hash(b, n, 19) < .5 ? context.measureText(label).width + 6 : -w - 6);
           context.fillStyle = 'rgba(255,255,255,.8)'; context.fillText(label, clamp(lx, 4, W - 200 * U), yy + Math.min(h - 4, 4)); }
       }
