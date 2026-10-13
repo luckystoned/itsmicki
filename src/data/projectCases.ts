@@ -592,7 +592,7 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
     title: 'Nostalgia as Agony',
     year: '2026',
     role: 'Art Direction,<br>Immersive Design,<br>Depressed as hell',
-    nutshell: `A personal archive of childhood footage, reshaped through glitch and broken noises to evoke memories that blur, fracture, and slip away—along with the people who once filled them.`,
+    nutshell: `A personal archive of childhood footage, reshaped through glitch and broken noises to evoke memories that blur, fracture, and slip away—along with the people who once filled them.<span class="case-nutshell-note">(Take into account that this interaction has sound)</span>`,
     drags: [],
     // As in Figma (954:3347): the piece, then the concept.
     blocks: [
