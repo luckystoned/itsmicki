@@ -1433,11 +1433,16 @@ const vimeoUrl = (id: string) =>
     .project-case-page[data-case='textures-body'] .case-text-content > .case-text-columns > p:only-child { flex: none; width: 47.94vw; }
     /* "(synthetic bodies)": the opening sentence at the large copy size, the two columns below it, as in Figma. */
     .project-case-page[data-case='textures-body'] .case-text-content > .case-text-lead { width: 77.06vw; margin-bottom: 2.5vw; font-size: 4.03vw; line-height: .868; letter-spacing: -.03em; }
+    /* Contained Alienation, "(art direction)": title and opening sentence at the large copy size, the two columns
+       below (Figma 950:3076). */
+    .project-case-page[data-case='contained-alienation'] .case-text-lead > h2 { font-size: 4.03vw; line-height: .868; letter-spacing: -.03em; }
+    .project-case-page[data-case='contained-alienation'] .case-text-content > .case-text-lead { margin-bottom: 2.5vw; font-size: 4.03vw; line-height: .868; letter-spacing: -.03em; }
+    .project-case-page[data-case='contained-alienation'] .case-text-content > .case-text-columns { gap: 1.5vw; }
   }
 
   /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='missing-souls']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='contained-alienation'], .project-case-page[data-case='missing-souls']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
       text-align: justify;
     }
   }
@@ -1750,6 +1755,11 @@ const vimeoUrl = (id: string) =>
     .project-case-page-b .case-year {
       margin-left: 2.2vw;
     }
+
+    /* Side B: on phones the text columns read as one paragraph (on desktop they split it mid-sentence). */
+    .project-case-page-b .case-text-columns { display: block; }
+    .project-case-page-b .case-text-columns p { display: inline; }
+    .project-case-page-b .case-text-columns p + p::before { content: ' '; }
 
     /* Missing souls stands tall on phones, almost a story: more sky above her and more ground for the animals. */
     .case-media-single .case-media-surface:has(.souls-field) {
