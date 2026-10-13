@@ -5,14 +5,14 @@
  *
  * Each soul is two blobs with the same stem: its photo (a JPEG the visitor's browser cropped around the animal and
  * re-drew, so no location or camera details travel with it), shown in the list of who's here; and its look, kept in
- * its own pathname: c(at) or d(og), size (0–2), markings (0 plain, 1 tabby, 2 patches), build (0 thin … 9 chubby),
- * three colours, then its name
- * and its owner's (hex of their UTF-8), e.g. "souls/<stem>_c114_f2d9b0b98a5e4a3326_4d696c6f_4d69636b69.json".
+ * its own pathname: c(at) or d(og), size (0–2), coat (0 plain, 1 tabby, 2 patches, 3 tortoiseshell), build (0 thin …
+ * 9 chubby), three colours, its name and its owner's (hex of their UTF-8), and any markings ("_x" and bits in hex),
+ * e.g. "souls/<stem>_c114_f2d9b0b98a5e4a3326_4d696c6f_4d69636b69.json".
  *
  * Whoever leaves a soul gets a key (kept in their browser) to change its look or take it out again; only the key's
  * SHA-256 is stored, inside the look's blob.
  *
- *   GET    /api/souls                    → { souls: Array<{ id, photo? }> (oldest first), cap }
+ *   GET    /api/souls                    → { souls: Array<{ id, photo?, marks? }> (oldest first), cap }
  *   POST   /api/souls { look, photo }     → 201 { id, photo, key } · 409 { full: true } when full · 400 if it is not a soul
  *   PATCH  /api/souls { id, key, look }   → 200 { id } (its new id) · 403 with the wrong key · 404 if it is gone
  *   DELETE /api/souls { id, key }         → 200 { gone: id } · 403 with the wrong key · 404 if it is gone
@@ -21,10 +21,16 @@ import { del, list, put } from '@vercel/blob';
 
 const CAP = 42; // Souls the place holds; then it is full (until someone takes theirs out).
 const PREFIX = 'souls/';
-const LOOK = /^[cd][012][012][0-9]_[0-9a-f]{18}_[0-9a-f]{2,40}_[0-9a-f]{2,40}$/; // Look (with build 0–9), name, owner.
+// Look (coat 0–3, build 0–9), name, owner, and its markings if it has any.
+const LOOK = /^[cd][012][0-3][0-9]_[0-9a-f]{18}_[0-9a-f]{2,40}_[0-9a-f]{2,40}(?:_x[0-9a-f]{1,4})?$/;
 const MAX_PHOTO = 600_000; // Bytes of JPEG.
 // Souls taken out of the place (by their stem), without deleting their files: Lexie, who is alive.
 const HIDDEN = new Set(['mv41f4ng-3a584adb']);
+// Photos replaced by hand (by stem), served from the site: Sandia's was kept blank by the browser it was left from.
+const PHOTOS: Record<string, string> = { 'mv4c70zh-7573a7b7': '/04_SideB/Projects/04_MissingSouls/souls/sandia.jpg' };
+// Markings added by hand (by stem, bits as in the site's MARKS) to souls left before they could be chosen:
+// Mirko and Sandia have pricked ears (1024).
+const MARKS: Record<string, number> = { 'mv459j8u-ca3564ca': 1024, 'mv4c70zh-7573a7b7': 1024 };
 
 const json = (body: unknown, status = 200, cache = 'no-store') =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': cache } });
@@ -60,7 +66,7 @@ export async function GET() {
   const photos = new Map(blobs.filter((blob) => blob.pathname.endsWith('.jpg')).map((blob) => [stemOf(blob.pathname), blob.url]));
   // Oldest first, by when they were left (the stem starts with that time), so an edited soul keeps its place.
   const souls = blobs.filter((blob) => blob.pathname.endsWith('.json')).sort((a, b) => stemOf(a.pathname).localeCompare(stemOf(b.pathname)))
-    .map((blob) => ({ id: blob.pathname, photo: photos.get(stemOf(blob.pathname)) }));
+    .map((blob) => ({ id: blob.pathname, photo: PHOTOS[stemOf(blob.pathname)] ?? photos.get(stemOf(blob.pathname)), marks: MARKS[stemOf(blob.pathname)] }));
   // Cached at the edge for 30 seconds: listing counts against Blob's monthly operations (2,000 on Hobby). Whoever just
   // added a soul sees it right away anyway (their browser adds it until the list catches up).
   return json({ souls, cap: CAP }, 200, 'public, max-age=0, s-maxage=30, stale-while-revalidate=120');
