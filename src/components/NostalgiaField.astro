@@ -2,8 +2,9 @@
 // Nostalgia as Agony: a memory that won't hold still. The footage (for now a still) is pixel-stretched into vertical
 // streaks, with two clusters of tracking boxes where it shows clean and, in hits, thin slices slipping sideways and
 // dashed rows of dead pixels, as in the cover. A hand in front of the camera (or the pointer) draws the tracking to
-// it and the image opens up there; a closed fist (or a held press) breaks everything, image and sound: near the
-// camera (or high in the frame) the song breaks higher and harsher, far (or low) lower and ethereal. The camera image
+// it and the image opens up there, the glitch growing as it comes near the camera (or up the frame) and shrinking as
+// it goes away; a closed fist (or a held press) breaks everything, image and sound: near the camera (or high in the
+// frame) the song breaks higher and harsher, far (or low) lower and ethereal. The camera image
 // stays on the device; the sound only starts when asked for. With reduced motion only the still shows.
 type Props = { label: string };
 const { label } = Astro.props;
@@ -126,6 +127,8 @@ const { label } = Astro.props;
 
     // The hand (camera or pointer), as shares of the frame; how closed (fist 0–1) and how near (0–1) it is.
     let hand: { x: number; y: number } | null = null, handShown = 0, fistTarget = 0, fist = 0, near = .5;
+    // How big the glitch is: larger with the hand near, smaller with it far (1 with no hand).
+    let scale = 1;
 
     // Drawing: one frame of the cover's glitch, live.
     let beatSeed = 0;
@@ -155,7 +158,7 @@ const { label } = Astro.props;
         const boxes: Array<[number, number, number, number, number]> = [];
         for (let n = 0; n < count; n++) {
           const big = n === 0 && (hash(b, 3) < .5 || open > .3), mid = n < 3 + open * 4 && !big && hash(b, n, 4) < .6;
-          const s = big ? (220 + hash(b, 5) * 320) * (1 + open * .6) : mid ? 80 + hash(b, n, 6) * 140 : 10 + hash(b, n, 7) * 46;
+          const s = (big ? (220 + hash(b, 5) * 320) * (1 + open * .6) : mid ? 80 + hash(b, n, 6) * 140 : 10 + hash(b, n, 7) * 46) * (g === 0 ? scale : 1);
           const w = Math.round(s * U * (.6 + hash(b, n, 8) * .8)), h = Math.round(s * U * (.8 + hash(b, n, 9) * 1.2));
           const spread = big ? .15 : .55 - open * .2;
           const x = Math.round(cx + (hash(b, n, 10) - .5) * W * spread - w / 2), yy = Math.round(cy + (hash(b, n, 11) - .5) * H * spread - h / 2);
@@ -193,11 +196,11 @@ const { label } = Astro.props;
         for (let c = 0; c < clusters; c++) {
           const nearHand = hash(seed, c, 2) < .65, tr = groups[c % 2];
           const cy = nearHand ? tr.cy + (hash(seed, c, 3) - .5) * H * .6 : hash(seed, c, 3) * H, cx = nearHand ? tr.cx + (hash(seed, c, 4) - .5) * W * .4 : hash(seed, c, 4) * W;
-          const cw = W * (.18 + hash(seed, c, 5) * .32 + fist * .2), ch = H * (.04 + hash(seed, c, 6) * .12 + fist * .1);
+          const cw = W * Math.min(.95, (.18 + hash(seed, c, 5) * .32 + fist * .2) * scale), ch = H * (.04 + hash(seed, c, 6) * .12 + fist * .1) * scale;
           const x0 = Math.round(cx - cw / 2);
           let yy = Math.round(cy - ch / 2);
           while (yy < cy + ch / 2) {
-            const h = Math.max(1, Math.round((3 + hash(seed, c, yy) * 26) * U)), r = hash(seed, yy, 7);
+            const h = Math.max(1, Math.round((3 + hash(seed, c, yy) * 26) * U * scale)), r = hash(seed, yy, 7);
             const xs = Math.round(x0 + (hash(seed, yy, 8) - .5) * cw * .4), w = Math.round(cw * (.4 + hash(seed, yy, 9) * .7));
             const dx = Math.round((hash(seed, yy, 10) - .5) * cw * (.5 + fist * near));
             if (w > 0) {
@@ -207,9 +210,9 @@ const { label } = Astro.props;
             yy += h + (hash(seed, yy, 13) < .6 ? 0 : Math.round(hash(seed, yy, 14) * 14 * U));
           }
           if (hash(seed, c, 15) < .85) for (let l = 0; l < 1 + Math.floor(hash(seed, c, 16) * 3); l++) {
-            const ly = Math.round(cy + (hash(seed, c, l + 17) - .5) * ch * 1.4), lh = Math.max(1, Math.round((4 + hash(seed, c, l + 20) * 6) * U));
+            const ly = Math.round(cy + (hash(seed, c, l + 17) - .5) * ch * 1.4), lh = Math.max(1, Math.round((4 + hash(seed, c, l + 20) * 6) * U * scale));
             let x = Math.round(x0 - cw * .3 * hash(seed, c, l + 22)); const end = x + cw * (1 + hash(seed, c, l + 23) * .6);
-            while (x < end) { const dw = Math.max(1, Math.round((2 + hash(x, ly, seed) * 12) * U));
+            while (x < end) { const dw = Math.max(1, Math.round((2 + hash(x, ly, seed) * 12) * U * scale));
               if (hash(x, ly, seed + 1) < .55) { context.fillStyle = SETTINGS.dashes[Math.floor(hash(x, ly, seed + 2) * SETTINGS.dashes.length)]; context.fillRect(x, ly, dw, lh); }
               x += dw + Math.round(hash(x, ly, seed + 3) * 16 * U); }
           }
@@ -223,7 +226,7 @@ const { label } = Astro.props;
     // in the frame = near, low = far).
     let cameraOn = false;
     const local = (event: PointerEvent) => { const r = canvas.getBoundingClientRect(); return { x: clamp((event.clientX - r.left) / r.width), y: clamp((event.clientY - r.top) / r.height) }; };
-    root.addEventListener('pointermove', (event) => { if (cameraOn) return; hand = local(event); if (fistTarget) near = 1 - hand.y; });
+    root.addEventListener('pointermove', (event) => { if (cameraOn) return; hand = local(event); near = 1 - hand.y; });
     root.addEventListener('pointerleave', () => { if (cameraOn) return; hand = null; fistTarget = 0; });
     root.addEventListener('pointerdown', (event) => { if (cameraOn) return; hand = local(event); near = 1 - hand.y; fistTarget = 1; root.setPointerCapture(event.pointerId); });
     const release = () => { if (!cameraOn) fistTarget = 0; };
@@ -299,6 +302,7 @@ const { label } = Astro.props;
       if (!visible) { running = false; if (sound.on) { sound.stop(); setSoundLabel(); } return; }
       fist += (fistTarget - fist) * .18;
       handShown += ((hand ? 1 : 0) - handShown) * .08;
+      scale += ((hand ? .5 + near * 1.1 : 1) - scale) * .12;
       draw(time);
       sound.shape(fist, near, time / 1000);
       requestAnimationFrame(frame);
