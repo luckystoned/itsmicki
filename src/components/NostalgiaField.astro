@@ -32,62 +32,101 @@ const { label } = Astro.props;
   const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const TAU = Math.PI * 2;
 
-  /** The song, broken by the hand: pitch and speed, distortion with a bit-crush, a low-pass and a long, cold echo. */
+  // The glitch itself, sample by sample (an AudioWorklet): while `amount` is up, bits of what just played are caught
+  // and repeated (a scratched CD), the sound is crushed to fewer bits and a lower rate (harsh, metallic) and drops out
+  // for an instant now and then. `near` makes it all faster, shorter and harsher.
+  const GLITCH = `
+    class Glitch extends AudioWorkletProcessor {
+      static get parameterDescriptors() { return [{ name: 'amount', defaultValue: 0, minValue: 0, maxValue: 1 }, { name: 'near', defaultValue: .5, minValue: 0, maxValue: 1 }]; }
+      constructor() { super(); this.size = sampleRate | 0; this.buf = [new Float32Array(this.size), new Float32Array(this.size)]; this.w = 0; this.hold = [0, 0]; this.count = 0; this.rep = null; this.drop = 0; }
+      process(inputs, outputs, params) {
+        const input = inputs[0], output = outputs[0];
+        if (!input || !input.length) return true;
+        const a = params.amount[0], near = params.near[0], n = output[0].length;
+        if (a > .02) {
+          if (!this.rep && Math.random() < a * (.03 + near * .08)) {
+            const len = Math.max(64, Math.floor(sampleRate * (.025 + (1 - near) * .1) * (.5 + Math.random())));
+            this.rep = { start: (this.w - len + this.size) % this.size, len, pos: 0, left: 2 + Math.floor(Math.random() * (3 + near * 9)) };
+          }
+          if (this.drop <= 0 && Math.random() < a * .025 * (.4 + near)) this.drop = Math.floor(sampleRate * (.008 + Math.random() * .04));
+        } else this.rep = null;
+        const bits = 16 - a * (8 + 4 * near), q = Math.pow(2, Math.max(4, bits) - 1), holdN = 1 + Math.floor(a * (2 + near * 26)), wet = Math.min(1, a * 1.6);
+        for (let i = 0; i < n; i++) {
+          for (let c = 0; c < 2; c++) this.buf[c][this.w] = (input[c] || input[0])[i];
+          const take = this.count++ % holdN === 0;
+          for (let c = 0; c < output.length; c++) {
+            const dry = (input[c] || input[0])[i];
+            const x = this.rep ? this.buf[c % 2][(this.rep.start + this.rep.pos) % this.size] : dry;
+            if (take) this.hold[c % 2] = x;
+            let y = Math.round(this.hold[c % 2] * q) / q;
+            if (this.drop > 0) y = 0;
+            output[c][i] = dry * (1 - wet) + y * wet;
+          }
+          this.w = (this.w + 1) % this.size;
+          if (this.drop > 0) this.drop--;
+          if (this.rep && ++this.rep.pos >= this.rep.len) { this.rep.pos = 0; if (--this.rep.left <= 0) this.rep = null; }
+        }
+        return true;
+      }
+    }
+    registerProcessor('nostalgia-glitch', Glitch);`;
+
+  /** The song, broken by the hand: the glitch above, its pitch and speed, a low-pass and a long, cold echo. */
   const makeSound = (src: string) => {
     const audio = new Audio(src);
     audio.loop = true; audio.preload = 'none';
-    (audio as HTMLAudioElement & { preservesPitch?: boolean; webkitPreservesPitch?: boolean }).preservesPitch = false;
+    (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
     (audio as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = false;
-    let graph: { ctx: AudioContext; shaper: WaveShaperNode; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; chop: GainNode; master: GainNode } | null = null;
-    let lastCurve = -1;
-    const curve = (amount: number) => {
-      // Soft clipping that hardens and coarsens (fewer steps) as it breaks.
-      const n = 2048, c = new Float32Array(n), drive = 1 + amount * 40, steps = Math.round(256 - amount * 240);
-      for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; const y = Math.tanh(x * drive) / Math.tanh(drive); c[i] = Math.round(y * steps) / steps; }
-      return c;
-    };
-    const build = () => {
+    let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode } | null = null;
+    const build = async () => {
       const ctx = new AudioContext();
       const source = ctx.createMediaElementSource(audio);
-      const shaper = ctx.createWaveShaper(); shaper.curve = curve(0); shaper.oversample = '2x';
-      const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 20000; filter.Q.value = .7;
+      let glitch: AudioWorkletNode | null = null;
+      try {
+        const url = URL.createObjectURL(new Blob([GLITCH], { type: 'text/javascript' }));
+        await ctx.audioWorklet.addModule(url);
+        URL.revokeObjectURL(url);
+        glitch = new AudioWorkletNode(ctx, 'nostalgia-glitch', { outputChannelCount: [2] });
+      } catch { glitch = null; } // Without worklets: pitch, filter and echo only.
+      const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 20000; filter.Q.value = .8;
       const echo = ctx.createConvolver();
-      const length = Math.round(ctx.sampleRate * 3.2), ir = ctx.createBuffer(2, length, ctx.sampleRate);
-      for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3); }
+      const length = Math.round(ctx.sampleRate * 3.5), ir = ctx.createBuffer(2, length, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.6); }
       echo.buffer = ir;
-      const dry = ctx.createGain(), wet = ctx.createGain(), chop = ctx.createGain(), master = ctx.createGain();
+      const dry = ctx.createGain(), wet = ctx.createGain(), master = ctx.createGain();
       wet.gain.value = 0; master.gain.value = 0;
-      source.connect(shaper).connect(filter);
-      filter.connect(dry).connect(chop);
-      filter.connect(echo).connect(wet).connect(chop);
-      chop.connect(master).connect(ctx.destination);
-      graph = { ctx, shaper, filter, wet, dry, chop, master };
+      (glitch ? source.connect(glitch) : source).connect(filter);
+      filter.connect(dry).connect(master);
+      filter.connect(echo).connect(wet).connect(master);
+      master.connect(ctx.destination);
+      graph = { ctx, glitch, filter, wet, dry, master };
     };
     let on = false;
     return {
       get on() { return on; },
       available: async () => { try { const r = await fetch(src, { method: 'HEAD' }); return r.ok; } catch { return false; } },
       start: async () => {
-        if (!graph) build();
+        if (!graph) await build();
         await graph!.ctx.resume();
         await audio.play();
         graph!.master.gain.setTargetAtTime(.9, graph!.ctx.currentTime, .4);
         on = true;
       },
       stop: () => { if (!graph) return; graph.master.gain.setTargetAtTime(0, graph.ctx.currentTime, .15); setTimeout(() => audio.pause(), 500); on = false; },
-      /** fist 0–1, near 0 (far) – 1 (near), t in seconds. */
-      shape: (fist: number, near: number, t: number) => {
+      /** fist 0–1, near 0 (far) – 1 (near). */
+      shape: (fist: number, near: number) => {
         if (!graph || !on) return;
         const now = graph.ctx.currentTime;
-        audio.playbackRate = clamp(1 + fist * (near * .65 - (1 - near) * .45), .5, 1.8);
-        const broken = fist * (.25 + .75 * near);
-        if (Math.abs(broken - lastCurve) > .04) { graph.shaper.curve = curve(broken); lastCurve = broken; }
-        graph.filter.frequency.setTargetAtTime(20000 - fist * (1 - near) * 19200, now, .08);
-        graph.wet.gain.setTargetAtTime(fist * (1 - near) * .85, now, .15);
-        graph.dry.gain.setTargetAtTime(1 - fist * (1 - near) * .45, now, .15);
-        // Stutter: the sound drops out in quick bursts, harder the nearer the fist.
-        const gate = fist > .2 && Math.sin(t * TAU * (9 + near * 9)) > .55 - fist * near * .9 ? 1 - fist * (.35 + near * .6) : 1;
-        graph.chop.gain.setTargetAtTime(gate, now, .008);
+        // Near: higher and faster; far: lower and slower.
+        audio.playbackRate = clamp(1 + fist * (near * .85 - (1 - near) * .5), .5, 1.9);
+        if (graph.glitch) {
+          graph.glitch.parameters.get('amount')!.setTargetAtTime(fist * (.55 + .45 * near), now, .03);
+          graph.glitch.parameters.get('near')!.setTargetAtTime(near, now, .05);
+        }
+        // Far: muffled and drowned in a long echo (ethereal).
+        graph.filter.frequency.setTargetAtTime(20000 - fist * (1 - near) * 19300, now, .08);
+        graph.wet.gain.setTargetAtTime(fist * (.25 + (1 - near) * .9), now, .15);
+        graph.dry.gain.setTargetAtTime(1 - fist * (1 - near) * .55, now, .15);
       },
     };
   };
@@ -304,7 +343,7 @@ const { label } = Astro.props;
       handShown += ((hand ? 1 : 0) - handShown) * .08;
       scale += ((hand ? .5 + near * 1.1 : 1) - scale) * .12;
       draw(time);
-      sound.shape(fist, near, time / 1000);
+      sound.shape(fist, near);
       requestAnimationFrame(frame);
     };
     const start = () => { if (!running && visible && !calm) { running = true; requestAnimationFrame(frame); } };
