@@ -3,7 +3,7 @@
 // screens), a liquid, grainy hole opens onto `under`. The hole follows the pointer's motion, leaves a trail that
 // slowly closes, and every edge of it (islands included) is drawn with a thin red stroke. Drawn with WebGL2; without
 // it the top video plays on its own, and with reduced motion only the still frame shows. Through the hole, the video
-// underneath is drawn as coloured ASCII.
+// underneath is drawn like a printed contour map: thin outlines of its shapes on ivory, sparse digits inside them.
 type Props = {
   top: string;
   under: string;
@@ -37,12 +37,12 @@ const { top, under, poster, label } = Astro.props;
     stroke: [.96, .94, .88], // Ivory stroke.
     strokeWidth: 1.3, // Half the line width, in CSS pixels.
     inkBreak: .8, // Printed look: how much the ink thins out and breaks into grain (0 = solid).
-    asciiCell: 9, // ASCII cell size, in CSS pixels.
-    asciiGlyphs: ' .:-=+*#%', // From light to dark (more ink where the image is darker).
-    asciiContrast: [.04, .52], // Brightness range stretched to the full set of characters, so the video reads clearly.
-    asciiTone: .3, // How much each cell's paper darkens with the image under it.
-    paper: [.96, .94, .88], // The negative is printed in two tones: dark ink on ivory paper.
-    ink: [.08, .08, .075],
+    asciiCell: 13, // Digit cell size, in CSS pixels.
+    asciiGlyphs: '014', // 0 along the outlines, 1 in the mid tones, 4 in the dark ones.
+    asciiContrast: [.04, .52], // Brightness range stretched to full, so the shapes read clearly.
+    contours: [.3, .58], // Brightness levels traced as outlines.
+    paper: [.96, .935, .87], // Ivory paper, dark grey ink.
+    ink: [.2, .2, .2],
     particles: 1, // How many small islands the fading trail leaves behind (0 = none).
   };
 
@@ -71,21 +71,28 @@ const { top, under, poster, label } = Astro.props;
         outColor = vec4(max(0., mix(f.x, around, .08) * uKeep - uDrain), f.yz * uVelKeep, 1.); }`,
     display: `${HEAD}${NOISE}uniform sampler2D uField; uniform sampler2D uTop; uniform sampler2D uUnder; uniform vec2 uCover; uniform float uTime;
       uniform float uWobble; uniform float uEdgeNoise; uniform float uGrain; uniform vec3 uStroke; uniform float uStrokeWidth; uniform float uAspect; uniform float uInk;
-      uniform sampler2D uAtlas; uniform float uGlyphs; uniform float uCell; uniform vec2 uResolution; uniform vec3 uPaper; uniform vec3 uInkColor; uniform float uParticles; uniform vec2 uContrast; uniform float uTone;
-      // The negative, printed as ASCII: one character per cell, denser where the image is darker, in dark ink on ivory
-      // paper; the ink thins out and breaks into grain like a print.
+      uniform sampler2D uAtlas; uniform float uGlyphs; uniform float uCell; uniform vec2 uResolution; uniform vec3 uPaper; uniform vec3 uInkColor; uniform float uParticles; uniform vec2 uContrast; uniform vec2 uLevels;
+      // How light the video underneath is around a point on screen (softened over a few pixels, so outlines stay smooth).
+      float lightAt(vec2 frag) {
+        vec2 c = frag / uResolution;
+        vec2 uv = (vec2(c.x, 1. - c.y) - .5) * uCover + .5, px = 2.5 * uCover / uResolution;
+        vec3 sum = texture(uUnder, uv).rgb * 2. + texture(uUnder, uv + vec2(px.x, 0.)).rgb + texture(uUnder, uv - vec2(px.x, 0.)).rgb + texture(uUnder, uv + vec2(0., px.y)).rgb + texture(uUnder, uv - vec2(0., px.y)).rgb;
+        return smoothstep(uContrast.x, uContrast.y, dot(sum / 6., vec3(.299, .587, .114)));
+      }
+      // The negative, printed like a contour map: thin dark outlines where the image crosses two levels of brightness,
+      // and sparse digits inside the shapes (4 in the dark, 1 in the mid tones, 0 hugging the outlines), on ivory.
       vec3 ascii() {
-        vec2 cell = floor(gl_FragCoord.xy / uCell);
-        vec2 local = fract(gl_FragCoord.xy / uCell);
-        vec2 center = (cell + .5) * uCell / uResolution;
-        vec2 uv = (vec2(center.x, 1. - center.y) - .5) * uCover + .5;
-        float lum = smoothstep(uContrast.x, uContrast.y, dot(texture(uUnder, uv).rgb, vec3(.299, .587, .114)));
-        float index = floor(clamp(1. - lum, 0., 1.) * (uGlyphs - 1.) + .5);
-        float glyph = texture(uAtlas, vec2((index + local.x) / uGlyphs, 1. - local.y)).r;
-        float density = 1. - uInk * (1. - noise(gl_FragCoord.xy * .09)) * .6;
-        float printed = glyph * step(hash(floor(gl_FragCoord.xy) + 17.) * uInk * .8, glyph * density);
-        vec3 paper = uPaper - (1. - lum) * uTone + (noise(gl_FragCoord.xy * .35) - .5) * .03;
-        return mix(paper, uInkColor, printed);
+        float lum = lightAt(gl_FragCoord.xy);
+        float w = max(fwidth(lum), 1e-4) * 1.1;
+        float line = max(1. - smoothstep(0., w, abs(lum - uLevels.x)), 1. - smoothstep(0., w, abs(lum - uLevels.y)));
+        vec2 cell = floor(gl_FragCoord.xy / uCell), local = fract(gl_FragCoord.xy / uCell);
+        float l = lightAt((cell + .5) * uCell);
+        float pick = hash(cell + 31.);
+        float near = min(abs(l - uLevels.x), abs(l - uLevels.y));
+        // -1: no digit in this cell.
+        float index = near < .045 && pick < .5 ? 0. : l < uLevels.x && pick < .72 ? 2. : l < uLevels.y && pick < .4 ? 1. : -1.;
+        float glyph = index < 0. ? 0. : texture(uAtlas, vec2((index + local.x) / uGlyphs, 1. - local.y)).r;
+        return mix(uPaper, uInkColor, max(line * .85, glyph));
       }
       void main() {
         vec2 video = (vUv - .5) * uCover + .5;
@@ -190,7 +197,7 @@ const { top, under, poster, label } = Astro.props;
     atlasContext.fillStyle = '#000';
     atlasContext.fillRect(0, 0, atlasCanvas.width, atlasCanvas.height);
     atlasContext.fillStyle = '#fff';
-    atlasContext.font = `700 ${glyphSize * .9}px ui-monospace, Menlo, Consolas, monospace`;
+    atlasContext.font = `400 ${glyphSize * .62}px ui-monospace, Menlo, Consolas, monospace`;
     atlasContext.textAlign = 'center';
     atlasContext.textBaseline = 'middle';
     [...SETTINGS.asciiGlyphs].forEach((glyph, index) => atlasContext.fillText(glyph, (index + .5) * glyphSize, glyphSize * .54));
@@ -358,7 +365,7 @@ const { top, under, poster, label } = Astro.props;
           uCover: cover, uTime: time / 1000, uWobble: SETTINGS.wobble, uEdgeNoise: SETTINGS.edgeNoise, uGrain: SETTINGS.grain,
           uStroke: SETTINGS.stroke, uStrokeWidth: SETTINGS.strokeWidth * ratio, uAspect: aspect, uInk: SETTINGS.inkBreak,
           uGlyphs: SETTINGS.asciiGlyphs.length, uCell: SETTINGS.asciiCell * ratio, uResolution: [canvas.width, canvas.height],
-          uPaper: SETTINGS.paper, uInkColor: SETTINGS.ink, uParticles: SETTINGS.particles, uContrast: SETTINGS.asciiContrast, uTone: SETTINGS.asciiTone,
+          uPaper: SETTINGS.paper, uInkColor: SETTINGS.ink, uParticles: SETTINGS.particles, uContrast: SETTINGS.asciiContrast, uLevels: SETTINGS.contours,
         });
         if (!ready) { ready = true; root.classList.add('is-drawn'); }
       }

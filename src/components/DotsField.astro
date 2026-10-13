@@ -20,8 +20,8 @@ const { label } = Astro.props;
     clusters: 8, // Groups the dots gather in, like the reference.
     size: [5, 9], // Dot radius range on a 1556px-wide frame (scales with it).
     wander: 26, // How far each dot drifts around its place on its own, in CSS pixels.
-    huddle: [14, 110], // Each dot keeps its own distance from the pointer (CSS pixels): a loose cloud, not a ball.
-    follow: { reach: .45, pull: 9, spread: 2 }, // Following the pointer: how far it reaches (share of the width), how hard it
+    huddle: [12, 95], // Each dot keeps its own distance from the pointer (CSS pixels): a loose cloud, not a ball.
+    follow: { reach: .52, pull: 11.5, spread: 1.75 }, // Following the pointer: how far it reaches (share of the width), how hard it
     // pulls (loosely) and how wide the cloud around it is (times each dot's distance).
     gather: { pull: 140, drag: 12, tight: .3, swirl: 2200, jitter: 1400, breathe: .45 }, // Gathered: how fast all the
     // dots come together and how tight; and how they keep moving in there: swirling round, jittering and breathing.
