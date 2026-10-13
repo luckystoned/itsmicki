@@ -1150,8 +1150,36 @@ const { label } = Astro.props;
       listGrid.addEventListener('pointerenter', hold); listGrid.addEventListener('pointerleave', release);
       listGrid.addEventListener('focusin', hold); listGrid.addEventListener('focusout', release);
       listGrid.addEventListener('touchstart', hold, { passive: true }); listGrid.addEventListener('touchend', () => setTimeout(release, 1500), { passive: true });
-      // Scrolled by hand past the first pass: back to the same spot on the first one.
-      listGrid.addEventListener('scroll', () => { if (driftHeld && loopWidth && listGrid.scrollLeft >= loopWidth) listGrid.scrollLeft -= loopWidth; }, { passive: true });
+      // Scrolled by hand past either end of the first pass: the same spot on the other, so it keeps looping.
+      listGrid.addEventListener('scroll', () => {
+        if (!driftHeld || !loopWidth) return;
+        if (listGrid.scrollLeft >= loopWidth) listGrid.scrollLeft -= loopWidth;
+        else if (listGrid.scrollLeft <= 0) listGrid.scrollLeft += loopWidth;
+      }, { passive: true });
+      // A mouse wheel moves it sideways too, without reaching for a scrollbar.
+      listGrid.addEventListener('wheel', (event) => {
+        if (listGrid.scrollWidth <= listGrid.clientWidth) return;
+        const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+        if (!delta) return;
+        event.preventDefault();
+        driftHeld = true;
+        listGrid.scrollLeft += event.deltaMode === 1 ? delta * 32 : delta;
+      }, { passive: false });
+      // And it can be dragged with the mouse (fingers already scroll it); a drag doesn't count as a click on a button.
+      let dragX = -1, dragFrom = 0, dragged = false;
+      listGrid.addEventListener('pointerdown', (event) => {
+        if (event.pointerType !== 'mouse' || event.button !== 0) return;
+        dragX = event.clientX; dragFrom = listGrid.scrollLeft; dragged = false; driftHeld = true;
+      });
+      addEventListener('pointermove', (event) => {
+        if (dragX < 0) return;
+        const moved = event.clientX - dragX;
+        if (Math.abs(moved) > 4) { dragged = true; listGrid.classList.add('is-dragging'); }
+        if (dragged) listGrid.scrollLeft = dragFrom - moved;
+      });
+      addEventListener('pointerup', () => { if (dragX < 0) return; dragX = -1; listGrid.classList.remove('is-dragging'); if (!listGrid.matches(':hover')) release(); });
+      listGrid.addEventListener('click', (event) => { if (dragged) { event.preventDefault(); event.stopPropagation(); dragged = false; } }, true);
+      listGrid.addEventListener('dragstart', (event) => event.preventDefault());
     }
     caption.querySelector<HTMLButtonElement>('[data-souls-list]')?.addEventListener('click', () => {
       if (!listDialog || !listGrid) return;
@@ -1280,6 +1308,7 @@ const { label } = Astro.props;
   /* A horizontal strip: every photo the same height, its own width; the caption fits under it. */
   .souls-list-grid { display: flex; gap: 14px; margin: 0; padding: 16px 22px 22px; overflow-x: auto; list-style: none; scrollbar-width: none; overscroll-behavior-x: contain; }
   .souls-list-grid::-webkit-scrollbar { display: none; }
+  .souls-list-grid.is-dragging { cursor: grabbing; user-select: none; }
   .souls-list-grid :global(li) { flex: none; }
   .souls-list-grid :global(figure) { width: min-content; margin: 0; }
   .souls-list-grid :global(img) { display: block; width: auto; max-width: none; height: min(320px, 46vh); border-radius: 8px; }
