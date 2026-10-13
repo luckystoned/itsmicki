@@ -26,7 +26,7 @@ const NOSTALGIA_CARD = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Card.mp4';
 
 export const sideBProjects: SideBProject[] = [
   { slug: 'mkp-hair', title: 'Mkp & Hair', label: '01_Mkp & Hair_Art Direction+AI Image Generation', gridCover: '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp' },
-  { slug: 'ok-computer', title: 'OK Computer', label: '02_OK Computer_Art Direction+Photography+Mkp & Styling', gridCover: '/04_SideB/Home/02_SideBProjects.webp' },
+  { slug: 'contained-alienation', title: 'Contained Alienation', label: '02_Contained Alienation_Art Direction+Photography+Mkp & Styling', gridCover: '/04_SideB/Home/02_SideBProjects.webp' },
   { slug: 'general-immersive', title: 'General', label: '03_General_Art Direction+Immersive Interaction Design', gridCover: '/04_SideB/Home/03_SideBProjects.webp', gridVideo: '/04_SideB/Home/03_SideBProjects.mp4' },
   { slug: 'missing-souls', title: 'Missing souls', label: '04_Missing souls_Art Direction+Immersive Design', gridCover: '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Cover.webp', gridVideo: SOULS_LOOP },
   { slug: 'nostalgia-as-agony', title: 'Nostalgia as Agony', label: `05_Nostalgia as Agony_Concept & Art direction${coming}`, comingSoon: true, gridCover: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Cover.webp', gridVideo: NOSTALGIA_LOOP },

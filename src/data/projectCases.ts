@@ -43,7 +43,7 @@ export type CaseBlock =
     };
 
 export type ProjectCase = {
-  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body' | 'mkp-hair' | 'general-immersive' | 'missing-souls';
+  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body' | 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls';
   title: string;
   year: string;
   role: string;
@@ -475,7 +475,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
 };
 
 /** Side B cases, at /sideb/projects/{slug}, with the dark Side B page. */
-type SideBCaseSlug = 'mkp-hair' | 'general-immersive' | 'missing-souls';
+type SideBCaseSlug = 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls';
 export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
   'mkp-hair': {
     slug: 'mkp-hair',
@@ -518,6 +518,45 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
         image('/04_SideB/Projects/01_MkpHair/15_MkpHair.webp', 'Glossy lime-green lids lined with silver studs and matching lips.', '773 / 955'), '48.3125vw', '59.6875vw',
         image('/04_SideB/Projects/01_MkpHair/16_MkpHair.webp', 'Close-up of a lime-green lid studded with silver beads.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
+    ],
+    credits: [],
+  },
+  'contained-alienation': {
+    slug: 'contained-alienation',
+    title: 'Contained Alienation',
+    year: '2025',
+    role: 'Art Direction,<br>Photography,<br>Mkp &amp; Styling',
+    nutshell: `An exploration of a six-image group project imagining an OK Computer album cover through a story of technological alienation: as one character draws the other into his virtual world, plastic becomes a symbol of their gradual absorption into the system.`,
+    drags: [],
+    // As in Figma (950:3010): a wide image, the art direction text, then wide images and rows of two.
+    blocks: [
+      single(image('/04_SideB/Projects/02_ContainedAlienation/01_ContainedAlienation.webp', 'Black-and-white portraits in white high-neck suits repeated and blurred across a pale wall.', '1556 / 870')),
+      text('(art direction)', [
+        `As she enters his virtual reality, color and technological elements begin to disrupt that separation. Plastic shifts from a material surrounding him to a shared container that`,
+        `ultimately holds them both. Through art direction, photography, makeup and styling, I helped shape this progression across the six images.`,
+      ], {
+        variant: 'lead',
+        lead: `The visual language begins with a contrast between two states. Low-key lighting, dark tones and plastic enclose him in a world he has already accepted; high-key lighting keeps her separate, exposed and more human.`,
+      }),
+      single(image('/04_SideB/Projects/02_ContainedAlienation/02_ContainedAlienation.webp', 'Faces layered and blurred in the dark, a man looking straight ahead among them.', '1556 / 870')),
+      pair(
+        image('/04_SideB/Projects/02_ContainedAlienation/03_ContainedAlienation.webp', 'Two figures in white suits, one turned away, the other looking over his shoulder.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/02_ContainedAlienation/04_ContainedAlienation.webp', 'A hand against a blurred silhouette on a white wall.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      single(image('/04_SideB/Projects/02_ContainedAlienation/05_ContainedAlienation.webp', 'A man in a white suit against crumpled black plastic, a figure in shadow beside him.', '1556 / 870')),
+      pair(
+        image('/04_SideB/Projects/02_ContainedAlienation/06_ContainedAlienation.webp', 'A figure behind a sheet of frosted plastic, hands pressed against it.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/02_ContainedAlienation/07_ContainedAlienation.webp', 'A man fitting a white VR headset on a woman, both in white suits.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/04_SideB/Projects/02_ContainedAlienation/08_ContainedAlienation.webp', 'A woman crouching in the dark with an arm raised, a man standing behind her.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/02_ContainedAlienation/09_ContainedAlienation.webp', 'A woman in a white VR headset in the dark, a man behind her.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      pair(
+        image('/04_SideB/Projects/02_ContainedAlienation/10_ContainedAlienation.webp', 'A woman lifting a VR headset in the dark as a man leans in behind her.', '773 / 955'), '48.3125vw', '59.6875vw',
+        image('/04_SideB/Projects/02_ContainedAlienation/11_ContainedAlienation.webp', 'A woman with her fingers to her temples, plastic shining in her hair.', '773 / 955'), '48.3125vw', '59.6875vw',
+      ),
+      single(image('/04_SideB/Projects/02_ContainedAlienation/12_ContainedAlienation.webp', 'A man lying wrapped in clear plastic, a figure in white bending over him.', '1556 / 870')),
     ],
     credits: [],
   },
