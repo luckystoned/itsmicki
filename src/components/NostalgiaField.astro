@@ -34,56 +34,110 @@ const { label } = Astro.props;
   const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const TAU = Math.PI * 2;
 
-  // The glitch itself, sample by sample (an AudioWorklet): while `amount` is up, the song comes as through an old
-  // radio losing its station: squeezed into a narrow band, its level trembling, the signal fading in and out under
-  // static, with crackle and a tuning whistle that sweeps. `near` makes the interference denser, the whistle higher and
-  // the trembling faster; far, it sinks into static.
+  // The glitch itself, sample by sample (an AudioWorklet), in time with the song (100 BPM): while `amount` is up, each
+  // sixteenth plays clean or breaks on purpose, IDM-style: a roll (the last bit repeated in 1/8 to 1/64, its pitch
+  // sliding), a reverse, a 1/32 gate, a bit-crush, a dry hole, or, closing the bar, a tape stop. How often, and which,
+  // comes from a fixed pattern per bar (so it repeats and grooves), denser with `amount`; `near` makes the rolls
+  // shorter and rising, far makes them longer and falling. Each break is told to the page so the image breaks with it.
+  const SONG = { bpm: 100, first: .22 }; // Its tempo, and where its first beat falls (seconds).
   const GLITCH = `
+    const STEP = 60 / ${SONG.bpm} / 4, FIRST = ${SONG.first};
+    const hash = (a, b) => { let h = Math.imul(a * 374761393 + b * 668265263, 1274126177); h ^= h >>> 13; h = Math.imul(h, 1103515245); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    // What a step does: the pattern changes every 2 bars and repeats once, so it reads as a figure, not noise.
+    const event = (bar, step, a, near) => {
+      const phrase = Math.floor(bar / 2), h = hash(phrase * 31 + step, 7), k = hash(phrase * 31 + step, 11);
+      if (step === 15 && hash(phrase, 3) < a * .6) return { kind: 'stop' };
+      const density = a * (.45 + near * .35) * (step % 4 === 0 ? 1.3 : 1);
+      if (h > density) return { kind: 'pass' };
+      if (k < .42) {
+        const divs = near > .5 ? [.25, .5, .5, 1] : [.5, 1, 1, 2];
+        return { kind: 'roll', div: divs[Math.floor(hash(phrase * 31 + step, 13) * 4)], semis: near > .5 ? 3 + near * 9 : -(3 + (1 - near) * 9) };
+      }
+      if (k < .57) return { kind: 'reverse' };
+      if (k < .74) return { kind: 'gate' };
+      if (k < .9) return { kind: 'crush' };
+      return { kind: 'hole' };
+    };
     class Glitch extends AudioWorkletProcessor {
       static get parameterDescriptors() { return [{ name: 'amount', defaultValue: 0, minValue: 0, maxValue: 1 }, { name: 'near', defaultValue: .5, minValue: 0, maxValue: 1 }]; }
       constructor() {
         super();
-        this.hp = [0, 0]; this.lp = [0, 0]; this.prev = [0, 0]; this.brown = 0; this.hiss = 0;
-        this.sig = 1; this.sigTarget = 1; this.sigLeft = 0;
-        this.flutter = 0; this.whistle = 0; this.wFreq = 900; this.wTarget = 900; this.wOn = 0; this.crackle = 0;
+        this.size = sampleRate * 4 | 0; this.buf = [new Float32Array(this.size), new Float32Array(this.size)]; this.w = 0;
+        this.clock = null; this.lastStep = -1; this.ev = { kind: 'pass' }; this.evStart = 0; this.read = 0; this.hold = [0, 0]; this.count = 0;
+        // The radio: a narrow band, static, crackle and a tuning whistle, all of it cued by the steps.
+        this.hp = [0, 0]; this.lp = [0, 0]; this.prev = [0, 0]; this.brown = 0; this.hiss = 0; this.sig = 1;
+        this.burst = 0; this.crackle = 0; this.whistle = 0; this.wFreq = 900; this.wTarget = 900; this.wOn = 0;
+        this.port.onmessage = (e) => { this.clock = e.data; };
       }
       process(inputs, outputs, params) {
         const input = inputs[0], output = outputs[0];
         if (!input || !input.length) return true;
-        const a = params.amount[0], near = params.near[0], n = output[0].length, sr = sampleRate;
-        if (a > .02) {
-          // The station comes and goes: now and then the signal drops (to static) for a moment, then returns.
-          if (--this.sigLeft <= 0) {
-            const drop = Math.random() < a * (.35 + near * .3);
-            this.sigTarget = drop ? .04 + Math.random() * .35 : .85 + Math.random() * .15;
-            this.sigLeft = Math.floor((drop ? 20 + Math.random() * 100 : 40 + Math.random() * 260) * (1 - near * .5)); // In 128-sample blocks.
-          }
-          // A tuning whistle, sweeping, sometimes.
-          if (Math.random() < .02 + a * .04) { this.wTarget = (300 + Math.random() * 1400) * (1 + near * 1.6); this.wOn = Math.random() < a * (.45 + near * .3) ? 1 : 0; }
-          if (this.crackle <= 0 && Math.random() < a * (.03 + near * .05)) this.crackle = Math.floor(sr * (.03 + Math.random() * .15));
-        } else { this.sigTarget = 1; this.wOn = 0; }
-        // A narrow radio band: cut the lows and the highs (narrower when near).
+        const a = params.amount[0], near = params.near[0], n = output[0].length, sr = sampleRate, stepLen = STEP * sr;
         const hpA = Math.exp(-2 * Math.PI * (250 + near * 250) / sr), lpA = 1 - Math.exp(-2 * Math.PI * (2600 + (1 - near) * 600 - near * 900) / sr);
-        const fRate = (5 + near * 22 + Math.random() * 3) / sr, fDepth = a * (.25 + near * .35);
-        const staticLevel = a * (.05 + (1 - near) * .07), wet = Math.min(1, a * 1.4), level = 1 + a * .7; // (the narrow band loses energy: brought back up)
+        const staticLevel = a * (.06 + (1 - near) * .07), wet = Math.min(1, a * 1.4), level = 1 + a * .7, fDepth = a * (.25 + near * .35);
         for (let i = 0; i < n; i++) {
-          this.sig += (this.sigTarget - this.sig) * .004;
-          this.flutter += fRate; if (this.flutter > 1) this.flutter -= 1;
-          const tremble = 1 - fDepth * (.5 + .5 * Math.sin(this.flutter * 2 * Math.PI));
+          for (let c = 0; c < 2; c++) this.buf[c][this.w] = (input[c] || input[0])[i];
+          // Where the song is (it tells us its time; we run on from there).
+          const t = this.clock ? this.clock.song + (currentTime + i / sr - this.clock.at) * this.clock.rate : currentTime + i / sr; // (its own clock until told)
+          const beats = (t - FIRST) / STEP, s = Math.floor(beats), phase = beats - s;
+          if (s !== this.lastStep) {
+            this.lastStep = s;
+            const bar = Math.floor(s / 16), step = ((s % 16) + 16) % 16;
+            this.ev = a > .03 ? event(bar, step, a, near) : { kind: 'pass' };
+            this.evStart = this.w; this.read = 0;
+            if (this.ev.kind !== 'pass') {
+              this.port.postMessage({ kind: this.ev.kind, step, bar });
+              this.burst = .5 + hash(s, 5) * .5; // every break hits with a burst of static
+              if (hash(s, 9) < .4 + near * .3) this.crackle = Math.floor(stepLen * (hash(s, 17) < .5 ? 1 : 2));
+            }
+            // The whistle retunes on the beats, and is on in some of them.
+            if (step % 4 === 0 && a > .03) { this.wTarget = (300 + hash(bar * 4 + step, 21) * 1400) * (1 + near * 1.6); this.wOn = hash(bar * 4 + step, 23) < a * (.45 + near * .3) ? 1 : 0; }
+            if (a <= .03) this.wOn = 0;
+          }
+          const ev = this.ev, edge = Math.min(1, phase * 40, (1 - phase) * 40); // little fades at the step's edges
+          // How much of the station gets through: holes and stops lose it to static, gates chop it in 32nds.
+          const sigTarget = a <= .03 ? 1 : ev.kind === 'hole' ? (phase < .15 ? 1 : .05) : ev.kind === 'gate' ? (Math.floor(phase * 8) % 2 === 0 ? 1 : .05) : ev.kind === 'stop' ? 1 - phase * .8 : .92;
+          this.sig += (sigTarget - this.sig) * .02;
+          this.burst *= .9996;
+          // The tremble is in time: 16ths when far, 32nds when near.
+          const tremble = 1 - fDepth * (.5 + .5 * Math.cos(beats * 2 * Math.PI * (near > .5 ? 2 : 1)));
           this.wFreq += (this.wTarget - this.wFreq) * .0004; this.whistle += this.wFreq / sr; if (this.whistle > 1) this.whistle -= 1;
           const white = Math.random() * 2 - 1;
           this.brown = (this.brown + white * .02) * .997; this.hiss += (white - this.hiss) * .35;
-          let noise = (this.hiss * .6 + this.brown * 1.6) * (staticLevel + (1 - this.sig) * a * .22);
+          let noise = (this.hiss * .6 + this.brown * 1.6) * (staticLevel + (1 - this.sig) * a * .3 + this.burst * a * .25);
           if (this.crackle > 0 && Math.random() < .25) noise += (Math.random() * 2 - 1) * a * (.15 + near * .2);
-          const tone = this.wOn ? Math.sin(this.whistle * 2 * Math.PI) * a * .035 * (.5 + .5 * Math.sin(this.flutter * 6.28 * 3)) : 0;
+          const tone = this.wOn ? Math.sin(this.whistle * 2 * Math.PI) * a * .035 * (.5 + .5 * Math.cos(beats * Math.PI)) : 0;
           for (let c = 0; c < output.length; c++) {
             const ch = c % 2, dry = (input[c] || input[0])[i];
-            this.hp[ch] = hpA * (this.hp[ch] + dry - this.prev[ch]); this.prev[ch] = dry;
+            let y = dry;
+            if (ev.kind === 'roll') {
+              const len = Math.max(32, Math.floor(stepLen * ev.div)), pos = this.read % len;
+              const at = (this.evStart - len + Math.floor(pos) + this.size) % this.size, fr = pos - Math.floor(pos);
+              y = this.buf[ch][at] * (1 - fr) + this.buf[ch][(at + 1) % this.size] * fr;
+              const local = pos / len; y *= Math.min(1, local * 30, (1 - local) * 30); // each repeat clicks in cleanly
+            } else if (ev.kind === 'reverse') {
+              y = this.buf[ch][(this.evStart - Math.floor(this.read) % Math.floor(stepLen * 2) + this.size) % this.size];
+            } else if (ev.kind === 'crush') {
+              if (this.count % (4 + Math.floor(near * 10)) === 0) this.hold[ch] = dry;
+              y = Math.round(this.hold[ch] * 10) / 10;
+            } else if (ev.kind === 'stop') {
+              y = this.buf[ch][(this.evStart - Math.floor(stepLen) + Math.floor(this.read) + this.size) % this.size];
+            }
+            const cut = ev.kind === 'pass' ? dry : dry * (1 - edge) + y * edge;
+            // Then through the radio.
+            this.hp[ch] = hpA * (this.hp[ch] + cut - this.prev[ch]); this.prev[ch] = cut;
             this.lp[ch] += lpA * (this.hp[ch] - this.lp[ch]);
             const radio = Math.tanh(this.lp[ch] * 1.8) * this.sig * tremble;
-            output[c][i] = (dry * (1 - wet) + (radio + noise + tone) * wet) * level;
+            const out = (cut * (1 - wet) + (radio + noise + tone) * wet) * level;
+            output[c][i] = a > .03 ? Math.tanh(out) : out; // (a soft limit, so the bursts never clip)
           }
+          // How fast the read head moves: rolls slide in pitch across the step; a tape stop slows down.
+          if (ev.kind === 'roll') this.read += Math.pow(2, (ev.semis * phase) / 12);
+          else if (ev.kind === 'stop') this.read += Math.max(0, 1 - phase);
+          else this.read += 1;
           if (this.crackle > 0) this.crackle--;
+          this.count++;
+          this.w = (this.w + 1) % this.size;
         }
         return true;
       }
@@ -98,6 +152,7 @@ const { label } = Astro.props;
     (audio as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = false;
     let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode; ear: AnalyserNode } | null = null;
     let wave = new Float32Array(1024), loud = 0, floor = .02, lastOnset = 0;
+    const breaks: Array<{ kind: string; step: number; bar: number; at: number }> = [];
     const build = async () => {
       const ctx = new AudioContext();
       const source = ctx.createMediaElementSource(audio);
@@ -109,6 +164,7 @@ const { label } = Astro.props;
         await ctx.audioWorklet.addModule(url);
         URL.revokeObjectURL(url);
         glitch = new AudioWorkletNode(ctx, 'nostalgia-glitch', { outputChannelCount: [2] });
+        glitch.port.onmessage = (e) => { breaks.push({ ...e.data, at: performance.now() }); if (breaks.length > 8) breaks.shift(); };
       } catch { glitch = null; } // Without worklets: pitch, filter and echo only.
       const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 20000; filter.Q.value = .8;
       const echo = ctx.createConvolver();
@@ -138,6 +194,8 @@ const { label } = Astro.props;
       stop: () => { if (!graph) return; graph.master.gain.setTargetAtTime(0, graph.ctx.currentTime, .15); setTimeout(() => audio.pause(), 500); on = false; },
       /** The films' speed follows the song's (its glitches stretch and rush the image too). */
       get rate() { return audio.playbackRate; },
+      /** The latest IDM break, if one happened in the last `within` ms. */
+      lastBreak: (within: number) => { const b = breaks[breaks.length - 1]; return b && performance.now() - b.at < within ? b : null; },
       /** How loud the song is now (0–1-ish), and whether a hit (a sudden rise over its recent level) just happened. */
       listen: () => {
         if (!graph || !on) return { level: 0, onset: 0 };
@@ -155,10 +213,10 @@ const { label } = Astro.props;
       shape: (fist: number, near: number) => {
         if (!graph || !on) return;
         const now = graph.ctx.currentTime;
-        // Near: higher and faster; far: lower and slower.
-        audio.playbackRate = clamp(1 + fist * (near * .85 - (1 - near) * .5), .5, 1.9);
         if (graph.glitch) {
-          graph.glitch.parameters.get('amount')!.setTargetAtTime(fist * (.55 + .45 * near), now, .03);
+          // The song keeps its tempo (the breaks are in time with it): the worklet is told where it is.
+          graph.glitch.port.postMessage({ song: audio.currentTime, at: graph.ctx.currentTime, rate: audio.playbackRate });
+          graph.glitch.parameters.get('amount')!.setTargetAtTime(fist * (.6 + .4 * near), now, .02);
           graph.glitch.parameters.get('near')!.setTargetAtTime(near, now, .05);
         }
         // Far: muffled and drowned in a long echo (ethereal).
@@ -300,7 +358,10 @@ const { label } = Astro.props;
       // while the fist is closed, more and wilder the nearer it is.
       let hit = -1, f = 0;
       if (sound.on) {
-        if (heard.onset) { audioHit = { until: time + 50 + heard.onset * 160 + heard.level * 120, seed: Math.floor(time) % 100000, power: heard.onset }; }
+        // The song's IDM breaks (with the fist) break the image on the same step; otherwise its own hits do.
+        const brk = sound.lastBreak(160);
+        if (brk && (!audioHit || audioHit.seed !== brk.bar * 16 + brk.step)) audioHit = { until: time + 150, seed: brk.bar * 16 + brk.step, power: brk.kind === 'roll' || brk.kind === 'stop' ? 1 : .6 };
+        else if (heard.onset) { audioHit = { until: time + 50 + heard.onset * 160 + heard.level * 120, seed: Math.floor(time) % 100000, power: heard.onset }; }
         if (audioHit && time < audioHit.until) { hit = audioHit.seed; f = Math.floor((audioHit.until - time) / 42); }
       } else {
         const k = Math.floor((t % SETTINGS.loop) * 24);
