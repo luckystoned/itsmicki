@@ -1,5 +1,5 @@
 ---
-// Nostalgia as Agony: a memory that won't hold still. The footage (for now a still) is pixel-stretched into vertical
+// Nostalgia as Agony: a memory that won't hold still. Home videos, cut together with their own sound, are pixel-stretched into vertical
 // streaks, with two clusters of tracking boxes where it shows clean and, in hits, thin slices slipping sideways and
 // dashed rows of dead pixels, as in the cover. A hand in front of the camera (or the pointer) draws the tracking to
 // it and the image opens up there, the glitch growing as it comes near the camera (or up the frame) and shrinking as
@@ -11,6 +11,7 @@ const { label } = Astro.props;
 ---
 
 <div class="nostalgia-field" data-nostalgia-field role="img" aria-label={label}>
+  <video class="nostalgia-field-video" src="/04_SideB/Projects/05_Nostalgia/03_Nostalgia_Home.mp4" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true"></video>
   <canvas class="nostalgia-field-canvas" aria-hidden="true"></canvas>
 </div>
 
@@ -20,7 +21,8 @@ const { label } = Astro.props;
   const SETTINGS = {
     // The footage: a wide and a tall cut (the tall one for phone frames). Videos can take their place later.
     stills: { wide: '/04_SideB/Projects/05_Nostalgia/01_Nostalgia_Still.webp', tall: '/04_SideB/Projects/05_Nostalgia/02_Nostalgia_Still_Tall.webp' },
-    track: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Track.mp3', // The song (not in the site yet).
+    track: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Track.mp3', // The song (With You, nthng).
+    voices: .9, song: .75, // How loud the home videos' own sound and the song are in the mix.
     loop: 4, // Seconds the glitch pattern takes to come round.
     hits: [[3, 2], [8, 1], [12, 9], [29, 2], [33, 1], [36, 4], [45, 2], [49, 1], [52, 3], [59, 2], [64, 14], [82, 1], [86, 2], [90, 3]] as Array<[number, number]>, // ta ta piiii tatatta… (in 24ths of a second)
     line: 'rgba(146,168,196,', // The tracking boxes and their wires: a muted blue.
@@ -80,7 +82,7 @@ const { label } = Astro.props;
     registerProcessor('nostalgia-glitch', Glitch);`;
 
   /** The song, broken by the hand: the glitch above, its pitch and speed, a low-pass and a long, cold echo. */
-  const makeSound = (src: string) => {
+  const makeSound = (src: string, film: HTMLVideoElement) => {
     const audio = new Audio(src);
     audio.loop = true; audio.preload = 'none';
     (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
@@ -88,7 +90,12 @@ const { label } = Astro.props;
     let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode } | null = null;
     const build = async () => {
       const ctx = new AudioContext();
-      const source = ctx.createMediaElementSource(audio);
+      // The song and the home videos' own sound, mixed, both broken by the same glitch.
+      const song = ctx.createGain(), voices = ctx.createGain(), source = ctx.createGain();
+      song.gain.value = SETTINGS.song; voices.gain.value = SETTINGS.voices;
+      ctx.createMediaElementSource(audio).connect(song).connect(source);
+      ctx.createMediaElementSource(film).connect(voices).connect(source);
+      film.muted = false;
       let glitch: AudioWorkletNode | null = null;
       try {
         const url = URL.createObjectURL(new Blob([GLITCH], { type: 'text/javascript' }));
@@ -117,10 +124,13 @@ const { label } = Astro.props;
         if (!graph) await build();
         await graph!.ctx.resume();
         await audio.play();
+        film.play().catch(() => {});
         graph!.master.gain.setTargetAtTime(.9, graph!.ctx.currentTime, .4);
         on = true;
       },
       stop: () => { if (!graph) return; graph.master.gain.setTargetAtTime(0, graph.ctx.currentTime, .15); setTimeout(() => audio.pause(), 500); on = false; },
+      /** The films' speed follows the song's (its glitches stretch and rush the image too). */
+      get rate() { return audio.playbackRate; },
       /** fist 0–1, near 0 (far) – 1 (near). */
       shape: (fist: number, near: number) => {
         if (!graph || !on) return;
@@ -144,18 +154,30 @@ const { label } = Astro.props;
     const context = canvas.getContext('2d')!;
     const caption = root.closest('section') ?? document;
     let width = 0, height = 0, ratio = 1, U = 1;
+    const film = root.querySelector<HTMLVideoElement>('.nostalgia-field-video')!;
     const stills: Record<'wide' | 'tall', HTMLImageElement> = { wide: new Image(), tall: new Image() };
     stills.wide.src = SETTINGS.stills.wide; stills.tall.src = SETTINGS.stills.tall;
     const tall = () => height > width * 1.05;
     // The footage at the frame's size (cover-fitted), its squashed copy (the soft smear) and the frame grabbed for slicing.
     let footage = canvasOf(1, 1), smear = canvasOf(1, 24), grab = canvasOf(1, 1), grain = canvasOf(1, 1);
-    const paintFootage = () => {
+    // The home videos once they play; until then (and with reduced motion) the still.
+    const source = (): [CanvasImageSource, number, number] | null => {
+      if (!calm && film.readyState >= 2 && film.videoWidth) return [film, film.videoWidth, film.videoHeight];
       const img = tall() ? stills.tall : stills.wide;
-      if (!img.complete || !img.naturalWidth) return false;
+      return img.complete && img.naturalWidth ? [img, img.naturalWidth, img.naturalHeight] : null;
+    };
+    const refresh = () => {
+      const src = source();
+      if (!src) return false;
+      const [media, mw, mh] = src, f = footage.getContext('2d')!, sc = Math.max(footage.width / mw, footage.height / mh);
+      f.drawImage(media, (footage.width - mw * sc) / 2, (footage.height - mh * sc) / 2, mw * sc, mh * sc);
+      smear.getContext('2d')!.drawImage(footage, 0, 0, smear.width, 24);
+      return true;
+    };
+    const paintFootage = () => {
       footage = canvasOf(canvas.width, canvas.height);
-      const f = footage.getContext('2d')!, sc = Math.max(footage.width / img.naturalWidth, footage.height / img.naturalHeight);
-      f.drawImage(img, (footage.width - img.naturalWidth * sc) / 2, (footage.height - img.naturalHeight * sc) / 2, img.naturalWidth * sc, img.naturalHeight * sc);
-      smear = canvasOf(canvas.width, 24); smear.getContext('2d')!.drawImage(footage, 0, 0, smear.width, 24);
+      smear = canvasOf(canvas.width, 24);
+      if (!refresh()) return false;
       grab = canvasOf(canvas.width, canvas.height);
       grain = canvasOf(canvas.width, canvas.height);
       const g = grain.getContext('2d')!, d = g.createImageData(grain.width, grain.height);
@@ -181,7 +203,7 @@ const { label } = Astro.props;
     let beatSeed = 0;
     const draw = (time: number) => {
       const W = canvas.width, H = canvas.height, t = time / 1000;
-      if (footage.width !== W && !paintFootage()) return;
+      if (footage.width !== W ? !paintFootage() : !refresh()) return;
       context.imageSmoothingEnabled = true;
       // Streaks: the soft smear, and a scan line stretched down every column.
       context.drawImage(smear, 0, 0, W, 24, 0, 0, W, H);
@@ -287,7 +309,7 @@ const { label } = Astro.props;
     root.addEventListener('pointerup', release); root.addEventListener('pointercancel', release);
 
     // Sound: off until asked for (a click on "sound on", or turning the camera on).
-    const sound = makeSound(SETTINGS.track);
+    const sound = makeSound(SETTINGS.track, film);
     const soundButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-nostalgia-sound]')];
     const status = caption.querySelector<HTMLElement>('[data-nostalgia-status]');
     const setStatus = (text: string) => { if (status && status.textContent !== text) status.textContent = text; };
@@ -353,15 +375,16 @@ const { label } = Astro.props;
     // Running while on screen.
     let visible = false, running = false;
     const frame = (time: number) => {
-      if (!visible) { running = false; if (sound.on) { sound.stop(); setSoundLabel(); } return; }
+      if (!visible) { running = false; film.pause(); if (sound.on) { sound.stop(); setSoundLabel(); } return; }
       fist += (fistTarget - fist) * .18;
       handShown += ((hand ? 1 : 0) - handShown) * .08;
       scale += ((hand ? .5 + near * 1.1 : 1) - scale) * .12;
       draw(time);
       sound.shape(fist, near);
+      if (sound.on && Math.abs(film.playbackRate - sound.rate) > .01) film.playbackRate = sound.rate;
       requestAnimationFrame(frame);
     };
-    const start = () => { if (!running && visible && !calm) { running = true; requestAnimationFrame(frame); } };
+    const start = () => { if (!running && visible && !calm) { running = true; film.preload = 'auto'; film.play().catch(() => {}); requestAnimationFrame(frame); } };
     new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) start(); }, { rootMargin: '10%' }).observe(root);
     new ResizeObserver(() => { resize(); if (calm) { context.drawImage(footage, 0, 0); } }).observe(root);
     Object.values(stills).forEach((img) => img.addEventListener('load', () => { if (paintFootage() && calm) context.drawImage(footage, 0, 0); }));
@@ -371,4 +394,5 @@ const { label } = Astro.props;
 <style>
   .nostalgia-field { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; background: #202020; }
   .nostalgia-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  .nostalgia-field-video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 </style>
