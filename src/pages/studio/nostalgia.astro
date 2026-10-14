@@ -1,7 +1,7 @@
 ---
 // Recording studio for Nostalgia as Agony (not linked anywhere, noindex): a vertical 1080×1920 desktop, in the style
 // of a Mac screen, with the piece live in a Preview window, the camera (mirrored, the hand's points drawn on it) in
-// a small window, folders and the Mac cursor following the hand. "rec" records it with the broken song and
+// a small window and folders (no cursor: the hand is seen in the camera). "rec" records it with the broken song and
 // downloads the video. Without the camera, the mouse plays the piece (press and hold to break it).
 import NostalgiaField from '@/components/NostalgiaField.astro';
 ---
@@ -121,19 +121,6 @@ import NostalgiaField from '@/components/NostalgiaField.astro';
     ctx.fillText(label, x, y + h + size * .26); ctx.textAlign = 'left';
   };
 
-  // The Mac arrow (pressed a little while the fist is closed).
-  const cursor = (x: number, y: number, press: number) => {
-    const s = 1.9 * (1 - press * .12);
-    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
-    ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 23); ctx.lineTo(5.5, 17.5); ctx.lineTo(9.5, 26.5); ctx.lineTo(13, 25); ctx.lineTo(9.2, 16.2); ctx.lineTo(16.5, 16.2); ctx.closePath();
-    ctx.fillStyle = '#ffffff'; ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.beginPath(); ctx.moveTo(2, 4.5); ctx.lineTo(2, 18.5); ctx.lineTo(5.9, 14.6); ctx.lineTo(10.2, 23.8); ctx.lineTo(11, 23.4); ctx.lineTo(6.9, 14.2); ctx.lineTo(12.2, 14.2); ctx.closePath();
-    ctx.fillStyle = '#000000'; ctx.fill();
-    ctx.restore();
-  };
-
   // The camera, mirrored and cover-fitted, with the hand's points and bones over it.
   const cameraView = (x: number, y: number, w: number, h: number, video: HTMLVideoElement | null, landmarks: Point[] | null) => {
     ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
@@ -176,7 +163,6 @@ import NostalgiaField from '@/components/NostalgiaField.astro';
       const t = Math.floor((performance.now() - recording.started) / 1000);
       status.textContent = `● recording ${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')} — R or the button stops and downloads it.`;
     }
-    if (state?.hand) cursor(p.x + state.hand.x * p.w, p.y + p.bar + state.hand.y * (p.h - p.bar), state.fist);
     requestAnimationFrame(draw);
   };
   requestAnimationFrame(draw);
