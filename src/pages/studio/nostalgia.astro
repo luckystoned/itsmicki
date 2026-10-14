@@ -1,7 +1,7 @@
 ---
 // Recording studio for Nostalgia as Agony (not linked anywhere, noindex): a vertical 1080×1920 desktop, in the style
 // of a Mac screen, with the piece live in a Preview window, the camera (mirrored, the hand's points drawn on it) in
-// a small window, folders and the @, and the Mac cursor following the hand. "rec" records it with the broken song and
+// a small window, folders and the Mac cursor following the hand. "rec" records it with the broken song and
 // downloads the video. Without the camera, the mouse plays the piece (press and hold to break it).
 import NostalgiaField from '@/components/NostalgiaField.astro';
 ---
@@ -46,11 +46,10 @@ import NostalgiaField from '@/components/NostalgiaField.astro';
   const FONT = 'system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif';
   // Where things sit on the 1080×1920 desktop.
   const LAYOUT = {
-    folder: { x: 540, y: 96, size: 140, label: 'nostalgia as agony' }, // (x is its centre)
+    folder: { x: 540, y: 96, size: 140, label: '𝄞⨾💿✮˚.⋆' }, // (x is its centre)
     preview: { x: 80, y: 330, w: 920, h: 1000, bar: 66, title: 'nostalgia_as_agony.mov' },
     camera: { x: 560, y: 1400, w: 440, h: 330, bar: 52, title: 'camera.mov' },
-    folders: [{ x: 150, y: 1430, label: 'home videos' }, { x: 150, y: 1600, label: '1999' }],
-    handle: { x: 110, y: 1790, w: 210, h: 66, text: '@its.micki' },
+    folders: [{ x: 150, y: 1430, label: '🎧ྀི♪⋆.✮' }, { x: 150, y: 1600, label: 'portfolio' }],
   };
   // The hand's bones (MediaPipe's 21 points).
   const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
@@ -122,15 +121,6 @@ import NostalgiaField from '@/components/NostalgiaField.astro';
     ctx.fillText(label, x, y + h + size * .26); ctx.textAlign = 'left';
   };
 
-  // The selection box with the @, small squares on its corners and sides.
-  const handle = () => {
-    const { x, y, w, h, text } = LAYOUT.handle;
-    ctx.strokeStyle = '#7a7a7a'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, w, h);
-    ctx.fillStyle = '#ffffff';
-    for (const [px, py] of [[0, 0], [.5, 0], [1, 0], [0, .5], [1, .5], [0, 1], [.5, 1], [1, 1]]) { ctx.fillRect(x + px * w - 5, y + py * h - 5, 10, 10); ctx.strokeRect(x + px * w - 5, y + py * h - 5, 10, 10); }
-    ctx.fillStyle = '#3a3a3a'; ctx.textAlign = 'center'; ctx.font = `500 26px ${FONT}`; ctx.fillText(text, x + w / 2, y + h / 2 + 9); ctx.textAlign = 'left';
-  };
-
   // The Mac arrow (pressed a little while the fist is closed).
   const cursor = (x: number, y: number, press: number) => {
     const s = 1.9 * (1 - press * .12);
@@ -174,7 +164,6 @@ import NostalgiaField from '@/components/NostalgiaField.astro';
     const { folder: big, preview: p, camera: c } = LAYOUT;
     folder(big.x, big.y, big.size, big.label);
     LAYOUT.folders.forEach((f) => folder(f.x, f.y, 110, f.label));
-    handle();
 
     windowFrame(p.x, p.y, p.w, p.h, p.bar, p.title, recording ? 'Recording' : 'Edited', true);
     const state = piece?.state();
