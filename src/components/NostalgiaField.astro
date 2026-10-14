@@ -14,6 +14,9 @@ const { label } = Astro.props;
   <video class="nostalgia-field-video" src="/04_SideB/Projects/05_Nostalgia/03_Nostalgia_Home.mp4" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true"></video>
   <canvas class="nostalgia-field-canvas" role="img" aria-label={label}></canvas>
   <!-- With the camera on it fills the screen: a cross closes it (camera and sound off). -->
+  <button type="button" class="nostalgia-field-sound" role="switch" aria-checked="false" data-nostalgia-sound-toggle hidden>
+    <span class="nostalgia-field-sound-label">sound</span><span class="nostalgia-field-sound-track" aria-hidden="true"><span></span></span>
+  </button>
   <button type="button" class="nostalgia-field-close" data-nostalgia-close aria-label="Close: turn the camera and the sound off" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" /></svg>
   </button>
@@ -249,11 +252,46 @@ const { label } = Astro.props;
       const img = tall() ? stills.tall : stills.wide;
       return img.complete && img.naturalWidth ? [img, img.naturalWidth, img.naturalHeight] : null;
     };
+    // Super 8: 18 frames a second, the gate weaving, warm faded colour, lifted blacks, flicker, a soft vignette, dust and hairs.
+    let lastFrame = -1, vignette = canvasOf(1, 1);
+    const super8 = (f: CanvasRenderingContext2D, frame: number) => {
+      const W = footage.width, H = footage.height;
+      f.globalCompositeOperation = 'multiply'; f.fillStyle = '#f3d9b0'; f.fillRect(0, 0, W, H); // warm
+      f.globalCompositeOperation = 'screen'; f.fillStyle = '#2a1a10'; f.fillRect(0, 0, W, H); // faded blacks
+      f.globalCompositeOperation = 'source-over';
+      const flicker = (hash(frame, 41) - .5) * .12;
+      f.fillStyle = flicker > 0 ? `rgba(255,236,200,${flicker})` : `rgba(0,0,0,${-flicker})`; f.fillRect(0, 0, W, H);
+      f.drawImage(vignette, 0, 0);
+      // Dust: a few specks a frame, now and then a hair or a scratch.
+      const u = Math.max(1, W / 600);
+      for (let k = 0, n = Math.floor(hash(frame, 43) * 5); k < n; k++) {
+        f.fillStyle = hash(frame, 44, k) < .7 ? 'rgba(12,8,6,.75)' : 'rgba(255,248,232,.7)';
+        f.beginPath(); f.arc(hash(frame, 45, k) * W, hash(frame, 46, k) * H, u * (.6 + hash(frame, 47, k) * 2.2), 0, TAU); f.fill();
+      }
+      if (hash(frame, 48) < .12) {
+        f.strokeStyle = 'rgba(10,6,4,.6)'; f.lineWidth = u * .8; f.beginPath();
+        const x0 = hash(frame, 49) * W, y0 = hash(frame, 50) * H; f.moveTo(x0, y0);
+        f.quadraticCurveTo(x0 + (hash(frame, 51) - .5) * 60 * u, y0 + 20 * u, x0 + (hash(frame, 52) - .5) * 40 * u, y0 + (15 + hash(frame, 53) * 40) * u); f.stroke();
+      }
+      const scratch = Math.floor(frame / 30); // a scratch that stays for a while, then moves
+      if (hash(scratch, 54) < .5) { f.fillStyle = 'rgba(255,246,228,.22)'; f.fillRect(hash(scratch, 55) * W + (hash(frame, 56) - .5) * 3 * u, 0, u, H); }
+    };
     const refresh = () => {
       const src = source();
       if (!src) return false;
-      const [media, mw, mh] = src, f = footage.getContext('2d')!, sc = Math.max(footage.width / mw, footage.height / mh);
-      f.drawImage(media, (footage.width - mw * sc) / 2, (footage.height - mh * sc) / 2, mw * sc, mh * sc);
+      const frame = Math.floor(performance.now() / (1000 / 18));
+      if (frame === lastFrame && footage.width === vignette.width) return true;
+      lastFrame = frame;
+      if (vignette.width !== footage.width || vignette.height !== footage.height) {
+        vignette = canvasOf(footage.width, footage.height);
+        const v = vignette.getContext('2d')!, g = v.createRadialGradient(vignette.width / 2, vignette.height / 2, Math.min(vignette.width, vignette.height) * .3, vignette.width / 2, vignette.height / 2, Math.hypot(vignette.width, vignette.height) / 2);
+        g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(10,5,2,.55)'); v.fillStyle = g; v.fillRect(0, 0, vignette.width, vignette.height);
+      }
+      const [media, mw, mh] = src, f = footage.getContext('2d')!, sc = Math.max(footage.width / mw, footage.height / mh) * 1.03;
+      const weave = Math.max(1, footage.width / 500);
+      const dx = (hash(frame, 39) - .5) * weave * 1.4, dy = (hash(frame, 40) - .5) * weave * 2.4 + Math.sin(frame * .7) * weave * .6;
+      f.drawImage(media, (footage.width - mw * sc) / 2 + dx, (footage.height - mh * sc) / 2 + dy, mw * sc, mh * sc);
+      super8(f, frame);
       smear.getContext('2d')!.drawImage(footage, 0, 0, smear.width, 24);
       return true;
     };
@@ -452,9 +490,13 @@ const { label } = Astro.props;
     const setStatus = (text: string) => { [status, fullStatus].forEach((el) => { if (el && el.textContent !== text) el.textContent = text; }); };
     let hasSound = false;
     sound.available().then((ok) => { hasSound = ok; soundButtons.forEach((b) => { b.closest<HTMLElement>('[data-nostalgia-sound-option]')?.toggleAttribute('hidden', !ok); }); });
-    const setSoundLabel = () => soundButtons.forEach((b) => { b.textContent = sound.on ? 'sound off' : 'sound on'; b.setAttribute('aria-pressed', String(sound.on)); });
+    const soundToggle = root.querySelector<HTMLButtonElement>('[data-nostalgia-sound-toggle]')!;
+    const setSoundLabel = () => {
+      soundButtons.forEach((b) => { b.textContent = sound.on ? 'sound off' : 'sound on'; b.setAttribute('aria-pressed', String(sound.on)); });
+      soundToggle.setAttribute('aria-checked', String(sound.on));
+    };
     const soundOn = async () => { if (!hasSound || sound.on) return; try { await sound.start(); } catch { /* Blocked: it waits for the next click. */ } setSoundLabel(); };
-    soundButtons.forEach((b) => b.addEventListener('click', async () => { if (sound.on) sound.stop(); else await soundOn(); setSoundLabel(); }));
+    [...soundButtons, soundToggle].forEach((b) => b.addEventListener('click', async () => { if (sound.on) sound.stop(); else await soundOn(); setSoundLabel(); }));
 
     // Camera: the open hand draws the tracking; a fist breaks everything, its distance bends the sound.
     const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-nostalgia-camera]')];
@@ -473,14 +515,14 @@ const { label } = Astro.props;
       opener = document.activeElement as HTMLElement | null;
       root.before(home); document.body.append(root);
       root.classList.add('is-full'); document.documentElement.classList.add('nostalgia-full-open');
-      closeButton.hidden = false; if (fullStatus) fullStatus.hidden = false;
+      closeButton.hidden = false; soundToggle.hidden = !hasSound; if (fullStatus) fullStatus.hidden = false;
       closeButton.focus();
     };
     const closeFull = () => {
       if (!root.classList.contains('is-full')) return;
       root.classList.remove('is-full'); document.documentElement.classList.remove('nostalgia-full-open');
       home.replaceWith(root);
-      closeButton.hidden = true; if (fullStatus) fullStatus.hidden = true;
+      closeButton.hidden = true; soundToggle.hidden = true; if (fullStatus) fullStatus.hidden = true;
       opener?.focus();
     };
     const stopCamera = () => { closeFull(); camera?.stop(); camera = null; cameraOn = false; hand = null; fistTarget = 0; closed = false; if (cameraHelp) cameraHelp.hidden = true; setCameraLabel('turn the camera on', false); };
@@ -561,7 +603,17 @@ const { label } = Astro.props;
     position: absolute; top: 16px; right: 16px; z-index: 2; display: grid; place-items: center; width: 44px; height: 44px;
     padding: 0; border: 0; border-radius: 50%; color: #f2f0ec; background: rgb(0 0 0 / .45); cursor: pointer;
   }
-  .nostalgia-field-close[hidden], .nostalgia-field-status[hidden] { display: none; }
+  .nostalgia-field-close[hidden], .nostalgia-field-status[hidden], .nostalgia-field-sound[hidden] { display: none; }
+  .nostalgia-field-sound {
+    position: absolute; top: 16px; right: 72px; z-index: 2; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px;
+    border: 0; border-radius: 22px; color: #f2f0ec; background: rgb(0 0 0 / .45); font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .nostalgia-field-sound:hover { background: rgb(0 0 0 / .7); }
+  .nostalgia-field-sound:focus-visible { outline: 2px solid #f2f0ec; outline-offset: 2px; }
+  .nostalgia-field-sound-track { position: relative; width: 34px; height: 18px; border: 1.5px solid currentColor; border-radius: 9px; }
+  .nostalgia-field-sound-track > span { position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: currentColor; opacity: .5; transition: transform .2s, opacity .2s; }
+  .nostalgia-field-sound[aria-checked='true'] .nostalgia-field-sound-track > span { transform: translateX(16px); opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .nostalgia-field-sound-track > span { transition: none; } }
   .nostalgia-field-close svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; }
   .nostalgia-field-close:hover { background: rgb(0 0 0 / .7); }
   .nostalgia-field-close:focus-visible { outline: 2px solid #f2f0ec; outline-offset: 2px; }
