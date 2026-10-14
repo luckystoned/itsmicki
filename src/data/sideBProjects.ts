@@ -21,7 +21,8 @@ const SOULS_LOOP = '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Loop.mp4'
     of tracking boxes where it shows clean and, in hits echoed a moment later, thin slices slipping sideways and dashed
     rows of dead pixels. */
 const NOSTALGIA_LOOP = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Loop.mp4';
-/** Its carousel card: 12 muted seconds of the home videos as Super 8 (18 fps, gate weave, warm faded colour, grain). */
+/** Its carousel card: 12 muted seconds recorded from the piece itself: the home videos as Super 8, under its tracking
+    boxes, streaks and a couple of breaks (18 fps, fine grain). */
 const NOSTALGIA_CARD = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Card.mp4';
 
 export const sideBProjects: SideBProject[] = [
@@ -42,7 +43,7 @@ const carouselCards: Array<{ width: number; height: number; alt: string; video?:
   { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.', project: 1 },
   { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true, project: 2 },
   { width: 357, height: 354, alt: 'Lilac flowers on green stems swaying against a coral sky melting into lilac.', video: SOULS_LOOP, project: 3 },
-  { width: 358, height: 474, alt: 'Home videos from 1999 on warm, grainy Super 8: a girl in pink dancing on a tiled floor, a girl smiling into the camera, a grandmother at the window, a man laughing.', video: NOSTALGIA_CARD, project: 4 },
+  { width: 358, height: 474, alt: 'Home videos from 1999 on warm, grainy Super 8, stretched into vertical streaks with outlined tracking boxes where a girl in pink, a smiling girl, a grandmother and a laughing man show through, breaking into horizontal slices.', video: NOSTALGIA_CARD, project: 4 },
 ];
 
 export const sideBCarousel = carouselCards.map((card, index) => {

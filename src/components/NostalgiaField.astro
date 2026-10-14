@@ -297,9 +297,10 @@ const { label } = Astro.props;
       smear = canvasOf(canvas.width, 24);
       if (!refresh()) return false;
       grab = canvasOf(canvas.width, canvas.height);
-      grain = canvasOf(canvas.width, canvas.height);
+      // Fine film grain, one device pixel each and dense: a sheet a little larger than the frame, shifted every frame.
+      grain = canvasOf(canvas.width + 64, canvas.height + 64);
       const g = grain.getContext('2d')!, d = g.createImageData(grain.width, grain.height);
-      for (let n = 0; n < d.data.length; n += 4) { const v = 128 + (hash(n, 7) - .5) * 60; d.data[n] = d.data[n + 1] = d.data[n + 2] = v; d.data[n + 3] = 255; }
+      for (let n = 0; n < d.data.length; n += 4) { const v = 128 + ((hash(n, 7) + hash(n, 8)) - 1) * 150; d.data[n] = d.data[n + 1] = d.data[n + 2] = v; d.data[n + 3] = 255; }
       g.putImageData(d, 0, 0);
       return true;
     };
@@ -466,7 +467,9 @@ const { label } = Astro.props;
         }
       }
       // Grain over everything.
-      context.save(); context.globalCompositeOperation = 'overlay'; context.globalAlpha = .12; context.drawImage(grain, 0, 0); context.restore();
+      const gf = Math.floor(time / (1000 / 18));
+      context.save(); context.globalCompositeOperation = 'overlay'; context.globalAlpha = .3;
+      context.drawImage(grain, -Math.floor(hash(gf, 61) * 64), -Math.floor(hash(gf, 62) * 64)); context.restore();
     };
 
     // The pointer stands in for the hand: over the frame it draws the tracking; pressed and held, it is a fist (high
