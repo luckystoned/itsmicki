@@ -170,3 +170,19 @@ img, video {
 }
 /* Vimeo embeds play as backgrounds; blocking pointer events hides the player's own menu. */
 iframe[src*="player.vimeo.com"] { pointer-events: none; }
+
+/* Immersive fields full screen while their camera is on (src/scripts/fullscreenField.ts): over the navigation too. */
+.is-full:is(.reveal-video, .dots-field, .nostalgia-field) { position: fixed !important; inset: 0 !important; z-index: 3000; touch-action: none; background: #000; }
+html.field-full-open { overflow: hidden; }
+.field-full-close {
+  position: absolute; top: 16px; right: 16px; z-index: 3; display: grid; place-items: center; width: 44px; height: 44px;
+  padding: 0; border: 0; border-radius: 50%; color: #f2f0ec; background: rgb(0 0 0 / .45); cursor: pointer;
+}
+.field-full-close svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.field-full-close:hover { background: rgb(0 0 0 / .7); }
+.field-full-close:focus-visible { outline: 2px solid #f2f0ec; outline-offset: 2px; }
+.field-full-status {
+  position: absolute; left: 16px; right: 76px; bottom: 16px; z-index: 3; margin: 0; color: #f2f0ec;
+  font-size: 14px; line-height: 1.3; text-shadow: 0 1px 6px rgb(0 0 0 / .8); pointer-events: none;
+}
+.field-full-close[hidden], .field-full-status[hidden] { display: none; }

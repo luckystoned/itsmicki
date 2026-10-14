@@ -17,10 +17,11 @@ export type SideBProject = {
 const MKP_LOOP = '/04_SideB/Projects/01_MkpHair/00_MkpHair_Loop.mp4';
 /** Missing souls' muted 6-second loop (square): a detail of its lilac flowers swaying, the sky melting from orange into lilac. */
 const SOULS_LOOP = '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Loop.mp4';
-/** Nostalgia as Agony's muted 4-second loops: the photo pixel-stretched into vertical streaks, with two clusters
+/** Nostalgia as Agony's muted 4-second grid loop: the photo pixel-stretched into vertical streaks, with two clusters
     of tracking boxes where it shows clean and, in hits echoed a moment later, thin slices slipping sideways and dashed
-    rows of dead pixels (landscape for the grid, portrait for its carousel card). */
+    rows of dead pixels. */
 const NOSTALGIA_LOOP = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Loop.mp4';
+/** Its carousel card: 12 muted seconds of the home videos as Super 8 (18 fps, gate weave, warm faded colour, grain). */
 const NOSTALGIA_CARD = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Card.mp4';
 
 export const sideBProjects: SideBProject[] = [
@@ -41,7 +42,7 @@ const carouselCards: Array<{ width: number; height: number; alt: string; video?:
   { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.', project: 1 },
   { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true, project: 2 },
   { width: 357, height: 354, alt: 'Lilac flowers on green stems swaying against a coral sky melting into lilac.', video: SOULS_LOOP, project: 3 },
-  { width: 358, height: 474, alt: 'A girl in lilac holding a baby against a tiled wall, the photo stretched into vertical streaks, with outlined boxes where it shows clean.', video: NOSTALGIA_CARD, project: 4 },
+  { width: 358, height: 474, alt: 'Home videos from 1999 on warm, grainy Super 8: a girl in pink dancing on a tiled floor, a girl smiling into the camera, a grandmother at the window, a man laughing.', video: NOSTALGIA_CARD, project: 4 },
 ];
 
 export const sideBCarousel = carouselCards.map((card, index) => {
