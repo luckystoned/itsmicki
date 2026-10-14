@@ -86,10 +86,13 @@ const { label } = Astro.props;
     audio.loop = true; audio.preload = 'none';
     (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
     (audio as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = false;
-    let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode } | null = null;
+    let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode; ear: AnalyserNode } | null = null;
+    let wave = new Float32Array(1024), loud = 0, floor = .02, lastOnset = 0;
     const build = async () => {
       const ctx = new AudioContext();
       const source = ctx.createMediaElementSource(audio);
+      // Listening to the song itself (before it is broken), so the image can glitch with it.
+      const ear = ctx.createAnalyser(); ear.fftSize = 1024; source.connect(ear);
       let glitch: AudioWorkletNode | null = null;
       try {
         const url = URL.createObjectURL(new Blob([GLITCH], { type: 'text/javascript' }));
@@ -108,7 +111,7 @@ const { label } = Astro.props;
       filter.connect(dry).connect(master);
       filter.connect(echo).connect(wet).connect(master);
       master.connect(ctx.destination);
-      graph = { ctx, glitch, filter, wet, dry, master };
+      graph = { ctx, glitch, filter, wet, dry, master, ear };
     };
     let on = false;
     return {
@@ -125,6 +128,19 @@ const { label } = Astro.props;
       stop: () => { if (!graph) return; graph.master.gain.setTargetAtTime(0, graph.ctx.currentTime, .15); setTimeout(() => audio.pause(), 500); on = false; },
       /** The films' speed follows the song's (its glitches stretch and rush the image too). */
       get rate() { return audio.playbackRate; },
+      /** How loud the song is now (0–1-ish), and whether a hit (a sudden rise over its recent level) just happened. */
+      listen: () => {
+        if (!graph || !on) return { level: 0, onset: 0 };
+        graph.ear.getFloatTimeDomainData(wave);
+        let sum = 0; for (let i = 0; i < wave.length; i++) sum += wave[i] * wave[i];
+        const rms = Math.sqrt(sum / wave.length), now = performance.now();
+        loud += (rms - loud) * .25; floor += (rms - floor) * .02;
+        const rise = rms / Math.max(.01, floor);
+        const onset = rise > 1.35 && rms > .03 && now - lastOnset > 110 ? Math.min(1, (rise - 1.35) * 1.5 + .3) : 0;
+        if (onset) lastOnset = now;
+        // (The song mostly sits around .25 RMS, quiet passages under .05: mapped across that range.)
+        return { level: clamp((loud - .04) / .32), onset };
+      },
       /** fist 0–1, near 0 (far) – 1 (near). */
       shape: (fist: number, near: number) => {
         if (!graph || !on) return;
@@ -194,7 +210,7 @@ const { label } = Astro.props;
     let scale = 1;
 
     // Drawing: one frame of the cover's glitch, live.
-    let beatSeed = 0;
+    let beatSeed = 0, heard = { level: 0, onset: 0 }, audioHit: { until: number; seed: number; power: number } | null = null;
     const draw = (time: number) => {
       const W = canvas.width, H = canvas.height, t = time / 1000;
       if (footage.width !== W ? !paintFootage() : !refresh()) return;
@@ -252,17 +268,23 @@ const { label } = Astro.props;
           context.fillStyle = 'rgba(255,255,255,.8)'; context.fillText(label, clamp(lx, 4, W - 200 * U), yy + Math.min(h - 4, 4)); }
       }
 
-      // Slices: in hits (echoed), and all the time while the fist is closed, more and wilder the nearer it is.
-      const k = Math.floor((t % SETTINGS.loop) * 24);
+      // Slices: with the song's hits while it plays (otherwise in the "ta ta piiii" pattern, echoed), and all the time
+      // while the fist is closed, more and wilder the nearer it is.
       let hit = -1, f = 0;
-      SETTINGS.hits.forEach(([s, l], n) => { if (k >= s && k < s + l) { hit = n; f = k - s; } const e = s + l + 2 + (n % 2); if (k >= e && k < e + (l > 4 ? 3 : 1)) { hit = n + 50; f = k - e; } });
+      if (sound.on) {
+        if (heard.onset) { audioHit = { until: time + 50 + heard.onset * 160 + heard.level * 120, seed: Math.floor(time) % 100000, power: heard.onset }; }
+        if (audioHit && time < audioHit.until) { hit = audioHit.seed; f = Math.floor((audioHit.until - time) / 42); }
+      } else {
+        const k = Math.floor((t % SETTINGS.loop) * 24);
+        SETTINGS.hits.forEach(([s, l], n) => { if (k >= s && k < s + l) { hit = n; f = k - s; } const e = s + l + 2 + (n % 2); if (k >= e && k < e + (l > 4 ? 3 : 1)) { hit = n + 50; f = k - e; } });
+      }
       const breaking = fist > .05;
       if (hit >= 0 || breaking) {
         if (breaking) beatSeed = Math.floor(t * (12 + near * 24));
         const seed = breaking ? beatSeed * 7 + 3 : hit * 97 + (f >> 1);
         grab.getContext('2d')!.drawImage(canvas, 0, 0);
         context.imageSmoothingEnabled = false;
-        const clusters = Math.round(4 + hash(seed, 1) * 5 + fist * (6 + near * 10));
+        const clusters = Math.round(4 + hash(seed, 1) * 5 + fist * (6 + near * 10) + (sound.on && audioHit ? audioHit.power * 6 : 0));
         for (let c = 0; c < clusters; c++) {
           const nearHand = hash(seed, c, 2) < .65, tr = groups[c % 2];
           const cy = nearHand ? tr.cy + (hash(seed, c, 3) - .5) * H * .6 : hash(seed, c, 3) * H, cx = nearHand ? tr.cx + (hash(seed, c, 4) - .5) * W * .4 : hash(seed, c, 4) * W;
@@ -285,6 +307,20 @@ const { label } = Astro.props;
             while (x < end) { const dw = Math.max(1, Math.round((2 + hash(x, ly, seed) * 12) * U * scale));
               if (hash(x, ly, seed + 1) < .55) { context.fillStyle = SETTINGS.dashes[Math.floor(hash(x, ly, seed + 2) * SETTINGS.dashes.length)]; context.fillRect(x, ly, dw, lh); }
               x += dw + Math.round(hash(x, ly, seed + 3) * 16 * U); }
+          }
+        }
+      }
+      // Broken pixels along the streaks: dashed columns of dead pixels, more with the song's level (or the hits).
+      {
+        const colBeat = Math.floor(t * (sound.on ? 8 + heard.level * 16 : 6)), columns = Math.round(3 + (sound.on ? heard.level * 22 : 5) + (hit >= 0 ? 8 : 0) + fist * 12);
+        for (let c = 0; c < columns; c++) {
+          const x = Math.round(hash(colBeat, c, 40) * W), y0 = Math.round(hash(colBeat, c, 41) * H * .7), len = H * (.15 + hash(colBeat, c, 42) * .6);
+          const cw = Math.max(1, Math.round((2 + hash(colBeat, c, 43) * 5) * U * scale));
+          let y = y0;
+          while (y < y0 + len) {
+            const dh = Math.max(1, Math.round((2 + hash(c, y, colBeat) * 14) * U * scale));
+            if (hash(c, y, colBeat + 1) < .55) { context.fillStyle = SETTINGS.dashes[Math.floor(hash(c, y, colBeat + 2) * SETTINGS.dashes.length)]; context.fillRect(x, y, cw, dh); }
+            y += dh + Math.round(hash(c, y, colBeat + 3) * 18 * U);
           }
         }
       }
@@ -373,6 +409,7 @@ const { label } = Astro.props;
       fist += (fistTarget - fist) * .18;
       handShown += ((hand ? 1 : 0) - handShown) * .08;
       scale += ((hand ? .5 + near * 1.1 : 1) - scale) * .12;
+      heard = sound.listen();
       draw(time);
       sound.shape(fist, near);
       if (sound.on && Math.abs(film.playbackRate - sound.rate) > .01) film.playbackRate = sound.rate;
