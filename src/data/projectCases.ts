@@ -1,5 +1,5 @@
 export type CaseMedia = {
-  type: 'image' | 'video' | 'carousel' | 'reveal' | 'dots' | 'souls';
+  type: 'image' | 'video' | 'carousel' | 'reveal' | 'dots' | 'souls' | 'nostalgia';
   alt: string;
   /** Image file, or for a video served from the site (not Vimeo) the .mp4 file. */
   src?: string;
@@ -43,7 +43,7 @@ export type CaseBlock =
     };
 
 export type ProjectCase = {
-  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body' | 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls';
+  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body' | 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls' | 'nostalgia-as-agony';
   title: string;
   year: string;
   role: string;
@@ -82,6 +82,8 @@ const reveal = (top: string, under: string, poster: string, alt: string, ratio: 
 const dots = (alt: string, ratio: string): CaseMedia => ({ type: 'dots', alt, ratio });
 /** The caregiver's place, where visitors leave their cat or dog (SoulsField). */
 const souls = (alt: string, ratio: string): CaseMedia => ({ type: 'souls', alt, ratio });
+/** The memory that breaks: the cover's glitch, live, answering a hand (camera) or the pointer, with a song (NostalgiaField). */
+const nostalgia = (alt: string, ratio: string): CaseMedia => ({ type: 'nostalgia', alt, ratio });
 
 const carousel = (
   slides: Array<{ src: string; alt: string }>,
@@ -475,7 +477,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
 };
 
 /** Side B cases, at /sideb/projects/{slug}, with the dark Side B page. */
-type SideBCaseSlug = 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls';
+type SideBCaseSlug = 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls' | 'nostalgia-as-agony';
 export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
   'mkp-hair': {
     slug: 'mkp-hair',
@@ -582,6 +584,26 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
     drags: [],
     blocks: [
       single(souls('A soft, glowing caregiver surrounded by luminous cats and dogs that visitors have left in her care.', '1556 / 870')),
+    ],
+    credits: [],
+  },
+  'nostalgia-as-agony': {
+    slug: 'nostalgia-as-agony',
+    title: 'Nostalgia as Agony',
+    year: '2026',
+    role: 'Art Direction,<br>Immersive Design,<br>Depressed as hell',
+    nutshell: `A personal archive of childhood footage, reshaped through glitch and broken noises to evoke memories that blur, fracture, and slip away—along with the people who once filled them.<span class="case-nutshell-note">(Take into account that this interaction has sound)</span>`,
+    drags: [],
+    // As in Figma (954:3347): the piece, then the concept.
+    blocks: [
+      single(nostalgia('A childhood photo of a girl holding a baby, smeared into vertical streaks, with tracking boxes where it shows clean and slices glitching sideways.', '1556 / 870')),
+      text('(the concept)', [
+        `But remembering isn’t the same as seeing clearly again. The images break, distort and lose focus. Glitch and broken noises make that uncertainty visible: a memory that falters, blurs with others and never quite stays still. Something is there, even if I can’t fully get it back.`,
+        `That tension carries into the sound. At times, it cuts through sharply; at others, it sinks into lower tones. Image and sound follow the impossible impulse to hold on to what has already passed, to someone who won’t return in the same way. Because remembering is also this: holding, for a moment, what is slowly slipping away.`,
+      ], {
+        variant: 'lead',
+        lead: `This project began with a collection of videos from my childhood. They show people who were central to my life and who are no longer here, or no longer present in the same way. I’m not trying to piece together an exact story. I return to these scenes to get close to something memory only holds onto halfway, as if I could still reach it.`,
+      }),
     ],
     credits: [],
   },
