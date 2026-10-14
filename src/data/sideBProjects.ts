@@ -17,9 +17,7 @@ export type SideBProject = {
 const MKP_LOOP = '/04_SideB/Projects/01_MkpHair/00_MkpHair_Loop.mp4';
 /** Missing souls' muted 6-second loop (square): a detail of its lilac flowers swaying, the sky melting from orange into lilac. */
 const SOULS_LOOP = '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Loop.mp4';
-/** Nostalgia as Agony's muted 4-second grid loop: the photo pixel-stretched into vertical streaks, with two clusters
-    of tracking boxes where it shows clean and, in hits echoed a moment later, thin slices slipping sideways and dashed
-    rows of dead pixels. */
+/** Nostalgia as Agony's grid loop: 12 muted seconds recorded from the piece (landscape), like its carousel card. */
 const NOSTALGIA_LOOP = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Loop.mp4';
 /** Its carousel card: 12 muted seconds recorded from the piece itself: the home videos as Super 8, under its tracking
     boxes, streaks and a couple of breaks (18 fps, fine grain). */
