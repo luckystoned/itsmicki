@@ -34,46 +34,56 @@ const { label } = Astro.props;
   const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const TAU = Math.PI * 2;
 
-  // The glitch itself, sample by sample (an AudioWorklet): while `amount` is up, bits of what just played are caught
-  // and repeated (a scratched CD), the sound is crushed and overdriven and buried in noise (hiss and crackle) without
-  // losing the song under it. `near` makes it all faster, shorter and harsher.
+  // The glitch itself, sample by sample (an AudioWorklet): while `amount` is up, the song comes as through an old
+  // radio losing its station: squeezed into a narrow band, its level trembling, the signal fading in and out under
+  // static, with crackle and a tuning whistle that sweeps. `near` makes the interference denser, the whistle higher and
+  // the trembling faster; far, it sinks into static.
   const GLITCH = `
     class Glitch extends AudioWorkletProcessor {
       static get parameterDescriptors() { return [{ name: 'amount', defaultValue: 0, minValue: 0, maxValue: 1 }, { name: 'near', defaultValue: .5, minValue: 0, maxValue: 1 }]; }
-      constructor() { super(); this.size = sampleRate | 0; this.buf = [new Float32Array(this.size), new Float32Array(this.size)]; this.w = 0; this.hold = [0, 0]; this.count = 0; this.rep = null; this.drop = 0; this.crackle = 0; }
+      constructor() {
+        super();
+        this.hp = [0, 0]; this.lp = [0, 0]; this.prev = [0, 0]; this.brown = 0; this.hiss = 0;
+        this.sig = 1; this.sigTarget = 1; this.sigLeft = 0;
+        this.flutter = 0; this.whistle = 0; this.wFreq = 900; this.wTarget = 900; this.wOn = 0; this.crackle = 0;
+      }
       process(inputs, outputs, params) {
         const input = inputs[0], output = outputs[0];
         if (!input || !input.length) return true;
-        const a = params.amount[0], near = params.near[0], n = output[0].length;
+        const a = params.amount[0], near = params.near[0], n = output[0].length, sr = sampleRate;
         if (a > .02) {
-          if (!this.rep && Math.random() < a * (.03 + near * .08)) {
-            const len = Math.max(64, Math.floor(sampleRate * (.025 + (1 - near) * .1) * (.5 + Math.random())));
-            this.rep = { start: (this.w - len + this.size) % this.size, len, pos: 0, left: 1 + Math.floor(Math.random() * (2 + near * 5)) };
+          // The station comes and goes: now and then the signal drops (to static) for a moment, then returns.
+          if (--this.sigLeft <= 0) {
+            const drop = Math.random() < a * (.35 + near * .3);
+            this.sigTarget = drop ? .04 + Math.random() * .35 : .85 + Math.random() * .15;
+            this.sigLeft = Math.floor((drop ? 20 + Math.random() * 100 : 40 + Math.random() * 260) * (1 - near * .5)); // In 128-sample blocks.
           }
-          if (this.drop <= 0 && Math.random() < a * .004 * (.4 + near)) this.drop = Math.floor(sampleRate * (.004 + Math.random() * .012));
-          // Bursts of crackle now and then, on top of a steady hiss.
-          if (this.crackle <= 0 && Math.random() < a * (.02 + near * .05)) this.crackle = Math.floor(sampleRate * (.02 + Math.random() * .12));
-        } else this.rep = null;
-        const bits = 16 - a * (6 + 4 * near), q = Math.pow(2, Math.max(6, bits) - 1), holdN = 1 + Math.floor(a * (1 + near * 10)), wet = Math.min(.8, a * 1.2);
-        const drive = 1 + a * (2.5 + near * 4), hiss = a * (.025 + near * .03), crack = a * (.12 + near * .18);
-        const level = 1 / (1 + a * .75); // Louder when broken: brought back to about the song's level.
+          // A tuning whistle, sweeping, sometimes.
+          if (Math.random() < .02 + a * .04) { this.wTarget = (300 + Math.random() * 1400) * (1 + near * 1.6); this.wOn = Math.random() < a * (.45 + near * .3) ? 1 : 0; }
+          if (this.crackle <= 0 && Math.random() < a * (.03 + near * .05)) this.crackle = Math.floor(sr * (.03 + Math.random() * .15));
+        } else { this.sigTarget = 1; this.wOn = 0; }
+        // A narrow radio band: cut the lows and the highs (narrower when near).
+        const hpA = Math.exp(-2 * Math.PI * (250 + near * 250) / sr), lpA = 1 - Math.exp(-2 * Math.PI * (2600 + (1 - near) * 600 - near * 900) / sr);
+        const fRate = (5 + near * 22 + Math.random() * 3) / sr, fDepth = a * (.25 + near * .35);
+        const staticLevel = a * (.05 + (1 - near) * .07), wet = Math.min(1, a * 1.4), level = 1 + a * .7; // (the narrow band loses energy: brought back up)
         for (let i = 0; i < n; i++) {
-          for (let c = 0; c < 2; c++) this.buf[c][this.w] = (input[c] || input[0])[i];
-          const take = this.count++ % holdN === 0;
+          this.sig += (this.sigTarget - this.sig) * .004;
+          this.flutter += fRate; if (this.flutter > 1) this.flutter -= 1;
+          const tremble = 1 - fDepth * (.5 + .5 * Math.sin(this.flutter * 2 * Math.PI));
+          this.wFreq += (this.wTarget - this.wFreq) * .0004; this.whistle += this.wFreq / sr; if (this.whistle > 1) this.whistle -= 1;
+          const white = Math.random() * 2 - 1;
+          this.brown = (this.brown + white * .02) * .997; this.hiss += (white - this.hiss) * .35;
+          let noise = (this.hiss * .6 + this.brown * 1.6) * (staticLevel + (1 - this.sig) * a * .22);
+          if (this.crackle > 0 && Math.random() < .25) noise += (Math.random() * 2 - 1) * a * (.15 + near * .2);
+          const tone = this.wOn ? Math.sin(this.whistle * 2 * Math.PI) * a * .035 * (.5 + .5 * Math.sin(this.flutter * 6.28 * 3)) : 0;
           for (let c = 0; c < output.length; c++) {
-            const dry = (input[c] || input[0])[i];
-            const x = this.rep ? this.buf[c % 2][(this.rep.start + this.rep.pos) % this.size] : dry;
-            if (take) this.hold[c % 2] = x;
-            // Crushed, overdriven, and buried in noise: a steady hiss plus crackle bursts that follow the music's level.
-            let y = Math.tanh(Math.round(this.hold[c % 2] * q) / q * drive) / Math.tanh(drive) * .9;
-            y += (Math.random() * 2 - 1) * hiss + (this.crackle > 0 && Math.random() < .3 ? (Math.random() * 2 - 1) * crack * (.3 + Math.abs(x)) : 0);
-            if (this.drop > 0) y *= .15;
-            output[c][i] = (dry * (1 - wet) + y * wet) * level;
+            const ch = c % 2, dry = (input[c] || input[0])[i];
+            this.hp[ch] = hpA * (this.hp[ch] + dry - this.prev[ch]); this.prev[ch] = dry;
+            this.lp[ch] += lpA * (this.hp[ch] - this.lp[ch]);
+            const radio = Math.tanh(this.lp[ch] * 1.8) * this.sig * tremble;
+            output[c][i] = (dry * (1 - wet) + (radio + noise + tone) * wet) * level;
           }
-          this.w = (this.w + 1) % this.size;
-          if (this.drop > 0) this.drop--;
           if (this.crackle > 0) this.crackle--;
-          if (this.rep && ++this.rep.pos >= this.rep.len) { this.rep.pos = 0; if (--this.rep.left <= 0) this.rep = null; }
         }
         return true;
       }
