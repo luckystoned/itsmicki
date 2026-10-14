@@ -605,6 +605,6 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
         lead: `This project began with a collection of videos from my childhood. They show people who were central to my life and who are no longer here, or no longer present in the same way. I’m not trying to piece together an exact story. I return to these scenes to get close to something memory only holds onto halfway, as if I could still reach it.`,
       }),
     ],
-    credits: [],
+    credits: ['Soundtrack / <a href="https://www.youtube.com/watch?v=ErA_uF_GkQ4" target="_blank" rel="noreferrer">With You — Nthng</a>'],
   },
 };
