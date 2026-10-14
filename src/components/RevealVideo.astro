@@ -22,6 +22,7 @@ const { top, under, poster, label } = Astro.props;
 
 <script>
   import { loadVision, openCamera } from '@/scripts/camera';
+  import { fullscreenField } from '@/scripts/fullscreenField';
 
   const SETTINGS = {
     field: 200, // Simulation grid along the frame's longer side.
@@ -257,8 +258,11 @@ const { top, under, poster, label } = Astro.props;
     let nose: { x: number; y: number } | null = null;
     let lostSince = 0;
     const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
-    const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; };
+    const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; full.setStatus(text); };
+    // Full screen while the camera is on; the cross (or Esc) turns it off.
+    const full = fullscreenField(root, { onClose: () => cameraOff() });
     const cameraOff = () => {
+      full.close();
       camera?.stop();
       camera = null;
       nose = null;
@@ -291,8 +295,10 @@ const { top, under, poster, label } = Astro.props;
     };
     const cameraOn = async () => {
       setLabel('starting the camera…', true);
+      full.open();
       try {
         camera = await openCamera();
+        if (!full.isOpen()) { camera?.stop(); camera = null; return; } // Closed while the browser was asking.
         if (!detector) {
           const { module, files } = await loadVision();
           detector = await module.FaceDetector.createFromOptions(files, {

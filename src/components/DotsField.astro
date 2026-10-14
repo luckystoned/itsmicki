@@ -14,6 +14,7 @@ const { label } = Astro.props;
 
 <script>
   import { loadVision, openCamera } from '@/scripts/camera';
+  import { fullscreenField } from '@/scripts/fullscreenField';
 
   const SETTINGS = {
     count: 1600, // Dots on a 1556px-wide frame; scales with the frame's area.
@@ -269,8 +270,10 @@ const { label } = Astro.props;
     let handPoint: { x: number; y: number } | null = null;
     let closed = false, lostSince = 0;
     const setLabel = (text: string, on: boolean) => cameraButtons.forEach((button) => { button.textContent = text; button.setAttribute('aria-pressed', String(on)); });
-    const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; };
-    const cameraOff = () => { camera?.stop(); camera = null; handPoint = null; closed = false; leave(); if (cameraHelp) cameraHelp.hidden = true; setLabel('turn the camera on', false); };
+    const setStatus = (text: string) => { if (cameraStatus && cameraStatus.textContent !== text) cameraStatus.textContent = text; full.setStatus(text); };
+    // Full screen while the camera is on; the cross (or Esc) turns it off.
+    const full = fullscreenField(root, { onClose: () => cameraOff() });
+    const cameraOff = () => { full.close(); camera?.stop(); camera = null; handPoint = null; closed = false; leave(); if (cameraHelp) cameraHelp.hidden = true; setLabel('turn the camera on', false); };
     const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
     const track = () => {
       if (!camera) return;
@@ -300,8 +303,10 @@ const { label } = Astro.props;
     };
     const cameraOn = async () => {
       setLabel('starting the camera…', true);
+      full.open();
       try {
         camera = await openCamera();
+        if (!full.isOpen()) { camera?.stop(); camera = null; return; } // Closed while the browser was asking.
         if (!hands) {
           const { module, files } = await loadVision();
           hands = await module.HandLandmarker.createFromOptions(files, {

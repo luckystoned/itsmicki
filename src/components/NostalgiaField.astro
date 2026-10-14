@@ -10,13 +10,18 @@ type Props = { label: string };
 const { label } = Astro.props;
 ---
 
-<div class="nostalgia-field" data-nostalgia-field role="img" aria-label={label}>
+<div class="nostalgia-field" data-nostalgia-field>
   <video class="nostalgia-field-video" src="/04_SideB/Projects/05_Nostalgia/03_Nostalgia_Home.mp4" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true"></video>
-  <canvas class="nostalgia-field-canvas" aria-hidden="true"></canvas>
+  <canvas class="nostalgia-field-canvas" role="img" aria-label={label}></canvas>
+  <!-- With the camera on it fills the screen (with a cross that closes it, camera and sound off) and this switch. -->
+  <button type="button" class="nostalgia-field-sound" role="switch" aria-checked="false" data-nostalgia-sound-toggle hidden>
+    <span class="nostalgia-field-sound-label">sound</span><span class="nostalgia-field-sound-track" aria-hidden="true"><span></span></span>
+  </button>
 </div>
 
 <script>
   import { loadVision, openCamera } from '@/scripts/camera';
+  import { fullscreenField } from '@/scripts/fullscreenField';
 
   const SETTINGS = {
     // The footage: a wide and a tall cut (the tall one for phone frames). Videos can take their place later.
@@ -34,46 +39,139 @@ const { label } = Astro.props;
   const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const TAU = Math.PI * 2;
 
-  // The glitch itself, sample by sample (an AudioWorklet): while `amount` is up, bits of what just played are caught
-  // and repeated (a scratched CD), the sound is crushed and overdriven and buried in noise (hiss and crackle) without
-  // losing the song under it. `near` makes it all faster, shorter and harsher.
+  // The glitch itself, sample by sample (an AudioWorklet), in time with the song (100 BPM): while `amount` is up, each
+  // sixteenth plays clean or breaks on purpose, IDM-style: a roll (the last bit repeated in 1/8 to 1/64, its pitch
+  // sliding), a reverse, a 1/32 gate, a bit-crush, a dry hole, or, closing the bar, a tape stop. How often, and which,
+  // comes from a fixed pattern per bar (so it repeats and grooves), denser with `amount`; `near` makes the rolls
+  // shorter and rising, far makes them longer and falling. Each break is told to the page so the image breaks with it.
+  const SONG = { bpm: 100, first: .22 }; // Its tempo, and where its first beat falls (seconds).
   const GLITCH = `
+    const STEP = 60 / ${SONG.bpm} / 4, FIRST = ${SONG.first};
+    const hash = (a, b) => { let h = Math.imul(a * 374761393 + b * 668265263, 1274126177); h ^= h >>> 13; h = Math.imul(h, 1103515245); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    // What a step does, as the glitches at 4:16 in the track: the song keeps going underneath (now and then it
+    // stutters or drops too) and a bright digital layer breaks over it: 32nd-note buzzes, ticks that ring, chirps
+    // sweeping up or down, blocks of crushed noise. The pattern changes every 2 bars and repeats once, so it reads
+    // as a figure, not noise.
+    const event = (bar, step, a, near) => {
+      const phrase = Math.floor(bar / 2), id = phrase * 31 + step, h = hash(id, 7), k = hash(id, 11), m = hash(id, 13);
+      if (step === 15 && hash(phrase, 3) < a * .5) return { kind: 'stop', song: 'stop', art: { type: 'crush', len: 1, d: 6, pan: 0 } };
+      const density = a * (.5 + near * .35) * (step % 4 === 0 ? 1.3 : 1);
+      if (h > density) return { kind: 'pass' };
+      const up = near > .5, song = m < .22 ? 'roll' : m < .3 ? 'hole' : 'pass';
+      let art;
+      if (k < .28) art = { type: 'buzz', len: hash(id, 17) < .4 ? 2 : 1, f: 110 * Math.pow(2, near * 4) * [1, 1.5, 2][Math.floor(hash(id, 19) * 3)] }; // far: a low growl
+      else if (k < .5) art = { type: 'ticks', len: hash(id, 21) < .5 ? 2 : 1, low: .15 + near * .85 };
+      else if (k < .76) {
+        const hi = (500 + near * 2800) * (1 + hash(id, 25) * .5), lo = (90 + near * 1000) * (1 + hash(id, 27) * .4); // far: they sink
+        art = { type: 'chirp', len: 1 + Math.floor(hash(id, 23) * 2), from: hash(id, 29) < .6 ? hi : lo, to: hash(id, 29) < .6 ? lo : hi };
+      } else art = { type: 'crush', len: hash(id, 31) < .5 ? 2 : 1, d: 3 + Math.floor(hash(id, 33) * 8) + Math.floor((1 - near) * 30) }; // far: coarser, darker
+      art.pan = (hash(id, 35) - .5) * .8;
+      const divs = up ? [.25, .5, .5, 1] : [.5, 1, 1, 2];
+      return { kind: song === 'pass' ? art.type : song, song, art, div: divs[Math.floor(hash(id, 37) * 4)], semis: up ? 3 + near * 9 : -(3 + (1 - near) * 9) };
+    };
     class Glitch extends AudioWorkletProcessor {
       static get parameterDescriptors() { return [{ name: 'amount', defaultValue: 0, minValue: 0, maxValue: 1 }, { name: 'near', defaultValue: .5, minValue: 0, maxValue: 1 }]; }
-      constructor() { super(); this.size = sampleRate | 0; this.buf = [new Float32Array(this.size), new Float32Array(this.size)]; this.w = 0; this.hold = [0, 0]; this.count = 0; this.rep = null; this.drop = 0; this.crackle = 0; }
+      constructor() {
+        super();
+        this.size = sampleRate * 4 | 0; this.buf = [new Float32Array(this.size), new Float32Array(this.size)]; this.w = 0;
+        this.clock = null; this.lastStep = -1; this.ev = { kind: 'pass' }; this.evStart = 0; this.read = 0;
+        // The bright layer: what it is, where it is, and its oscillator and sample-and-hold.
+        this.art = null; this.artPos = 0; this.artLen = 0; this.ph = 0; this.held = 0; this.heldLeft = 0; this.jitter = 0;
+        // The radio under it: a narrow band (its lows given back), static, crackle and a tuning whistle.
+        this.hp = [0, 0]; this.lp = [0, 0]; this.low = [0, 0]; this.prev = [0, 0]; this.brown = 0; this.hiss = 0; this.sig = 1;
+        this.burst = 0; this.crackle = 0; this.nlp = 0; this.nlp2 = 0; this.nlp3 = 0; this.whistle = 0; this.wFreq = 900; this.wTarget = 900; this.wOn = 0;
+        this.port.onmessage = (e) => { this.clock = e.data; };
+      }
+      // One sample of the bright layer.
+      artifact(stepLen) {
+        const art = this.art, p = this.artPos, L = this.artLen, sr = sampleRate;
+        const edge = Math.min(1, p / 48, (L - p) / 96), grain = stepLen / 2, gp = p % grain, gi = Math.floor(p / grain);
+        let y = 0;
+        if (art.type === 'buzz') {
+          this.ph += art.f / sr; this.ph -= Math.floor(this.ph);
+          if (--this.heldLeft <= 0) { this.held = (this.ph < .5 ? 1 : -1) + (this.ph * 2.01 % 1 < .5 ? .5 : -.5); this.heldLeft = 3; }
+          y = this.held * Math.exp(-gp / (.03 * sr)) * .13 + (gp < .002 * sr ? (Math.random() * 2 - 1) * .2 : 0);
+        } else if (art.type === 'ticks') {
+          const f = (1800 + hash(gi, art.len * 7 + 41) * 1800) * art.low;
+          y = Math.sin(2 * Math.PI * f * gp / sr) * Math.exp(-gp / (.01 * sr)) * .22 + (gp < 24 ? (Math.random() * 2 - 1) * .3 : 0);
+        } else if (art.type === 'chirp') {
+          // Grainy, not clean: the pitch jitters every few ms and the wave is held in steps (it aliases into copies).
+          if (p % 128 === 0) this.jitter = (Math.random() - .5) * .14;
+          const u = p / L, f = art.from * Math.pow(art.to / art.from, u) * (1 + this.jitter + .04 * Math.sin(2 * Math.PI * 38 * p / sr));
+          this.ph += f / sr; this.ph -= Math.floor(this.ph);
+          if (--this.heldLeft <= 0) { this.held = Math.sin(2 * Math.PI * this.ph) + .45 * Math.sin(4 * Math.PI * this.ph); this.heldLeft = 3; }
+          y = this.held * .14;
+        } else if (art.type === 'crush') {
+          if (--this.heldLeft <= 0) { this.held = Math.round((Math.random() * 2 - 1) * 3) / 3; this.heldLeft = art.d; }
+          y = hash(Math.floor(p / (stepLen / 4)), art.d + 43) < .7 ? this.held * .17 : 0; // cut in 64ths: the holes in it
+        }
+        return y * edge;
+      }
       process(inputs, outputs, params) {
         const input = inputs[0], output = outputs[0];
         if (!input || !input.length) return true;
-        const a = params.amount[0], near = params.near[0], n = output[0].length;
-        if (a > .02) {
-          if (!this.rep && Math.random() < a * (.03 + near * .08)) {
-            const len = Math.max(64, Math.floor(sampleRate * (.025 + (1 - near) * .1) * (.5 + Math.random())));
-            this.rep = { start: (this.w - len + this.size) % this.size, len, pos: 0, left: 1 + Math.floor(Math.random() * (2 + near * 5)) };
-          }
-          if (this.drop <= 0 && Math.random() < a * .004 * (.4 + near)) this.drop = Math.floor(sampleRate * (.004 + Math.random() * .012));
-          // Bursts of crackle now and then, on top of a steady hiss.
-          if (this.crackle <= 0 && Math.random() < a * (.02 + near * .05)) this.crackle = Math.floor(sampleRate * (.02 + Math.random() * .12));
-        } else this.rep = null;
-        const bits = 16 - a * (6 + 4 * near), q = Math.pow(2, Math.max(6, bits) - 1), holdN = 1 + Math.floor(a * (1 + near * 10)), wet = Math.min(.8, a * 1.2);
-        const drive = 1 + a * (2.5 + near * 4), hiss = a * (.025 + near * .03), crack = a * (.12 + near * .18);
-        const level = 1 / (1 + a * .75); // Louder when broken: brought back to about the song's level.
+        const a = params.amount[0], near = params.near[0], n = output[0].length, sr = sampleRate, stepLen = STEP * sr;
+        const hpA = Math.exp(-2 * Math.PI * (250 + near * 250) / sr), lpA = 1 - Math.exp(-2 * Math.PI * (2600 + (1 - near) * 600 - near * 900) / sr), lowA = 1 - Math.exp(-2 * Math.PI * 170 / sr);
+        const staticLevel = a * (.02 + (1 - near) * .03), wet = Math.min(1, a * 1.1), level = 1 + a * .5, fDepth = a * (.2 + near * .3), artLevel = .7 + a * .5;
         for (let i = 0; i < n; i++) {
           for (let c = 0; c < 2; c++) this.buf[c][this.w] = (input[c] || input[0])[i];
-          const take = this.count++ % holdN === 0;
-          for (let c = 0; c < output.length; c++) {
-            const dry = (input[c] || input[0])[i];
-            const x = this.rep ? this.buf[c % 2][(this.rep.start + this.rep.pos) % this.size] : dry;
-            if (take) this.hold[c % 2] = x;
-            // Crushed, overdriven, and buried in noise: a steady hiss plus crackle bursts that follow the music's level.
-            let y = Math.tanh(Math.round(this.hold[c % 2] * q) / q * drive) / Math.tanh(drive) * .9;
-            y += (Math.random() * 2 - 1) * hiss + (this.crackle > 0 && Math.random() < .3 ? (Math.random() * 2 - 1) * crack * (.3 + Math.abs(x)) : 0);
-            if (this.drop > 0) y *= .15;
-            output[c][i] = (dry * (1 - wet) + y * wet) * level;
+          // Where the song is (it tells us its time; we run on from there).
+          const t = this.clock ? this.clock.song + (currentTime + i / sr - this.clock.at) * this.clock.rate : currentTime + i / sr; // (its own clock until told)
+          const beats = (t - FIRST) / STEP, s = Math.floor(beats), phase = beats - s;
+          if (s !== this.lastStep) {
+            this.lastStep = s;
+            const bar = Math.floor(s / 16), step = ((s % 16) + 16) % 16;
+            this.ev = a > .03 ? event(bar, step, a, near) : { kind: 'pass' };
+            this.evStart = this.w; this.read = 0;
+            if (this.ev.kind !== 'pass') {
+              this.port.postMessage({ kind: this.ev.kind, step, bar });
+              this.art = this.ev.art; this.artPos = 0; this.artLen = Math.floor(this.ev.art.len * stepLen); this.heldLeft = 0;
+              this.burst = .3 + hash(s, 5) * .4;
+              if (hash(s, 9) < .3 + near * .3) this.crackle = Math.floor(stepLen);
+            }
+            if (step % 4 === 0 && a > .03) { this.wTarget = (300 + hash(bar * 4 + step, 21) * 1400) * (1 + near * 1.6); this.wOn = hash(bar * 4 + step, 23) < a * (.35 + near * .3) ? 1 : 0; }
+            if (a <= .03) { this.wOn = 0; this.art = null; }
           }
-          this.w = (this.w + 1) % this.size;
-          if (this.drop > 0) this.drop--;
+          const ev = this.ev, song = ev.song || 'pass', edge = Math.min(1, phase * 40, (1 - phase) * 40);
+          const sigTarget = a <= .03 ? 1 : song === 'hole' ? (phase < .15 ? 1 : .05) : song === 'stop' ? 1 - phase * .8 : .92;
+          this.sig += (sigTarget - this.sig) * .02;
+          this.burst *= .9996;
+          const tremble = 1 - fDepth * (.5 + .5 * Math.cos(beats * 2 * Math.PI * (near > .5 ? 2 : 1)));
+          this.wFreq += (this.wTarget - this.wFreq) * .0004; this.whistle += this.wFreq / sr; if (this.whistle > 1) this.whistle -= 1;
+          const white = Math.random() * 2 - 1;
+          this.brown = (this.brown + white * .02) * .997; this.hiss += (white - this.hiss) * .35;
+          let noise = (this.hiss * .6 + this.brown * 1.6) * (staticLevel + (1 - this.sig) * a * .25 + this.burst * a * .2);
+          if (this.crackle > 0 && Math.random() < .25) noise += (Math.random() * 2 - 1) * a * (.12 + near * .15);
+          this.nlp += .25 * (noise - this.nlp); this.nlp2 += .25 * (this.nlp - this.nlp2); this.nlp3 += .25 * (this.nlp2 - this.nlp3); noise = this.nlp3 * 1.4; // radio static stays under ~2 kHz (the bright layer has the top)
+          const tone = this.wOn ? Math.sin(this.whistle * 2 * Math.PI) * a * .03 * (.5 + .5 * Math.cos(beats * Math.PI)) : 0;
+          let bright = 0;
+          if (this.art && this.artPos < this.artLen) { bright = this.artifact(stepLen) * artLevel; this.artPos++; }
+          for (let c = 0; c < output.length; c++) {
+            const ch = c % 2, dry = (input[c] || input[0])[i];
+            let y = dry;
+            if (song === 'roll') {
+              const len = Math.max(32, Math.floor(stepLen * ev.div)), pos = this.read % len;
+              const at = (this.evStart - len + Math.floor(pos) + this.size) % this.size, fr = pos - Math.floor(pos);
+              y = this.buf[ch][at] * (1 - fr) + this.buf[ch][(at + 1) % this.size] * fr;
+              const local = pos / len; y *= Math.min(1, local * 30, (1 - local) * 30); // each repeat clicks in cleanly
+            } else if (song === 'stop') {
+              y = this.buf[ch][(this.evStart - Math.floor(stepLen) + Math.floor(this.read) + this.size) % this.size];
+            }
+            const cut = song === 'pass' ? dry : dry * (1 - edge) + y * edge;
+            // Through the radio, with the song's lows given back (they keep going, as in the track).
+            this.hp[ch] = hpA * (this.hp[ch] + cut - this.prev[ch]); this.prev[ch] = cut;
+            this.lp[ch] += lpA * (this.hp[ch] - this.lp[ch]);
+            this.low[ch] += lowA * (cut - this.low[ch]);
+            const radio = Math.tanh(this.lp[ch] * 1.8) * this.sig * tremble;
+            const art = bright * (ch === 0 ? 1 - (this.art ? this.art.pan : 0) : 1 + (this.art ? this.art.pan : 0));
+            const out = (cut * (1 - wet) + (radio + this.low[ch] * .9 + noise + tone) * wet) * level + art;
+            output[c][i] = a > .03 ? Math.tanh(out) : out; // (a soft limit, so the bursts never clip)
+          }
+          if (song === 'roll') this.read += Math.pow(2, (ev.semis * phase) / 12);
+          else if (song === 'stop') this.read += Math.max(0, 1 - phase);
+          else this.read += 1;
           if (this.crackle > 0) this.crackle--;
-          if (this.rep && ++this.rep.pos >= this.rep.len) { this.rep.pos = 0; if (--this.rep.left <= 0) this.rep = null; }
+          this.w = (this.w + 1) % this.size;
         }
         return true;
       }
@@ -86,8 +184,9 @@ const { label } = Astro.props;
     audio.loop = true; audio.preload = 'none';
     (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
     (audio as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = false;
-    let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode; ear: AnalyserNode } | null = null;
+    let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; bass: BiquadFilterNode; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode; ear: AnalyserNode } | null = null;
     let wave = new Float32Array(1024), loud = 0, floor = .02, lastOnset = 0;
+    const breaks: Array<{ kind: string; step: number; bar: number; at: number }> = [];
     const build = async () => {
       const ctx = new AudioContext();
       const source = ctx.createMediaElementSource(audio);
@@ -99,7 +198,9 @@ const { label } = Astro.props;
         await ctx.audioWorklet.addModule(url);
         URL.revokeObjectURL(url);
         glitch = new AudioWorkletNode(ctx, 'nostalgia-glitch', { outputChannelCount: [2] });
+        glitch.port.onmessage = (e) => { breaks.push({ ...e.data, at: performance.now() }); if (breaks.length > 8) breaks.shift(); };
       } catch { glitch = null; } // Without worklets: pitch, filter and echo only.
+      const bass = ctx.createBiquadFilter(); bass.type = 'lowshelf'; bass.frequency.value = 180; bass.gain.value = 0;
       const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 20000; filter.Q.value = .8;
       const echo = ctx.createConvolver();
       const length = Math.round(ctx.sampleRate * 3.5), ir = ctx.createBuffer(2, length, ctx.sampleRate);
@@ -107,11 +208,11 @@ const { label } = Astro.props;
       echo.buffer = ir;
       const dry = ctx.createGain(), wet = ctx.createGain(), master = ctx.createGain();
       wet.gain.value = 0; master.gain.value = 0;
-      (glitch ? source.connect(glitch) : source).connect(filter);
+      (glitch ? source.connect(glitch) : source).connect(bass).connect(filter);
       filter.connect(dry).connect(master);
       filter.connect(echo).connect(wet).connect(master);
       master.connect(ctx.destination);
-      graph = { ctx, glitch, filter, wet, dry, master, ear };
+      graph = { ctx, glitch, bass, filter, wet, dry, master, ear };
     };
     let on = false;
     return {
@@ -128,6 +229,8 @@ const { label } = Astro.props;
       stop: () => { if (!graph) return; graph.master.gain.setTargetAtTime(0, graph.ctx.currentTime, .15); setTimeout(() => audio.pause(), 500); on = false; },
       /** The films' speed follows the song's (its glitches stretch and rush the image too). */
       get rate() { return audio.playbackRate; },
+      /** The latest IDM break, if one happened in the last `within` ms. */
+      lastBreak: (within: number) => { const b = breaks[breaks.length - 1]; return b && performance.now() - b.at < within ? b : null; },
       /** How loud the song is now (0–1-ish), and whether a hit (a sudden rise over its recent level) just happened. */
       listen: () => {
         if (!graph || !on) return { level: 0, onset: 0 };
@@ -145,14 +248,18 @@ const { label } = Astro.props;
       shape: (fist: number, near: number) => {
         if (!graph || !on) return;
         const now = graph.ctx.currentTime;
-        // Near: higher and faster; far: lower and slower.
-        audio.playbackRate = clamp(1 + fist * (near * .85 - (1 - near) * .5), .5, 1.9);
         if (graph.glitch) {
-          graph.glitch.parameters.get('amount')!.setTargetAtTime(fist * (.55 + .45 * near), now, .03);
+          // The song keeps its tempo (the breaks are in time with it): the worklet is told where it is.
+          graph.glitch.port.postMessage({ song: audio.currentTime, at: graph.ctx.currentTime, rate: audio.playbackRate });
+          graph.glitch.parameters.get('amount')!.setTargetAtTime(fist * (.6 + .4 * near), now, .02);
           graph.glitch.parameters.get('near')!.setTargetAtTime(near, now, .05);
         }
-        // Far: muffled and drowned in a long echo (ethereal).
-        graph.filter.frequency.setTargetAtTime(20000 - fist * (1 - near) * 17500, now, .08);
+        // Far: the song slows and drops in pitch (up to ~6 semitones), muffled, its lows swelling, drowned in a long echo.
+        const far = fist * (1 - near);
+        const rate = 1 - far * .3;
+        if (Math.abs(audio.playbackRate - rate) > .005) audio.playbackRate += (rate - audio.playbackRate) * .15;
+        graph.bass.gain.setTargetAtTime(far * 10, now, .1);
+        graph.filter.frequency.setTargetAtTime(20000 * Math.pow(600 / 20000, far), now, .08);
         graph.wet.gain.setTargetAtTime(fist * (.2 + (1 - near) * .6), now, .15);
         graph.dry.gain.setTargetAtTime(1 - fist * (1 - near) * .25, now, .15);
       },
@@ -176,11 +283,46 @@ const { label } = Astro.props;
       const img = tall() ? stills.tall : stills.wide;
       return img.complete && img.naturalWidth ? [img, img.naturalWidth, img.naturalHeight] : null;
     };
+    // Super 8: 18 frames a second, the gate weaving, warm faded colour, lifted blacks, flicker, a soft vignette, dust and hairs.
+    let lastFrame = -1, vignette = canvasOf(1, 1);
+    const super8 = (f: CanvasRenderingContext2D, frame: number) => {
+      const W = footage.width, H = footage.height;
+      f.globalCompositeOperation = 'multiply'; f.fillStyle = '#f3d9b0'; f.fillRect(0, 0, W, H); // warm
+      f.globalCompositeOperation = 'screen'; f.fillStyle = '#2a1a10'; f.fillRect(0, 0, W, H); // faded blacks
+      f.globalCompositeOperation = 'source-over';
+      const flicker = (hash(frame, 41) - .5) * .12;
+      f.fillStyle = flicker > 0 ? `rgba(255,236,200,${flicker})` : `rgba(0,0,0,${-flicker})`; f.fillRect(0, 0, W, H);
+      f.drawImage(vignette, 0, 0);
+      // Dust: a few specks a frame, now and then a hair or a scratch.
+      const u = Math.max(1, W / 600);
+      for (let k = 0, n = Math.floor(hash(frame, 43) * 5); k < n; k++) {
+        f.fillStyle = hash(frame, 44, k) < .7 ? 'rgba(12,8,6,.75)' : 'rgba(255,248,232,.7)';
+        f.beginPath(); f.arc(hash(frame, 45, k) * W, hash(frame, 46, k) * H, u * (.6 + hash(frame, 47, k) * 2.2), 0, TAU); f.fill();
+      }
+      if (hash(frame, 48) < .12) {
+        f.strokeStyle = 'rgba(10,6,4,.6)'; f.lineWidth = u * .8; f.beginPath();
+        const x0 = hash(frame, 49) * W, y0 = hash(frame, 50) * H; f.moveTo(x0, y0);
+        f.quadraticCurveTo(x0 + (hash(frame, 51) - .5) * 60 * u, y0 + 20 * u, x0 + (hash(frame, 52) - .5) * 40 * u, y0 + (15 + hash(frame, 53) * 40) * u); f.stroke();
+      }
+      const scratch = Math.floor(frame / 30); // a scratch that stays for a while, then moves
+      if (hash(scratch, 54) < .5) { f.fillStyle = 'rgba(255,246,228,.22)'; f.fillRect(hash(scratch, 55) * W + (hash(frame, 56) - .5) * 3 * u, 0, u, H); }
+    };
     const refresh = () => {
       const src = source();
       if (!src) return false;
-      const [media, mw, mh] = src, f = footage.getContext('2d')!, sc = Math.max(footage.width / mw, footage.height / mh);
-      f.drawImage(media, (footage.width - mw * sc) / 2, (footage.height - mh * sc) / 2, mw * sc, mh * sc);
+      const frame = Math.floor(performance.now() / (1000 / 18));
+      if (frame === lastFrame && footage.width === vignette.width) return true;
+      lastFrame = frame;
+      if (vignette.width !== footage.width || vignette.height !== footage.height) {
+        vignette = canvasOf(footage.width, footage.height);
+        const v = vignette.getContext('2d')!, g = v.createRadialGradient(vignette.width / 2, vignette.height / 2, Math.min(vignette.width, vignette.height) * .3, vignette.width / 2, vignette.height / 2, Math.hypot(vignette.width, vignette.height) / 2);
+        g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(10,5,2,.55)'); v.fillStyle = g; v.fillRect(0, 0, vignette.width, vignette.height);
+      }
+      const [media, mw, mh] = src, f = footage.getContext('2d')!, sc = Math.max(footage.width / mw, footage.height / mh) * 1.03;
+      const weave = Math.max(1, footage.width / 500);
+      const dx = (hash(frame, 39) - .5) * weave * 1.4, dy = (hash(frame, 40) - .5) * weave * 2.4 + Math.sin(frame * .7) * weave * .6;
+      f.drawImage(media, (footage.width - mw * sc) / 2 + dx, (footage.height - mh * sc) / 2 + dy, mw * sc, mh * sc);
+      super8(f, frame);
       smear.getContext('2d')!.drawImage(footage, 0, 0, smear.width, 24);
       return true;
     };
@@ -189,9 +331,10 @@ const { label } = Astro.props;
       smear = canvasOf(canvas.width, 24);
       if (!refresh()) return false;
       grab = canvasOf(canvas.width, canvas.height);
-      grain = canvasOf(canvas.width, canvas.height);
+      // Fine film grain, one device pixel each and dense: a sheet a little larger than the frame, shifted every frame.
+      grain = canvasOf(canvas.width + 64, canvas.height + 64);
       const g = grain.getContext('2d')!, d = g.createImageData(grain.width, grain.height);
-      for (let n = 0; n < d.data.length; n += 4) { const v = 128 + (hash(n, 7) - .5) * 60; d.data[n] = d.data[n + 1] = d.data[n + 2] = v; d.data[n + 3] = 255; }
+      for (let n = 0; n < d.data.length; n += 4) { const v = 128 + ((hash(n, 7) + hash(n, 8)) - 1) * 150; d.data[n] = d.data[n + 1] = d.data[n + 2] = v; d.data[n + 3] = 255; }
       g.putImageData(d, 0, 0);
       return true;
     };
@@ -290,7 +433,10 @@ const { label } = Astro.props;
       // while the fist is closed, more and wilder the nearer it is.
       let hit = -1, f = 0;
       if (sound.on) {
-        if (heard.onset) { audioHit = { until: time + 50 + heard.onset * 160 + heard.level * 120, seed: Math.floor(time) % 100000, power: heard.onset }; }
+        // The song's IDM breaks (with the fist) break the image on the same step; otherwise its own hits do.
+        const brk = sound.lastBreak(160);
+        if (brk && (!audioHit || audioHit.seed !== brk.bar * 16 + brk.step)) audioHit = { until: time + 150, seed: brk.bar * 16 + brk.step, power: brk.kind === 'roll' || brk.kind === 'stop' || brk.kind === 'buzz' || brk.kind === 'crush' ? 1 : .6 };
+        else if (heard.onset) { audioHit = { until: time + 50 + heard.onset * 160 + heard.level * 120, seed: Math.floor(time) % 100000, power: heard.onset }; }
         if (audioHit && time < audioHit.until) { hit = audioHit.seed; f = Math.floor((audioHit.until - time) / 42); }
       } else {
         const k = Math.floor((t % SETTINGS.loop) * 24);
@@ -355,7 +501,9 @@ const { label } = Astro.props;
         }
       }
       // Grain over everything.
-      context.save(); context.globalCompositeOperation = 'overlay'; context.globalAlpha = .12; context.drawImage(grain, 0, 0); context.restore();
+      const gf = Math.floor(time / (1000 / 18));
+      context.save(); context.globalCompositeOperation = 'overlay'; context.globalAlpha = .3;
+      context.drawImage(grain, -Math.floor(hash(gf, 61) * 64), -Math.floor(hash(gf, 62) * 64)); context.restore();
     };
 
     // The pointer stands in for the hand: over the frame it draws the tracking; pressed and held, it is a fist (high
@@ -372,12 +520,18 @@ const { label } = Astro.props;
     const sound = makeSound(SETTINGS.track, film);
     const soundButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-nostalgia-sound]')];
     const status = caption.querySelector<HTMLElement>('[data-nostalgia-status]');
-    const setStatus = (text: string) => { if (status && status.textContent !== text) status.textContent = text; };
+    const setStatus = (text: string) => { if (status && status.textContent !== text) status.textContent = text; full.setStatus(text); };
     let hasSound = false;
-    sound.available().then((ok) => { hasSound = ok; soundButtons.forEach((b) => { b.closest<HTMLElement>('[data-nostalgia-sound-option]')?.toggleAttribute('hidden', !ok); }); });
-    const setSoundLabel = () => soundButtons.forEach((b) => { b.textContent = sound.on ? 'sound off' : 'sound on'; b.setAttribute('aria-pressed', String(sound.on)); });
+    sound.available().then((ok) => { hasSound = ok; if (!ok) soundToggle.remove(); soundButtons.forEach((b) => { b.closest<HTMLElement>('[data-nostalgia-sound-option]')?.toggleAttribute('hidden', !ok); }); });
+    const soundToggle = root.querySelector<HTMLButtonElement>('[data-nostalgia-sound-toggle]')!;
+    // Full screen while the camera is on; the cross turns camera and sound off.
+    const full = fullscreenField(root, { onClose: () => { stopCamera(); if (sound.on) sound.stop(); setSoundLabel(); }, controls: [soundToggle] });
+    const setSoundLabel = () => {
+      soundButtons.forEach((b) => { b.textContent = sound.on ? 'sound off' : 'sound on'; b.setAttribute('aria-pressed', String(sound.on)); });
+      soundToggle.setAttribute('aria-checked', String(sound.on));
+    };
     const soundOn = async () => { if (!hasSound || sound.on) return; try { await sound.start(); } catch { /* Blocked: it waits for the next click. */ } setSoundLabel(); };
-    soundButtons.forEach((b) => b.addEventListener('click', async () => { if (sound.on) sound.stop(); else await soundOn(); setSoundLabel(); }));
+    [...soundButtons, soundToggle].forEach((b) => b.addEventListener('click', async () => { if (sound.on) sound.stop(); else await soundOn(); setSoundLabel(); }));
 
     // Camera: the open hand draws the tracking; a fist breaks everything, its distance bends the sound.
     const cameraButtons = [...caption.querySelectorAll<HTMLButtonElement>('[data-nostalgia-camera]')];
@@ -387,7 +541,7 @@ const { label } = Astro.props;
     let closed = false, lostSince = 0;
     const setCameraLabel = (text: string, on: boolean) => cameraButtons.forEach((b) => { b.textContent = text; b.setAttribute('aria-pressed', String(on)); });
     const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
-    const stopCamera = () => { camera?.stop(); camera = null; cameraOn = false; hand = null; fistTarget = 0; closed = false; if (cameraHelp) cameraHelp.hidden = true; setCameraLabel('turn the camera on', false); };
+    const stopCamera = () => { full.close(); camera?.stop(); camera = null; cameraOn = false; hand = null; fistTarget = 0; closed = false; if (cameraHelp) cameraHelp.hidden = true; setCameraLabel('turn the camera on', false); };
     const track = () => {
       if (!camera) return;
       if (hands && camera.video.readyState >= 2) {
@@ -413,9 +567,11 @@ const { label } = Astro.props;
     };
     const startCamera = async () => {
       setCameraLabel('starting the camera…', true);
+      full.open();
       soundOn(); // The click that turns the camera on also starts the sound (browsers need one).
       try {
         camera = await openCamera();
+        if (!full.isOpen()) { camera?.stop(); camera = null; return; } // Closed while the browser was asking.
         if (!hands) {
           const { module, files } = await loadVision();
           hands = await module.HandLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: SETTINGS.hand, delegate: 'GPU' }, runningMode: 'VIDEO', numHands: 1 });
@@ -429,6 +585,7 @@ const { label } = Astro.props;
       } catch { stopCamera(); setCameraLabel('camera unavailable', false); }
     };
     cameraButtons.forEach((b) => b.addEventListener('click', () => (camera ? stopCamera() : startCamera())));
+
     if (!calm && 'mediaDevices' in navigator) caption.querySelectorAll<HTMLElement>('[data-nostalgia-camera-option]').forEach((o) => { o.hidden = false; });
     addEventListener('pagehide', () => { stopCamera(); sound.stop(); });
 
@@ -455,5 +612,16 @@ const { label } = Astro.props;
 <style>
   .nostalgia-field { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; background: #202020; }
   .nostalgia-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  .nostalgia-field-sound[hidden] { display: none; }
+  .nostalgia-field-sound {
+    position: absolute; top: 16px; right: 72px; z-index: 3; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px;
+    border: 0; border-radius: 22px; color: #f2f0ec; background: rgb(0 0 0 / .45); font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .nostalgia-field-sound:hover { background: rgb(0 0 0 / .7); }
+  .nostalgia-field-sound:focus-visible { outline: 2px solid #f2f0ec; outline-offset: 2px; }
+  .nostalgia-field-sound-track { position: relative; width: 34px; height: 18px; border: 1.5px solid currentColor; border-radius: 9px; }
+  .nostalgia-field-sound-track > span { position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: currentColor; opacity: .5; transition: transform .2s, opacity .2s; }
+  .nostalgia-field-sound[aria-checked='true'] .nostalgia-field-sound-track > span { transform: translateX(16px); opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .nostalgia-field-sound-track > span { transition: none; } }
   .nostalgia-field-video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 </style>
