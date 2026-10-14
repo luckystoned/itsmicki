@@ -5,7 +5,8 @@ export default defineConfig({
   site: 'https://www.itsmicki.com',
   output: 'static',
   build: { format: 'directory' },
-  integrations: [sitemap()],
+  // The recording page (/studio/…) is a tool, not part of the site: kept out of the sitemap (and noindex).
+  integrations: [sitemap({ filter: (page) => !page.includes('/studio/') })],
   vite: {
     server: {
       // Local dev reads the live list of Missing souls (GET only), so the place isn't empty; anything added, changed or
