@@ -59,12 +59,12 @@ const { label } = Astro.props;
       if (h > density) return { kind: 'pass' };
       const up = near > .5, song = m < .22 ? 'roll' : m < .3 ? 'hole' : 'pass';
       let art;
-      if (k < .28) art = { type: 'buzz', len: hash(id, 17) < .4 ? 2 : 1, f: (up ? 1760 : 880) * [1, 1.5, 2][Math.floor(hash(id, 19) * 3)] };
-      else if (k < .5) art = { type: 'ticks', len: hash(id, 21) < .5 ? 2 : 1 };
+      if (k < .28) art = { type: 'buzz', len: hash(id, 17) < .4 ? 2 : 1, f: 110 * Math.pow(2, near * 4) * [1, 1.5, 2][Math.floor(hash(id, 19) * 3)] }; // far: a low growl
+      else if (k < .5) art = { type: 'ticks', len: hash(id, 21) < .5 ? 2 : 1, low: .15 + near * .85 };
       else if (k < .76) {
-        const hi = 2600 + hash(id, 25) * 1400 * (up ? 1.6 : 1), lo = (up ? 1200 : 700) + hash(id, 27) * 400;
+        const hi = (500 + near * 2800) * (1 + hash(id, 25) * .5), lo = (90 + near * 1000) * (1 + hash(id, 27) * .4); // far: they sink
         art = { type: 'chirp', len: 1 + Math.floor(hash(id, 23) * 2), from: hash(id, 29) < .6 ? hi : lo, to: hash(id, 29) < .6 ? lo : hi };
-      } else art = { type: 'crush', len: hash(id, 31) < .5 ? 2 : 1, d: 3 + Math.floor(hash(id, 33) * 10) };
+      } else art = { type: 'crush', len: hash(id, 31) < .5 ? 2 : 1, d: 3 + Math.floor(hash(id, 33) * 8) + Math.floor((1 - near) * 30) }; // far: coarser, darker
       art.pan = (hash(id, 35) - .5) * .8;
       const divs = up ? [.25, .5, .5, 1] : [.5, 1, 1, 2];
       return { kind: song === 'pass' ? art.type : song, song, art, div: divs[Math.floor(hash(id, 37) * 4)], semis: up ? 3 + near * 9 : -(3 + (1 - near) * 9) };
@@ -92,7 +92,7 @@ const { label } = Astro.props;
           if (--this.heldLeft <= 0) { this.held = (this.ph < .5 ? 1 : -1) + (this.ph * 2.01 % 1 < .5 ? .5 : -.5); this.heldLeft = 3; }
           y = this.held * Math.exp(-gp / (.03 * sr)) * .13 + (gp < .002 * sr ? (Math.random() * 2 - 1) * .2 : 0);
         } else if (art.type === 'ticks') {
-          const f = 1800 + hash(gi, art.len * 7 + 41) * 1800;
+          const f = (1800 + hash(gi, art.len * 7 + 41) * 1800) * art.low;
           y = Math.sin(2 * Math.PI * f * gp / sr) * Math.exp(-gp / (.01 * sr)) * .22 + (gp < 24 ? (Math.random() * 2 - 1) * .3 : 0);
         } else if (art.type === 'chirp') {
           // Grainy, not clean: the pitch jitters every few ms and the wave is held in steps (it aliases into copies).
@@ -184,7 +184,7 @@ const { label } = Astro.props;
     audio.loop = true; audio.preload = 'none';
     (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
     (audio as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = false;
-    let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode; ear: AnalyserNode } | null = null;
+    let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; bass: BiquadFilterNode; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode; ear: AnalyserNode } | null = null;
     let wave = new Float32Array(1024), loud = 0, floor = .02, lastOnset = 0;
     const breaks: Array<{ kind: string; step: number; bar: number; at: number }> = [];
     const build = async () => {
@@ -200,6 +200,7 @@ const { label } = Astro.props;
         glitch = new AudioWorkletNode(ctx, 'nostalgia-glitch', { outputChannelCount: [2] });
         glitch.port.onmessage = (e) => { breaks.push({ ...e.data, at: performance.now() }); if (breaks.length > 8) breaks.shift(); };
       } catch { glitch = null; } // Without worklets: pitch, filter and echo only.
+      const bass = ctx.createBiquadFilter(); bass.type = 'lowshelf'; bass.frequency.value = 180; bass.gain.value = 0;
       const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 20000; filter.Q.value = .8;
       const echo = ctx.createConvolver();
       const length = Math.round(ctx.sampleRate * 3.5), ir = ctx.createBuffer(2, length, ctx.sampleRate);
@@ -207,11 +208,11 @@ const { label } = Astro.props;
       echo.buffer = ir;
       const dry = ctx.createGain(), wet = ctx.createGain(), master = ctx.createGain();
       wet.gain.value = 0; master.gain.value = 0;
-      (glitch ? source.connect(glitch) : source).connect(filter);
+      (glitch ? source.connect(glitch) : source).connect(bass).connect(filter);
       filter.connect(dry).connect(master);
       filter.connect(echo).connect(wet).connect(master);
       master.connect(ctx.destination);
-      graph = { ctx, glitch, filter, wet, dry, master, ear };
+      graph = { ctx, glitch, bass, filter, wet, dry, master, ear };
     };
     let on = false;
     return {
@@ -253,8 +254,12 @@ const { label } = Astro.props;
           graph.glitch.parameters.get('amount')!.setTargetAtTime(fist * (.6 + .4 * near), now, .02);
           graph.glitch.parameters.get('near')!.setTargetAtTime(near, now, .05);
         }
-        // Far: muffled and drowned in a long echo (ethereal).
-        graph.filter.frequency.setTargetAtTime(20000 - fist * (1 - near) * 17500, now, .08);
+        // Far: the song slows and drops in pitch (up to ~6 semitones), muffled, its lows swelling, drowned in a long echo.
+        const far = fist * (1 - near);
+        const rate = 1 - far * .3;
+        if (Math.abs(audio.playbackRate - rate) > .005) audio.playbackRate += (rate - audio.playbackRate) * .15;
+        graph.bass.gain.setTargetAtTime(far * 10, now, .1);
+        graph.filter.frequency.setTargetAtTime(20000 * Math.pow(600 / 20000, far), now, .08);
         graph.wet.gain.setTargetAtTime(fist * (.2 + (1 - near) * .6), now, .15);
         graph.dry.gain.setTargetAtTime(1 - fist * (1 - near) * .25, now, .15);
       },
