@@ -1,5 +1,5 @@
 ---
-// Nostalgia as Agony: a memory that won't hold still. Home videos, cut together with their own sound, are pixel-stretched into vertical
+// Nostalgia as Agony: a memory that won't hold still. Home videos, cut together (silent), are pixel-stretched into vertical
 // streaks, with two clusters of tracking boxes where it shows clean and, in hits, thin slices slipping sideways and
 // dashed rows of dead pixels, as in the cover. A hand in front of the camera (or the pointer) draws the tracking to
 // it and the image opens up there, the glitch growing as it comes near the camera (or up the frame) and shrinking as
@@ -22,7 +22,6 @@ const { label } = Astro.props;
     // The footage: a wide and a tall cut (the tall one for phone frames). Videos can take their place later.
     stills: { wide: '/04_SideB/Projects/05_Nostalgia/01_Nostalgia_Still.webp', tall: '/04_SideB/Projects/05_Nostalgia/02_Nostalgia_Still_Tall.webp' },
     track: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Track.mp3', // The song (With You, nthng).
-    voices: .9, song: .75, // How loud the home videos' own sound and the song are in the mix.
     loop: 4, // Seconds the glitch pattern takes to come round.
     hits: [[3, 2], [8, 1], [12, 9], [29, 2], [33, 1], [36, 4], [45, 2], [49, 1], [52, 3], [59, 2], [64, 14], [82, 1], [86, 2], [90, 3]] as Array<[number, number]>, // ta ta piiii tatatta… (in 24ths of a second)
     line: 'rgba(146,168,196,', // The tracking boxes and their wires: a muted blue.
@@ -90,12 +89,7 @@ const { label } = Astro.props;
     let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode } | null = null;
     const build = async () => {
       const ctx = new AudioContext();
-      // The song and the home videos' own sound, mixed, both broken by the same glitch.
-      const song = ctx.createGain(), voices = ctx.createGain(), source = ctx.createGain();
-      song.gain.value = SETTINGS.song; voices.gain.value = SETTINGS.voices;
-      ctx.createMediaElementSource(audio).connect(song).connect(source);
-      ctx.createMediaElementSource(film).connect(voices).connect(source);
-      film.muted = false;
+      const source = ctx.createMediaElementSource(audio);
       let glitch: AudioWorkletNode | null = null;
       try {
         const url = URL.createObjectURL(new Blob([GLITCH], { type: 'text/javascript' }));
