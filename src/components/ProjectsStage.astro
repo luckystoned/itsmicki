@@ -357,21 +357,6 @@ const { side = 'a', wordmark } = Astro.props;
     transition: transform .6s var(--projects-ease);
   }
 
-  .project-visual iframe {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: auto;
-    min-width: calc(100% + 4px); /* 2px overscan per side so no poster edge shows. */
-    height: 100%;
-    aspect-ratio: 426 / 240;
-    border: 0;
-    pointer-events: none;
-    height: 125%;
-    transform: translate(-50%, -50%);
-    translate: 0 calc((var(--parallax-progress, .5) - .5) * 20%);
-  }
-
   /* Videos served from the site sit over the cover with the same parallax as the image. */
   .project-visual video {
     position: absolute;

@@ -19,7 +19,7 @@ const definitions = [
   {
     slug: 'amazon',
     width: '100%', height: 'auto', ratio: '97.23 / 64.22',
-    vimeoId: '1215371786',
+    video: '/02_Projects/03_Amazon/01_Amazon_Loop.mp4',
   },
   {
     slug: 'maxmaher',
@@ -32,7 +32,7 @@ const definitions = [
   {
     slug: 'lumen',
     width: 'calc((97.23vw - 6px) * .42549)', height: 'auto', ratio: '40.49 / 40.24',
-    vimeoId: '1234293739',
+    video: '/02_Projects/06_Lumen/01_Lumen_Loop.mp4',
   },
   {
     slug: 'blend360',
@@ -42,7 +42,7 @@ const definitions = [
   {
     slug: 'textures-body',
     width: 'calc(100% * 1046 / 1556)', height: 'auto', ratio: '1046 / 767',
-    vimeoId: '1234326440', videoRatio: '328 / 240',
+    video: '/02_Projects/08_TexturesBody/01_TexturesBody_Loop.mp4',
   },
 ] as const;
 
@@ -55,8 +55,7 @@ const cards = definitions.map((definition) => {
     label: projectLabel(definition.slug),
     eager: 'eager' in definition ? definition.eager : false,
     cover: 'cover' in definition ? definition.cover : undefined,
-    vimeoId: 'vimeoId' in definition ? definition.vimeoId : undefined,
-    videoRatio: 'videoRatio' in definition ? definition.videoRatio : undefined,
+    video: 'video' in definition ? definition.video : undefined,
     style: `--project-width:${definition.width};--project-height:${definition.height};--project-ratio:${definition.ratio}${'parallaxSpan' in definition ? `;--parallax-span:${definition.parallaxSpan}` : ''}${'parallaxStart' in definition ? `;--parallax-start:${definition.parallaxStart}` : ''}${'parallaxHeight' in definition ? `;--parallax-height:${definition.parallaxHeight}` : ''}`,
   };
 });
@@ -78,19 +77,19 @@ const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody
 >
   <ProjectsStage wordmark="Itsmicki">
       <div class="projects-row projects-row-primary">
-        <ProjectGridItem project={genova.project} label={genova.label} style={genova.style} cover={genova.cover} vimeoId={genova.vimeoId} eager={genova.eager} />
-        <ProjectGridItem project={winona.project} label={winona.label} style={winona.style} cover={winona.cover} vimeoId={winona.vimeoId} eager={winona.eager} />
+        <ProjectGridItem project={genova.project} label={genova.label} style={genova.style} cover={genova.cover} video={genova.video} eager={genova.eager} />
+        <ProjectGridItem project={winona.project} label={winona.label} style={winona.style} cover={winona.cover} video={winona.video} eager={winona.eager} />
       </div>
 
-      <ProjectGridItem project={amazon.project} label={amazon.label} style={amazon.style} cover={amazon.cover} vimeoId={amazon.vimeoId} />
-      <ProjectGridItem project={maxMaher.project} label={maxMaher.label} style={maxMaher.style} cover={maxMaher.cover} vimeoId={maxMaher.vimeoId} />
+      <ProjectGridItem project={amazon.project} label={amazon.label} style={amazon.style} cover={amazon.cover} video={amazon.video} />
+      <ProjectGridItem project={maxMaher.project} label={maxMaher.label} style={maxMaher.style} cover={maxMaher.cover} video={maxMaher.video} />
 
       <div class="projects-row projects-row-secondary">
-        <ProjectGridItem project={lumen.project} label={lumen.label} style={lumen.style} cover={lumen.cover} vimeoId={lumen.vimeoId} />
-        <ProjectGridItem project={outliant.project} label={outliant.label} style={outliant.style} cover={outliant.cover} vimeoId={outliant.vimeoId} />
+        <ProjectGridItem project={lumen.project} label={lumen.label} style={lumen.style} cover={lumen.cover} video={lumen.video} />
+        <ProjectGridItem project={outliant.project} label={outliant.label} style={outliant.style} cover={outliant.cover} video={outliant.video} />
       </div>
 
-      <ProjectGridItem project={blend360.project} label={blend360.label} style={blend360.style} cover={blend360.cover} vimeoId={blend360.vimeoId} />
-      <ProjectGridItem project={texturesBody.project} label={texturesBody.label} style={texturesBody.style} cover={texturesBody.cover} vimeoId={texturesBody.vimeoId} videoRatio={texturesBody.videoRatio} />
+      <ProjectGridItem project={blend360.project} label={blend360.label} style={blend360.style} cover={blend360.cover} video={blend360.video} />
+      <ProjectGridItem project={texturesBody.project} label={texturesBody.label} style={texturesBody.style} cover={texturesBody.cover} video={texturesBody.video} />
   </ProjectsStage>
 </BaseLayout>

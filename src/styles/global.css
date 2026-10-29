@@ -168,8 +168,6 @@ img, video {
   user-select: none;
   -webkit-touch-callout: none;
 }
-/* Vimeo embeds play as backgrounds; blocking pointer events hides the player's own menu. */
-iframe[src*="player.vimeo.com"] { pointer-events: none; }
 
 /* Immersive fields full screen while their camera is on (src/scripts/fullscreenField.ts): over the navigation too. */
 .is-full:is(.reveal-video, .dots-field, .nostalgia-field) { position: fixed !important; inset: 0 !important; z-index: 3000; touch-action: none; background: #000; }
