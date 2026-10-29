@@ -123,7 +123,7 @@ const globalStructuredData = {
         });
       }
       // Keep images and videos from being saved or copied via the context menu or drag.
-      const protectedMedia = 'img, video, iframe[src*="player.vimeo.com"]';
+      const protectedMedia = 'img, video';
       const isOverMedia = (x: number, y: number) => [...document.querySelectorAll<HTMLElement>(protectedMedia)].some((media) => {
         if (media.closest('[data-site-pointer]')) return false;
         const rect = media.getBoundingClientRect();

@@ -15,28 +15,9 @@ interface Props {
 
 const { caseStudy, side = 'a' } = Astro.props;
 
-const ratioValue = (ratio: string) => {
-  const [width, height] = ratio.split('/').map(Number);
-  return width / height;
-};
-
-const mediaStyle = (media: CaseMedia) => {
-  let style = `--media-ratio:${media.ratio}`;
-  if (media.type === 'video') style += `;--source-ratio:${media.sourceRatio ? ratioValue(media.sourceRatio) : 16 / 9}`;
-  if (media.type !== 'video' || !media.sourceRatio) return style;
-
-  const targetRatio = ratioValue(media.ratio);
-  const sourceRatio = ratioValue(media.sourceRatio);
-  const width = sourceRatio > targetRatio ? (sourceRatio / targetRatio) * 100 : 100;
-  const height = sourceRatio < targetRatio ? (targetRatio / sourceRatio) * 100 : 100;
-  style += `;--video-width:${width}%;--video-height:${height}%`;
-  return style;
-};
+const mediaStyle = (media: CaseMedia) => `--media-ratio:${media.ratio}`;
 const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
   `--cell-width:${media.width};--cell-height:${media.height};${mediaStyle(media)}`;
-// Phones get 1080p; the inline script after the case content asks Vimeo for 4K on wider screens.
-const vimeoUrl = (id: string) =>
-  `https://player.vimeo.com/video/${id}?background=1&autoplay=1&loop=1&muted=1&controls=0&quality=1080p&dnt=1`;
 ---
 
 <div class:list={['project-case-page', { 'project-case-page-b': side === 'b' }]} data-case={caseStudy.slug}>
@@ -148,7 +129,7 @@ const vimeoUrl = (id: string) =>
           return (
             <section class="case-media-block case-media-single" style={mediaStyle(item)}>
               <div class="case-media-surface" data-case-media-reveal>
-                <div class:list={['case-media-content', { 'is-rotated': item.rotate === 90 }]}>
+                <div class="case-media-content">
                   {item.type === 'dots' ? (
                     <DotsField label={item.alt} />
                   ) : item.type === 'souls' ? (
@@ -186,15 +167,10 @@ const vimeoUrl = (id: string) =>
                       </span>
                     </div>
                   ) : item.type === 'video' && item.src ? (
-                    <video src={item.src} poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video></video>
-                  ) : item.vimeoId ? (
-                    <iframe
-                      data-vimeo-src={vimeoUrl(item.vimeoId)}
-                      title={item.alt}
-                      loading="lazy"
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      referrerpolicy="strict-origin-when-cross-origin"
-                    ></iframe>
+                    <video poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video>
+                      {item.mobileSrc && <source src={item.mobileSrc} type="video/mp4" media="(max-width: 760px)" />}
+                      <source src={item.src} type="video/mp4" />
+                    </video>
                   ) : null}
                 </div>
               </div>
@@ -290,15 +266,10 @@ const vimeoUrl = (id: string) =>
                       </span>
                         </div>
                       ) : item.type === 'video' && item.src ? (
-                        <video src={item.src} poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video></video>
-                      ) : item.vimeoId ? (
-                        <iframe
-                          data-vimeo-src={vimeoUrl(item.vimeoId)}
-                          title={item.alt}
-                          loading="lazy"
-                          allow="autoplay; fullscreen; picture-in-picture"
-                          referrerpolicy="strict-origin-when-cross-origin"
-                        ></iframe>
+                        <video poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video>
+                          {item.mobileSrc && <source src={item.mobileSrc} type="video/mp4" media="(max-width: 760px)" />}
+                          <source src={item.src} type="video/mp4" />
+                        </video>
                       ) : null}
                     </div>
                   </div>
@@ -322,13 +293,6 @@ const vimeoUrl = (id: string) =>
       </section>
     )}
   </article>
-  <script is:inline>
-    // Vimeo embeds start loading here, at 4K on wide screens and 1080p on phones.
-    document.querySelectorAll('iframe[data-vimeo-src]').forEach((frame) => {
-      const src = frame.getAttribute('data-vimeo-src');
-      frame.src = matchMedia('(min-width: 761px)').matches ? src.replace('quality=1080p', 'quality=4k') : src;
-    });
-  </script>
 
   <ProjectCaseFooter currentSlug={caseStudy.slug} side={side} />
 </div>
@@ -1080,36 +1044,12 @@ const vimeoUrl = (id: string) =>
   }
 
   .case-media-content img,
-  .case-media-content video,
-  .case-media-content iframe {
+  .case-media-content video {
     display: block;
     width: 100%;
     height: 100%;
     border: 0;
     object-fit: cover;
-  }
-
-  /* Videos always cover their frame, whatever its final size: no white edges from letterboxing. */
-  .case-media-content:has(> iframe) {
-    container-type: size;
-    overflow: hidden;
-  }
-
-  .case-media-content iframe {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: calc(max(100cqw, 100cqh * var(--source-ratio, 1.7778)) + 2px);
-    height: calc(max(100cqh, 100cqw / var(--source-ratio, 1.7778)) + 2px);
-    max-width: none;
-    transform: translate(-50%, -50%);
-  }
-
-  /* A vertical clip turned 90° to fill a horizontal frame: width and height swap places in the cover sizing. */
-  .case-media-content.is-rotated iframe {
-    width: calc(max(100cqh, 100cqw * var(--source-ratio, 1.7778)) + 2px);
-    height: calc(max(100cqw, 100cqh / var(--source-ratio, 1.7778)) + 2px);
-    transform: translate(-50%, -50%) rotate(90deg);
   }
 
   .case-reveal-caption {

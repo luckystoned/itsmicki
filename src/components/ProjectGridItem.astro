@@ -10,17 +10,13 @@ type Props = {
   eager?: boolean;
   /** Replaces the project's default cover on this grid only. */
   cover?: string;
-  /** Vimeo video played muted in a loop over the cover. */
-  vimeoId?: string;
-  /** Width / height of the Vimeo video when it is not 16:9, so it still covers the card. */
-  videoRatio?: string;
   /** Muted loop served from the site, over the cover. */
   video?: string;
   /** Case page; defaults to /projects/{slug}. `null` keeps the card without a link. */
   href?: string | null;
 };
 
-const { project, label, style, eager = false, cover = project.cover, vimeoId, videoRatio, video } = Astro.props;
+const { project, label, style, eager = false, cover = project.cover, video } = Astro.props;
 const href = project.comingSoon || Astro.props.href === null ? undefined : Astro.props.href ?? `/projects/${project.slug}`;
 const dimensions = cover ? imageMetadata[cover] : undefined;
 
@@ -28,9 +24,6 @@ if (!cover || !dimensions) {
   throw new Error(`Missing project cover metadata for ${project.slug}`);
 }
 
-const videoSrc = vimeoId
-  ? `https://player.vimeo.com/video/${vimeoId}?background=1&autoplay=1&loop=1&muted=1&controls=0&quality=1080p&dnt=1`
-  : undefined;
 ---
 
 <article class:list={['project-card', { 'is-coming': project.comingSoon }]} style={style} data-appear>
@@ -46,7 +39,6 @@ const videoSrc = vimeoId
           fetchpriority={eager ? 'high' : undefined}
           decoding="async"
         />
-        {videoSrc && <iframe src={videoSrc} style={videoRatio ? `aspect-ratio:${videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-project-video></iframe>}
         {video && <video src={video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
       </span>
       <span class="project-label">{label}</span>
@@ -63,7 +55,6 @@ const videoSrc = vimeoId
           fetchpriority={eager ? 'high' : undefined}
           decoding="async"
         />
-        {videoSrc && <iframe src={videoSrc} style={videoRatio ? `aspect-ratio:${videoRatio}` : undefined} title={`${project.title} project video`} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true" data-project-video></iframe>}
         {video && <video src={video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>}
       </span>
       <span class="project-label">{label}</span>
