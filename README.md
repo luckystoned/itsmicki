@@ -7,7 +7,7 @@ Portfolio editorial de Miki, desarrollado en Astro a partir del diseño original
 - Home, índice de proyectos, detalle de casos, Deets y Side B implementados.
 - Casos publicados: Winona, Max Maher, Outliant y Lumen.
 - Genova, Amazon y Blend360 se conservan como próximos casos.
-- Los videos se reproducen desde Vimeo; no se versionan archivos de video, excepto los videos cortos que se sirven desde el sitio: portadas del carrusel (`*_Loop.mp4`, para que el efecto de hover pueda leer sus cuadros) y clips de casos agregados con `clip()` en `projectCases.ts`, todos en `public/02_Projects/`, H.264 sin audio.
+- Videos: todos los videos se sirven desde el sitio, en `public/02_Projects/`, H.264 sin audio: portadas del carrusel (`*_Loop.mp4`, que el efecto de hover lee cuadro a cuadro), videos de casos agregados con `video()` (versión de escritorio hasta 2560px, `_Mobile.mp4` hasta 1280px y su primer cuadro en `.webp`) y clips cortos con `clip()`. Vimeo ya no se usa: su plan gratuito ignora la calidad pedida y entregaba 360p.
 - Las referencias y fuentes HTML originales viven fuera del repositorio, en `../Referencias originales`.
 - Las imágenes de producción están optimizadas en WebP, con dimensiones explícitas y carga diferida donde corresponde.
 
@@ -15,7 +15,7 @@ Portfolio editorial de Miki, desarrollado en Astro a partir del diseño original
 
 - Astro y TypeScript.
 - CSS nativo y JavaScript del navegador.
-- Vimeo Player mediante `iframe`.
+- Videos H.264 servidos desde el sitio con `<video>`.
 - pnpm como gestor de paquetes.
 
 Esta arquitectura mantiene el portfolio rápido, estático y sencillo de mantener. No requiere React, base de datos, CMS ni renderizado del lado del servidor para el alcance actual.
@@ -77,7 +77,7 @@ El resultado estático se genera en `dist/`. No se debe versionar esa carpeta.
 El contenido se reparte en dos archivos:
 
 - `src/data/projects.ts`: un registro por proyecto con slug, número, título, año, rol, resumen, portada y estado (`comingSoon`). Alimenta el listado y los metadatos SEO.
-- `src/data/projectCases.ts`: el contenido de cada página de caso publicada: textos, bloques de imágenes, videos de Vimeo (`vimeoId`), carruseles, imágenes arrastrables y créditos.
+- `src/data/projectCases.ts`: el contenido de cada página de caso publicada: textos, bloques de imágenes, videos (`video()` y `clip()`), carruseles, imágenes arrastrables y créditos.
 
 `src/data/imageMetadata.ts` registra el ancho y alto de cada imagen; los componentes lo usan para evitar saltos de layout.
 
@@ -95,11 +95,11 @@ Para agregar un caso:
 
 La página dinámica `src/pages/projects/[slug].astro` genera las rutas publicadas. Evitar crear una página manual por proyecto salvo que el diseño realmente necesite una excepción.
 
-## Videos de Vimeo
+## Videos
 
-Los videos se integran mediante su `vimeoId`. No descargar ni agregar `.mp4`, `.mov` u otros videos al repositorio. Se declaran en `src/data/projectCases.ts` con el helper `video()`, que recibe el ID, la proporción de la caja y la proporción original del video; `src/components/ProjectCase.astro` renderiza el `iframe` y recorta el video para que llene la caja.
+Los videos de los casos se declaran en `src/data/projectCases.ts` con `video(base, alt, ratio)`: `base` es la ruta sin extensión de tres archivos, `<base>.mp4` (lado largo hasta 2560px, CRF 18), `<base>_Mobile.mp4` (hasta 1280px, CRF 22, para pantallas de hasta 760px) y `<base>.webp` (primer cuadro, se ve hasta que el video arranca y con movimiento reducido). `src/components/ProjectCase.astro` los renderiza con `<video>` y `object-fit: cover`; `src/scripts/playVisibleVideos.ts` los carga y reproduce solo mientras están en pantalla.
 
-Perfil de referencia: [Miki en Vimeo](https://vimeo.com/user173432758).
+Exportar con `ffmpeg -an -c:v libx264 -preset slow -profile:v high -pix_fmt yuv420p -movflags +faststart`, desde el original de mayor calidad. Originales de referencia: [Miki en Vimeo](https://vimeo.com/user173432758).
 
 ## Imágenes y otros assets
 

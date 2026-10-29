@@ -1,6 +1,6 @@
 ---
 name: itsmicki-portfolio
-description: Maintain, extend, optimize, audit, or prepare deployment of the Itsmicki Astro design portfolio. Use for project content, routes, styling, responsive behavior, images, Vimeo embeds, Figma fidelity, accessibility, performance, or Vercel readiness in this repository.
+description: Maintain, extend, optimize, audit, or prepare deployment of the Itsmicki Astro design portfolio. Use for project content, routes, styling, responsive behavior, images, videos, Figma fidelity, accessibility, performance, or Vercel readiness in this repository.
 ---
 
 # Itsmicki Portfolio
@@ -18,7 +18,7 @@ Preserve the project's deliberately editorial visual identity while keeping its 
 
 - Keep Astro, TypeScript, native CSS, and static output.
 - Do not introduce React, Tailwind, a CMS, a database, or SSR merely for convenience.
-- Use `src/data/projects.ts` for project records (listing, metadata, SEO) and `src/data/projectCases.ts` for case-page content (blocks, images, Vimeo IDs, credits).
+- Use `src/data/projects.ts` for project records (listing, metadata, SEO) and `src/data/projectCases.ts` for case-page content (blocks, images, videos, credits).
 - Reuse `src/pages/projects/[slug].astro` for standard case studies.
 - Prefer focused Astro components over duplicated page markup.
 - Avoid dependencies when browser APIs or the existing code solve the problem cleanly.
@@ -27,7 +27,7 @@ Preserve the project's deliberately editorial visual identity while keeping its 
 
 - Keep only production-used images and documents in `public/`.
 - Keep source material and old HTML in the sibling `../Referencias originales` directory.
-- Embed videos from Vimeo by ID; never commit downloaded video files.
+- Serve videos from the site as H.264 without audio (desktop `.mp4`, `_Mobile.mp4` and a `.webp` first frame; see "Videos" in README.md). Vimeo is no longer used: its free plan ignores the requested quality.
 - Give meaningful images useful alternative text and decorative images empty alt text.
 - Give every iframe a descriptive title.
 - Preserve a recoverable source before optimizing images.

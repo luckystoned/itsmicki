@@ -3,10 +3,10 @@
 ## Primary files
 
 - `src/data/projects.ts`: project records used by listings and SEO.
-- `src/data/projectCases.ts`: case-page content, including Vimeo IDs.
+- `src/data/projectCases.ts`: case-page content, including videos.
 - `src/data/imageMetadata.ts`: width and height for every image.
 - `src/pages/projects/[slug].astro`: dynamic project detail route.
-- `src/components/ProjectCase.astro`: case-page markup, Vimeo embeds, carousels, and per-case styles.
+- `src/components/ProjectCase.astro`: case-page markup, videos, carousels, and per-case styles.
 - `src/styles/global.css`: global visual system and responsive rules.
 - `public/02_Projects/`: production case-study imagery.
 - `public/04_SideB/`: Side B imagery.
@@ -21,7 +21,7 @@
 
 - Figma file key: `z74GFJnb8tcTY6FIRhMtjY`.
 - Primary Figma node: `392:457`.
-- Vimeo profile: `https://vimeo.com/user173432758`.
+- Vimeo profile (originals of the case videos): `https://vimeo.com/user173432758`.
 
 ## Boundaries
 

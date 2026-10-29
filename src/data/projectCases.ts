@@ -1,16 +1,14 @@
 export type CaseMedia = {
   type: 'image' | 'video' | 'carousel' | 'reveal' | 'dots' | 'souls' | 'nostalgia';
   alt: string;
-  /** Image file, or for a video served from the site (not Vimeo) the .mp4 file. */
+  /** Image file, or for a video the .mp4 file. */
   src?: string;
+  /** Lighter .mp4 of the same video, played on phones instead of `src`. */
+  mobileSrc?: string;
   /** Still frame shown until a site video plays, and instead of it with reduced motion. */
   poster?: string;
   /** `reveal`: the video under `src`, shown through the hole the pointer opens (RevealVideo). */
   revealSrc?: string;
-  vimeoId?: string;
-  sourceRatio?: string;
-  /** Turns a video by 90° clockwise inside its frame (a vertical clip shown in a horizontal frame). */
-  rotate?: 90;
   slides?: Array<{
     src: string;
     alt: string;
@@ -64,8 +62,12 @@ const image = (src: string, alt: string, ratio: string, caption?: string): CaseM
   type: 'image', src, alt, ratio, caption,
 });
 
-const video = (vimeoId: string, alt: string, ratio: string, sourceRatio: string, caption?: string): CaseMedia => ({
-  type: 'video', vimeoId, alt, ratio, sourceRatio, caption,
+/**
+ * Case video served from the site: `base` names `<base>.mp4` (up to 2560px), `<base>_Mobile.mp4` (up to 1280px, for
+ * phones) and `<base>.webp` (its first frame), all H.264 without audio.
+ */
+const video = (base: string, alt: string, ratio: string, caption?: string): CaseMedia => ({
+  type: 'video', src: `${base}.mp4`, mobileSrc: `${base}_Mobile.mp4`, poster: `${base}.webp`, alt, ratio, caption,
 });
 
 /** Short video served from the site, muted and looping, over its still frame. */
@@ -133,12 +135,12 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
     ],
     blocks: [
       // Structure from Figma 863:1006. Images are exported from Figma at 2x; videos are the ones already in production.
-      single(video('1215371662', 'Winona website motion reel', '1556 / 870', '16 / 9')),
+      single(video('/02_Projects/01_Winona/01_Winona_Video', 'Winona website motion reel', '1556 / 870')),
       single(image('/02_Projects/01_Winona/10_Winona.webp', 'Winona campaign artwork displayed across a large outdoor wall.', '1556 / 870')),
       single(image('/02_Projects/01_Winona/11_Winona.webp', 'Redefining Menopause headline with a Winona patient portrait.', '1556 / 870')),
       single(image('/02_Projects/01_Winona/12_Winona.webp', 'Winona Talks cards about night sweats over a portrait lying on the grass.', '1556 / 870')),
       pair(
-        video('1215371665', 'Winona brand guidelines in motion', '878 / 1010', '2160 / 2490'), '54.875vw', '63.125vw',
+        video('/02_Projects/01_Winona/02_Winona_Video', 'Winona brand guidelines in motion', '878 / 1010'), '54.875vw', '63.125vw',
         image('/02_Projects/01_Winona/13_Winona.webp', 'Animated Winona campaign: Progesterone New Body Cream, Estrogen + Progesterone, Get Blossom and You call the shots.', '650 / 672'), '40.625vw', '42vw',
       ),
       text('(synopsis)', [
@@ -148,11 +150,11 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
       single(image('/02_Projects/01_Winona/14_Winona.webp', 'Winona Hair Serum campaign portrait.', '1556 / 870')),
       pair(
         image('/02_Projects/01_Winona/15_Winona.webp', 'Winona Redefining Menopause tote bag on a chair.', '651 / 830'), '40.6875vw', '51.875vw',
-        video('1215371675', 'Winona campaign art direction in motion', '880 / 832', '2284 / 2160'), '55vw', '52vw',
+        video('/02_Projects/01_Winona/05_Winona_Video', 'Winona campaign art direction in motion', '880 / 832'), '55vw', '52vw',
       ),
-      single(video('1215371679', 'Winona website experience reel', '1556 / 870', '16 / 9')),
+      single(video('/02_Projects/01_Winona/06_Winona_Video', 'Winona website experience reel', '1556 / 870')),
       pair(
-        video('1215371663', 'Winona UGC ambassador campaign', '651 / 520', '16 / 9', 'UGC Campaign_Ambassors'), '40.6875vw', '32.5vw',
+        video('/02_Projects/01_Winona/04_Winona_Video', 'Winona UGC ambassador campaign', '651 / 520', 'UGC Campaign_Ambassors'), '40.6875vw', '32.5vw',
         carousel([
           { src: '/02_Projects/01_Winona/03_Winona.webp', alt: 'Winona Essential Defense bottle on satin.' },
           { src: '/02_Projects/01_Winona/04_Winona.webp', alt: 'Winona Vaginal Estrogen Cream on a soft chair.' },
@@ -167,9 +169,9 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
         image('/02_Projects/01_Winona/16_Winona.webp', 'Blurred Winona Essential Defense bottle.', '728 / 956'), '45.5vw', '59.75vw',
         image('/02_Projects/01_Winona/17_Winona.webp', 'Portrait with cleansing foam on the face.', '822 / 956'), '51.375vw', '59.75vw',
       ),
-      single(video('1215371680', 'Winona final brand motion reel', '1556 / 870', '16 / 9')),
+      single(video('/02_Projects/01_Winona/07_Winona_Video', 'Winona final brand motion reel', '1556 / 870')),
       pair(
-        video('1215371690', 'Winona mobile interface in motion', '655 / 835', '2160 / 2756'), '40.9375vw', '52.1875vw',
+        video('/02_Projects/01_Winona/08_Winona_Video', 'Winona mobile interface in motion', '655 / 835'), '40.9375vw', '52.1875vw',
         image('/02_Projects/01_Winona/18_Winona.webp', 'Winona progesterone body cream page on a phone resting on a table.', '878 / 835'), '54.875vw', '52.1875vw',
       ),
       single(image('/02_Projects/01_Winona/19_Winona.webp', 'Bioidentical treatments that really work, with Winona product cards.', '1556 / 870')),
@@ -192,7 +194,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
       { src: '/02_Projects/04_MaxMaher/02_MaxMaher_Drag.webp', left: '74.8%', top: '6.5vw', width: '25.28vw', rotation: '14.31deg' },
     ],
     blocks: [
-      single(video('1215371826', 'Max Maher animated brand reel', '1556 / 386', '3892 / 1080')),
+      single(video('/02_Projects/04_MaxMaher/01_MaxMaher_Video', 'Max Maher animated brand reel', '1556 / 386')),
       single(image('/02_Projects/04_MaxMaher/01_MaxMaher.webp', 'Max Maher brand guideline overview.', '1556 / 870')),
       single(image('/02_Projects/04_MaxMaher/02_MaxMaher.webp', 'Max Maher typography system featuring Supply Mono, Mondwest and Neue Montreal.', '1556 / 870')),
       text('(synopsis)', [
@@ -201,7 +203,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
       ]),
       pair(
         image('/02_Projects/04_MaxMaher/03_MaxMaher.webp', 'Pixel icon pack for Max Maher.', '40.5 / 29.78'), '40.5vw', '29.78vw',
-        video('1215371825', 'Max Maher vertical brand animation', '55.26 / 65.17', '2160 / 2488'), '55.26vw', '65.17vw',
+        video('/02_Projects/04_MaxMaher/02_MaxMaher_Video', 'Max Maher vertical brand animation', '55.26 / 65.17'), '55.26vw', '65.17vw',
       ),
       text('(the challenge)', [], {
         variant: 'wide',
@@ -215,7 +217,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
         ], 'Max Maher caps, pins and keychain.', '51.36 / 51.98'), '51.36vw', '51.98vw',
         image('/02_Projects/04_MaxMaher/6b_MaxMaher.webp', 'Max Maher campaign graphics held in a hand.', '44.08 / 51.98'), '44.08vw', '51.98vw',
       ),
-      single(video('1215375694', 'Max Maher pixel transition animation', '1556 / 891', '3772 / 2160')),
+      single(video('/02_Projects/04_MaxMaher/03_MaxMaher_Video', 'Max Maher pixel transition animation', '1556 / 891')),
       single(image('/02_Projects/04_MaxMaher/07_MaxMaher.webp', 'Max Maher branded tote bag photographed in the street.', '1556 / 1358')),
       text('(visual direction)', [
         `The selected direction combines tropical warmth with a distinctly digital structure. A vivid Caribbean palette differentiates the brand from the conservative blues, greens, and dark interfaces common in financial communication. Consistent image treatments create continuity across varied source material, while custom iconography translates recurring economic and technology concepts into a more immediate visual vocabulary.`,
@@ -257,13 +259,13 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
       { src: '/02_Projects/05_Outliant/02_OTL_Drag.webp', left: '71.547vw', top: '11.508vw', width: '25.55vw', rotation: '-8deg' },
     ],
     blocks: [
-      single(video('1215371885', 'Outliant hero brand reel', '1556 / 665', '2530 / 1080')),
+      single(video('/02_Projects/05_Outliant/01_Outliant_Video', 'Outliant hero brand reel', '1556 / 665')),
       pair(
         image('/02_Projects/05_Outliant/01_OTL.webp', 'A person applying an Outliant Role Creative sticker.', '40.49 / 54.69'), '40.49vw', '54.69vw',
-        video('1215371884', 'Outliant brand system in motion', '54.69 / 54.69', '1 / 1'), '54.69vw', '54.69vw',
+        video('/02_Projects/05_Outliant/02_Outliant_Video', 'Outliant brand system in motion', '54.69 / 54.69'), '54.69vw', '54.69vw',
       ),
       pair(
-        video('1215371883', 'Outliant campaign animation', '55.97 / 51.98', '1 / 1'), '55.97vw', '51.98vw',
+        video('/02_Projects/05_Outliant/03_Outliant_Video', 'Outliant campaign animation', '55.97 / 51.98'), '55.97vw', '51.98vw',
         image('/02_Projects/05_Outliant/02_OTL.webp', 'Blue Outliant tote bag.', '39.48 / 51.98'), '39.48vw', '51.98vw',
       ),
       text('(synopsis)', [
@@ -292,14 +294,14 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
         variant: 'lead',
         lead: `The selected concept—The Professional & Concise Agency—uses simplicity as a sign of confidence. A restrained palette of dark grey, Outliant’s established electric blue, soft neutrals, and white creates a calmer and more intentional foundation for the work to stand out. The freely available Manrope brings clarity and subtle personality to the primary typography, while Fragment Mono introduces a precise technological accent for highlights and coded details without adding licensing costs.`,
       }),
-      single(video('1215371886', 'Outliant website experience', '1556 / 870', '1546 / 870')),
+      single(video('/02_Projects/05_Outliant/04_Outliant_Video', 'Outliant website experience', '1556 / 870')),
       text('(digital experience)', [
         `I translated the new positioning and visual direction into a complete website, leading the UX/UI process from structure and interface decisions through final execution. The site became the primary expression of the repositioned brand: a clearer way to explain Outliant’s offer, organize its capabilities, and communicate with a more focused enterprise audience.`,
         `Because Outliant had never worked with a formal design system, I also created its first one from the ground up. I defined reusable foundations, components, patterns, and interaction rules to make the website more consistent and give future digital work a shared, scalable language. Motion principles extended that system into transitions and behaviors, adding rhythm and technological character without compromising clarity.`,
       ]),
       pair(
         image('/02_Projects/05_Outliant/10__OTL.webp', 'Outliant developer department stickers.', '40.74 / 51.98'), '40.74vw', '51.98vw',
-        video('1215371895', 'Outliant digital experience in motion', '54.67 / 51.98', '2280 / 2160'), '54.67vw', '51.98vw',
+        video('/02_Projects/05_Outliant/05_Outliant_Video', 'Outliant digital experience in motion', '54.67 / 51.98'), '54.67vw', '51.98vw',
       ),
       text('(conclusion)', [
         `The project resolved more than a visual inconsistency. It gave Outliant a clearer definition of who it was, what it stood for, and how it should position itself in the market. By closing the focus, the brand moved from trying to represent every possible service to presenting a more deliberate and credible proposition for mid-market and enterprise clients.`,
@@ -327,7 +329,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
       { src: '/02_Projects/06_Lumen/02_Lumen_Drag.webp', left: '59vw', top: '6vw', width: '23vw', rotation: '-10deg' },
     ],
     blocks: [
-      single({ ...video('1215371918', 'Lumen audiovisual event highlight reel', '1556 / 570', '9 / 16'), rotate: 90 }),
+      single(video('/02_Projects/06_Lumen/01_Lumen_Video', 'Lumen audiovisual event highlight reel', '1556 / 570')),
       text('(the context)', [
         `The cultural circuit is often geographically concentrated. Artists who work outside the city center face fewer opportunities to exhibit, connect with new audiences, and become part of the conversations that shape contemporary culture. Distance and unfamiliarity can become invisible barriers: what happens outside the established circuit is too easily perceived as secondary, even when the work is rigorous, innovative, and relevant.`,
         `Lumen emerged from the need to question that imbalance. Its purpose was not to imitate a central cultural model in another location but to create a meaningful experience from the territory itself—one capable of introducing audiences to artists, practices, and places they may not otherwise encounter.`,
@@ -360,7 +362,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
       }),
       single(image('/02_Projects/06_Lumen/08_Lumen.webp', 'Lumen visual identity layered over a DJ performance.', '1556 / 870')),
       pair(
-        video('1234293739', 'Lumen keychain and printed tag turning slowly.', '51.36 / 51.98', '3840 / 2160'), '51.36vw', '51.98vw',
+        video('/02_Projects/06_Lumen/02_Lumen_Video', 'Lumen keychain and printed tag turning slowly.', '51.36 / 51.98'), '51.36vw', '51.98vw',
         carousel([
           { src: '/02_Projects/06_Lumen/10_Lumen.webp', alt: 'Black-and-white portrait of a person wearing sunglasses at a Lumen event.' },
           { src: '/02_Projects/06_Lumen/11_Lumen.webp', alt: 'DJ wearing a Lumen cap and headphones at the mixing desk.' },
@@ -427,7 +429,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
     nutshell: `An exploration of ingredient textures and human skin through AI-generated imagery and video. Using tools such as Magnific, HyperAgent, Higgsfield, and Midjourney, I developed tactile visuals focused on realistic surfaces and fine micro-detail.`,
     drags: [],
     blocks: [
-      single(video('1234326440', 'Amber, green and clear oil drops moving slowly in a diagonal chain.', '1556 / 870', '328 / 240')),
+      single(video('/02_Projects/08_TexturesBody/01_TexturesBody_Video', 'Amber, green and clear oil drops moving slowly in a diagonal chain.', '1556 / 870')),
       text('(art direction)', [], {
         variant: 'wide',
         wide: `The process began by exploring the relationship between ingredients and human skin. I treated both as tactile surfaces, looking for ways to highlight their natural qualities through close-up compositions, controlled lighting, and a strong sense of materiality.`,
@@ -443,8 +445,8 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
         `Once the still imagery established the look and feel of the project, I extended the exploration into video. The focus was on bringing the textures to life while preserving their realism and tactile quality, so the movement felt like a natural continuation of the images.`,
       ]),
       pair(
-        video('1234325405', 'Translucent coral petal-like folds moving gently.', '773 / 955', '240 / 300'), '48.3125vw', '59.6875vw',
-        video('1234325402', 'Clear gel shifting slowly around suspended shapes.', '773 / 955', '240 / 300'), '48.3125vw', '59.6875vw',
+        video('/02_Projects/08_TexturesBody/03_TexturesBody_Coral', 'Translucent coral petal-like folds moving gently.', '773 / 955'), '48.3125vw', '59.6875vw',
+        video('/02_Projects/08_TexturesBody/04_TexturesBody_Gel', 'Clear gel shifting slowly around suspended shapes.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
       text('(synthetic bodies)', [
         `To bring more realism to their skin, I created a dedicated AI agent and supplied it with a curated set of skin-texture references, including photographs I took myself and selected stock imagery. These references guided the surface`,
