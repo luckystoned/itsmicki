@@ -99,6 +99,9 @@ const globalStructuredData = {
     <meta name="twitter:image:alt" content={imageAlt} />
     <script is:inline type="application/ld+json" set:html={JSON.stringify(globalStructuredData)} />
     {structuredData && <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />}
+    <!-- Vercel Web Analytics: cookieless visit counts, served by Vercel at /_vercel/insights once enabled in the project. -->
+    <script is:inline>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+    <script is:inline defer src="/_vercel/insights/script.js"></script>
     <title>{title}</title>
   </head>
   <body>
