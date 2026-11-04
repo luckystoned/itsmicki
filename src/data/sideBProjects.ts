@@ -15,7 +15,8 @@ export type SideBProject = {
 
 /** Mkp & Hair's muted 5-second loop (square), on its carousel card (the larger grid card keeps the sharper photo). */
 const MKP_LOOP = '/04_SideB/Projects/01_MkpHair/00_MkpHair_Loop.mp4';
-/** Missing souls' muted 6-second loop (square), recorded from the piece: a close-up of its cross-shaped flowers swaying. */
+/** Missing souls' muted 6-second loop (square), recorded from the piece: a close-up of three of its cross-shaped flowers
+    swaying on the horizon and two little ones on the ground. */
 const SOULS_LOOP = '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Loop.mp4';
 /** Nostalgia as Agony's grid loop: 12 muted seconds recorded from the piece (landscape), like its carousel card. */
 const NOSTALGIA_LOOP = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Loop.mp4';
@@ -40,7 +41,7 @@ const carouselCards: Array<{ width: number; height: number; alt: string; video?:
   { width: 357, height: 355, alt: 'Portrait with moss-green brows, flushed cheeks and spiky tufts tied with pink ribbon.', video: MKP_LOOP, project: 0 },
   { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.', project: 1 },
   { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true, project: 2 },
-  { width: 357, height: 354, alt: 'Close-up of cross-shaped lime, pink, rust and pinkish-grey flowers on khaki stems swaying over dark brown.', video: SOULS_LOOP, project: 3 },
+  { width: 357, height: 354, alt: 'Close-up of three cross-shaped flowers, lime, pink and rust, swaying on khaki stems, and two little ones on the dark brown ground.', video: SOULS_LOOP, project: 3 },
   { width: 358, height: 474, alt: 'Home videos from 1999 on warm, grainy Super 8, stretched into vertical streaks with outlined tracking boxes where a girl in pink, a smiling girl, a grandmother and a laughing man show through, breaking into horizontal slices.', video: NOSTALGIA_CARD, project: 4 },
 ];
 
