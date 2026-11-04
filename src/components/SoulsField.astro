@@ -1,10 +1,11 @@
 ---
-// Missing souls: a warm, glowing place (coral sky, lavender ground, blurred plants swaying) where a caregiver looks
-// after the animals people leave with her. Anyone can add their cat or dog from a photo where its face shows. The photo is read on
+// Missing souls: a place drawn like a printed textile (dark brown ground, lime, pink, warm greys, rust, caramel and khaki; every
+// shape built from grid cells with rounded corners, round holes for eyes, cross-shaped flowers swaying) where a
+// caregiver looks after the animals people leave with her. Anyone can add their cat or dog from a photo where its face shows. The photo is read on
 // their device (MediaPipe finds the animal, reads its colours and markings, and turns down photos full of people), then
 // a little form asks its name, its owner's, cat or dog, a few words about its coat (which win over the photo), how thin
-// or chubby it is (a slider, with a live preview) and its size. In the place it becomes a soft, glowing illustrated cat
-// or dog in its own colours, with an aura and colours fringing off its edges, its name shown near it on hover; its
+// or chubby it is (a slider, with a live preview) and its size. In the place it becomes a blocky cat or dog in the palette
+// colours nearest its own, its name shown near it on hover; its
 // photo, cropped around it and re-drawn (no location or camera details), is kept for the list of who's here. Once here,
 // it lives its own little life: it stands, walks about on its paws, hops, stretches, grooms, lies down to nap and blinks;
 // a newcomer is first stroked by the caregiver, and anyone can pick one up (legs dangling) and set it down elsewhere.
@@ -86,20 +87,16 @@ const { label } = Astro.props;
     classes: { cat: 8, dog: 12, person: 15 }, // DeepLab v3 (PASCAL VOC) labels.
     people: .2, // Photos are shown in the list: a crop where people fill more than this share is turned down.
     photoSide: 1000, // The photo kept: cropped around the animal, at most this many pixels on its longer side.
-    // The place, after the reference: a coral sky melting into a lavender-blue ground, a warm glow on the floor.
-    sky: [[0, '#e46a55'], [.2, '#ec8064'], [.33, '#ec9a86'], [.41, '#cf9cb4'], [.5, '#a99ae0'], [.76, '#8582d8'], [1, '#716ecb']] as Array<[number, string]>,
-    // Slow clouds of colour drifting like nebulae, lilac into the sky and orange into the ground, so the two melt into
-    // each other: [colour, x, y, radius (shares of the frame), opacity, seconds per drift].
-    nebulae: [
-      ['#a59cf0', .2, .3, .55, .42, 70], ['#b9a6f2', .78, .22, .5, .36, 90], ['#ff9470', .3, .78, .55, .34, 80],
-      ['#ff8a66', .82, .7, .5, .3, 65], ['#f3a6c4', .55, .5, .6, .3, 100], ['#9c96ea', .5, .62, .45, .3, 75],
-    ] as Array<[string, number, number, number, number, number]>,
+    // The palette, after the references: a dark brown ground, lime, pink, warm greys, a pinkish grey, rust, caramel
+    // and khaki.
+    colours: { ground: '#2a2017', lime: '#d4ec3c', pink: '#e8a7bb', grey: '#968b82', mauve: '#ab9285', rust: '#a9481d', caramel: '#7f4316', khaki: '#857348', skin: '#edd3c0' },
+    // Coats are drawn in the nearest of these: white, pale grey, pinkish grey, grey, taupe, black, rust, caramel, beige.
+    coats: ['#ece5da', '#d6cbbf', '#ab9285', '#a39890', '#6f645c', '#1c1819', '#a9481d', '#7f4316', '#857348'],
     horizon: .38, // Where the ground starts, as a share of the height (high, so there's plenty of ground for them).
-    plants: { back: '#98a3ee', stem: '#6f8f63', front: '#5f8456' }, // Flowers on the horizon, their stems, leaves in front.
-    // Eyes are little arches (∩), smiling shut: a yellowish bone white, or black on a white coat (light enough that
-    // the bone white wouldn't show).
-    eyes: { light: '#efe2bd', dark: '#1d1b22', whiteCoat: 205 },
-    grain: .17, // Strength of the film grain over everything.
+    cell: .022, // Grid cell of the plants, as a share of the base size.
+    eyes: { dark: '#140e0a', light: '#e9e0d3', shine: '#f6ecdc' }, // Solid eyes, with a little light in them.
+    grain: .12, // Strength of the film grain over everything.
+    fineGrain: 9, // The ground's fine grain: how far each speck strays from the brown (0–255).
     // How big each kind is next to the others (a medium dog is 1).
     scale: { cat: [.6, .78, .9], dog: [.66, .92, 1.2] },
     // What they do, and how often; lengths in seconds.
@@ -150,9 +147,6 @@ const { label } = Astro.props;
     return marks;
   };
   const marksText = (marks = 0) => MARK_WORDS.filter(([mark]) => marks & MARKS[mark]).map(([mark, , label]) => (mark === 'eye' && marks & MARKS.eyeLight ? 'a white patch over one eye' : label)).join(', ');
-  const lum = (colour: string) => { const [r, g, b] = rgbOf(colour); return .299 * r + .587 * g + .114 * b; };
-  /** A white (or near-white) coat, by its middle colour: their eyes are drawn dark so they show. */
-  const whiteCoat = (look: Look) => lum(look.colours[1]) > SETTINGS.eyes.whiteCoat;
 
   type Act = 'sit' | 'walk' | 'hop' | 'stretch' | 'groom' | 'sleep' | 'pet' | 'held' | 'fall';
   type Layer = { canvas: HTMLCanvasElement; x: number; y: number; w: number; h: number };
@@ -168,7 +162,12 @@ const { label } = Astro.props;
     hx: number; hy: number; x: number; y: number; fromX: number; fromY: number; toX: number; toY: number;
     act: Act; actStart: number; actEnd: number; face: number; faceShown: number; blink: number; phase: number; drawn: number;
   };
-  type Plant = { sprite: HTMLCanvasElement; x: number; y: number; w: number; h: number; phase: number; sway: number };
+  type Plant = {
+    sprite: HTMLCanvasElement; x: number; y: number; w: number; h: number; phase: number; sway: number;
+    // The wind: how far it is bent, and how fast; the little ones on the ground can blow away (`fly`) and grow back.
+    bend: number; bendV: number; loose?: boolean; regrow?: number;
+    fly?: { x: number; y: number; vx: number; vy: number; rot: number; vr: number; since: number };
+  };
 
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const STORE = 'missing-souls';
@@ -178,25 +177,105 @@ const { label } = Astro.props;
   const ease = (p: number) => p * p * (3 - 2 * p);
   const hex = (rgb: number[]) => `#${rgb.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')}`;
   const rgbOf = (colour: string) => [1, 3, 5].map((i) => parseInt(colour.slice(i, i + 2), 16));
-  const mix = (a: string, b: string, t: number) => { const x = rgbOf(a), y = rgbOf(b); return hex(x.map((v, i) => v + (y[i] - v) * t)); };
-  /** An eye: a little arch (∩) with a soft glow; asleep, it turns into a closed curve (∪). Dark on a white coat. */
-  const drawEye = (g: CanvasRenderingContext2D, x: number, y: number, r: number, asleep = false, dark = false, colour?: string) => {
+  /** An eye: a solid round dot with a little light in it (dark, or light on a dark coat); asleep, a short rounded bar. */
+  const drawEye = (g: CanvasRenderingContext2D, x: number, y: number, r: number, asleep = false, onDark = false) => {
     g.save();
-    g.lineCap = 'round';
-    g.lineWidth = Math.max(.9, r * .75);
-    g.strokeStyle = colour ?? (dark ? SETTINGS.eyes.dark : SETTINGS.eyes.light);
-    g.shadowColor = colour ?? (dark ? 'rgba(29, 27, 34, .35)' : 'rgba(239, 226, 189, .8)');
-    g.shadowBlur = r * (dark ? 1.2 : 2.2);
+    g.fillStyle = onDark ? SETTINGS.eyes.light : SETTINGS.eyes.dark;
     g.beginPath();
-    if (asleep) g.arc(x, y - r * .5, r * 1.05, Math.PI * .15, Math.PI * .85);
-    else g.arc(x, y + r * .55, r * 1.15, Math.PI * 1.12, Math.PI * 1.88);
-    g.stroke();
+    if (asleep) g.roundRect(x - r * 1.1, y - r * .32, r * 2.2, r * .64, r * .32);
+    else g.arc(x, y, r, 0, Math.PI * 2);
+    g.fill();
+    if (!asleep) { g.fillStyle = onDark ? SETTINGS.eyes.dark : SETTINGS.eyes.shine; g.beginPath(); g.arc(x + r * .35, y - r * .35, r * .32, 0, Math.PI * 2); g.fill(); }
     g.restore();
   };
+  /** The nearest of a few colours (weighted, roughly as the eye sees it). */
+  const closest = (colour: string, options: string[]) => {
+    const [r, g, b] = rgbOf(colour);
+    let best = options[0], bestDistance = Infinity;
+    for (const option of options) {
+      const [or, og, ob] = rgbOf(option), mr = (r + or) / 2;
+      const distance = (2 + mr / 256) * (r - or) ** 2 + 4 * (g - og) ** 2 + (2 + (255 - mr) / 256) * (b - ob) ** 2;
+      if (distance < bestDistance) { best = option; bestDistance = distance; }
+    }
+    return best;
+  };
+  /** A pet's three colours as drawn: each the nearest coat colour of the palette. */
+  const coatColours = (look: Look) => look.colours.map((colour) => closest(colour, SETTINGS.coats)) as [string, string, string];
+
+  /** Cells of a grid: a colour index per cell, -1 where it is empty. */
+  type Cells = { cells: Int16Array; gw: number; gh: number };
+  const gridOf = (gw: number, gh: number): Cells => ({ cells: new Int16Array(gw * gh).fill(-1), gw, gh });
+  /** Draws grid cells as one shape with rounded corners, like the motifs of the references: outer corners rounded,
+      inner (concave) corners filleted, cells side by side merged; a lone cell becomes a dot. Colour seams inside the
+      shape stay square. (ox, oy): where the grid starts. */
+  const drawCells = (g: CanvasRenderingContext2D, { cells, gw, gh }: Cells, cell: number, colours: string[], ox = 0, oy = 0) => {
+    const at = (i: number, j: number) => (i < 0 || j < 0 || i >= gw || j >= gh ? -1 : cells[j * gw + i]);
+    const r = cell * .5, e = .6;
+    for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
+      const c = at(i, j), x = ox + i * cell, y = oy + j * cell;
+      if (c >= 0) {
+        const L = at(i - 1, j) >= 0, R = at(i + 1, j) >= 0, T = at(i, j - 1) >= 0, B = at(i, j + 1) >= 0;
+        g.fillStyle = colours[c];
+        g.beginPath();
+        // Overlapping a touch where cells meet, so no hairline shows between them.
+        g.roundRect(x - (L ? e : 0), y - (T ? e : 0), cell + (L ? e : 0) + (R ? e : 0), cell + (T ? e : 0) + (B ? e : 0), [!L && !T ? r : 0, !R && !T ? r : 0, !R && !B ? r : 0, !L && !B ? r : 0]);
+        g.fill();
+      } else {
+        // Inner corners: where two sides of an empty cell meet filled ones, a fillet rounds the notch.
+        for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+          const side = at(i + sx, j), top = at(i, j + sy);
+          if (side < 0 || top < 0) continue;
+          const px = x + (sx > 0 ? cell : 0), py = y + (sy > 0 ? cell : 0);
+          g.fillStyle = colours[side];
+          g.beginPath();
+          g.moveTo(px - sx * r, py);
+          g.arcTo(px, py, px, py - sy * r, r);
+          g.lineTo(px, py);
+          g.closePath();
+          g.fill();
+        }
+      }
+    }
+  };
+  /** Turns a drawn shape into grid cells: each cell takes the shape's colour there (the nearest of `palette`), or stays
+      empty where the shape covers less than `threshold` of it. (ox, oy): where the grid starts, at or left of / above 0. */
+  const cellsOf = (source: HTMLCanvasElement, cell: number, palette: string[], threshold = .45, ox = 0, oy = 0): Cells => {
+    const gw = Math.ceil((source.width - ox) / cell), gh = Math.ceil((source.height - oy) / cell);
+    const tiny = document.createElement('canvas'); tiny.width = gw; tiny.height = gh;
+    const t = tiny.getContext('2d', { willReadFrequently: true })!;
+    t.imageSmoothingEnabled = true; t.imageSmoothingQuality = 'high';
+    t.scale(1 / cell, 1 / cell); t.drawImage(source, -ox, -oy);
+    const data = t.getImageData(0, 0, gw, gh).data, grid = gridOf(gw, gh);
+    for (let k = 0; k < gw * gh; k++) {
+      if (data[k * 4 + 3] < threshold * 255) continue;
+      grid.cells[k] = palette.indexOf(closest(hex([data[k * 4], data[k * 4 + 1], data[k * 4 + 2]]), palette));
+    }
+    return grid;
+  };
+  /** A drawn shape re-drawn as rounded grid cells in the palette, on a canvas of the same size. */
+  const blockify = (source: HTMLCanvasElement, cell: number, palette: string[], threshold = .45, ox = 0, oy = 0) => {
+    const out = document.createElement('canvas'); out.width = source.width; out.height = source.height;
+    drawCells(out.getContext('2d')!, cellsOf(source, cell, palette, threshold, ox, oy), cell, palette, ox, oy);
+    return out;
+  };
+  /** Where a grid has to start so that `at` falls in the middle of a cell. */
+  const alignTo = (at: number, cell: number) => ((at - cell / 2) % cell) - cell;
 
   // Souls kept on this device, when the shared place cannot be reached. `?souls=reset` in the address clears them.
   try { if (new URLSearchParams(location.search).get('souls') === 'reset') localStorage.removeItem(STORE); } catch { /* No storage. */ }
   type Entry = { id: string; photo?: string; marks?: number };
+  // Coats corrected by hand (by stem), where the photo read them wrong: the coat pattern (0 plain … 3 tortoiseshell), its
+  // three colours (light, middle, dark) and markings to add. Malbec is all black; Kimchi all grey with pricked ears;
+  // Morita beige; Mirko white; Obi a beagle (tan, a black saddle, white chest, paws, muzzle and tail tip); Miley in
+  // Morita's beige.
+  const FIXES: Record<string, { pattern?: Look['pattern']; colours?: [string, string, string]; marks?: number }> = {
+    'mv42v257-2fdc6494': { pattern: 0, colours: ['#4a4446', '#1c1819', '#120f10'] },
+    'mv43lknk-47461bb0': { pattern: 0, marks: 1024 },
+    'mv438i86-aaf7d16e': { pattern: 0, colours: ['#a8966a', '#857348', '#5e5233'] },
+    'mv459j8u-ca3564ca': { pattern: 0, colours: ['#f4efe6', '#ece5da', '#b9b0a5'] },
+    'mv4dm2l9-4064d8f8': { pattern: 0, colours: ['#ece5da', '#a9481d', '#1c1819'], marks: 8 | 16 | 32 | 256 | 512 },
+    'mv6m63zd-1e500404': { pattern: 0, colours: ['#a8966a', '#857348', '#5e5233'] },
+  };
   const localSouls = (): Entry[] => {
     try {
       const list = JSON.parse(localStorage.getItem(STORE) ?? '[]');
@@ -373,348 +452,172 @@ const { label } = Astro.props;
       g.putImageData(img, 0, 0);
     }
 
-    // Soft edges without canvas filters (Safari): halve the image step by step, then double it back up the same way;
-    // each step blends neighbours, so the result is a smooth blur (one big jump would look blocky).
-    const soften = (source: HTMLCanvasElement, amount: number) => {
-      const steps: HTMLCanvasElement[] = [source];
-      let scale = 1;
-      while (scale * 2 <= amount) {
-        const last = steps[steps.length - 1], next = canvasOf(last.width / 2, last.height / 2), n = next.getContext('2d')!;
-        n.imageSmoothingQuality = 'high';
-        n.drawImage(last, 0, 0, next.width, next.height);
-        steps.push(next);
-        scale *= 2;
-      }
-      if (amount / scale > 1.05) {
-        const last = steps[steps.length - 1], next = canvasOf(source.width / amount, source.height / amount), n = next.getContext('2d')!;
-        n.imageSmoothingQuality = 'high';
-        n.drawImage(last, 0, 0, next.width, next.height);
-        steps.push(next);
-      }
-      let up = steps[steps.length - 1];
-      for (let i = steps.length - 2; i >= 0; i--) {
-        const next = canvasOf(steps[i].width, steps[i].height), n = next.getContext('2d')!;
-        n.imageSmoothingQuality = 'high';
-        n.drawImage(up, 0, 0, next.width, next.height);
-        up = next;
-      }
-      return up;
-    };
-
-    /** A pet as a soft illustrated figure, facing right, in its own colours and markings: a body, a head with ears
-        (pointed for a cat, floppy with a snout for a dog), a tail, and four legs on their own so they can walk and fold.
-        Everything is drawn crisp in unit space (feet at y = 1, about one unit tall), then blurred into a glow. */
+    /** A pet built cell by cell, like the animals of the references, facing right: a long block for the body, a square
+        head on its front end with one-cell ears (or a dark floppy ear, and a snout, for a dog), a tail standing up from
+        its back and four legs a cell wide, on their own so they can walk and fold. In the palette colours nearest its
+        own, its coat and markings painted on the cells; about eleven cells from its feet to the tips of its ears. */
     const paintFigure = (soul: Soul, unit: number): Figure => {
       const { look } = soul, dog = look.kind === 'dog';
       const marks = look.marks ?? 0, has = (mark: keyof typeof MARKS) => (marks & MARKS[mark]) !== 0;
       const floppy = dog && !has('pointedEars');
       let n = hash(soul.id) || 1;
       const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
-      const [light, mid, dark] = look.colours;
-      // Proportions, a little different for every one; small dogs have shorter legs and bigger heads, big dogs longer.
-      // Rounder, softer volumes than a drawing, like the references; and as thin or chubby as they are (build 0–9).
-      const build = .72 + look.build * .08;
-      const legScale = dog ? [.66, .9, 1.02][look.size] : [.78, .88, .92][look.size];
-      const legTop = 1 - (dog ? .34 : .3) * legScale * (.94 + random() * .12);
-      const bodyLength = (dog ? .64 : .56) * (.95 + random() * .1) * (.94 + build * .06), bodyDepth = (dog ? .34 : .32) * (.94 + random() * .12) * build;
-      const bodyCx = .56, bodyCy = legTop - bodyDepth * .28;
-      const headR = (dog ? [.18, .155, .145][look.size] : [.18, .16, .15][look.size]) * (.95 + random() * .1) * (.94 + build * .06);
-      const headX = bodyCx + bodyLength / 2 + headR * .4, headY = bodyCy - bodyDepth * .5 - headR * .5;
-      const eyeY = headY - headR * .1, eyeXs = dog ? [headX + headR * .05, headX + headR * .55] : [headX - headR * .15, headX + headR * .45];
-      // A floppy ear hangs from the back of the head, by the cheek.
-      const earX = headX - headR * .55, earY = headY + headR * .32;
-      const legW = (dog ? [.09, .095, .1][look.size] : .08) * (.85 + build * .15);
-      const pad = .3; // Room around the figure for its glow, in units.
-      const W = (1.45 + pad * 2) * unit, H = (1.15 + pad * 2) * unit, ox = pad * unit, oy = (pad + .15) * unit; // Unit (0,0) → canvas (ox,oy).
-      const X = (u: number) => ox + u * unit, Y = (u: number) => oy + u * unit;
-
-      // Its coat: light on the back and face, into its colour, into shadow towards the belly and paws.
-      const coat = (g: CanvasRenderingContext2D, w: number, h: number) => {
-        const fill = g.createLinearGradient(0, Y(headY - headR * 1.6), 0, Y(1));
-        fill.addColorStop(0, light); fill.addColorStop(.45, mid); fill.addColorStop(1, dark);
-        g.fillStyle = fill; g.fillRect(0, 0, w, h);
-      };
-      const tinted = (source: HTMLCanvasElement, colour: string) => { const c = canvasOf(source.width, source.height), t = c.getContext('2d')!; t.drawImage(source, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = colour; t.fillRect(0, 0, c.width, c.height); return c; };
-      const finish = (shape: HTMLCanvasElement, colour: (g: CanvasRenderingContext2D) => void) => {
-        const c = shape.getContext('2d')!;
-        c.globalCompositeOperation = 'source-atop';
-        colour(c);
-        // Light from inside, like the references: a warm glow low in the chest, a cool green one on the back.
-        c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
-        const warm = c.createRadialGradient(X(bodyCx + bodyLength * .2), Y(bodyCy + bodyDepth * .1), 0, X(bodyCx + bodyLength * .2), Y(bodyCy + bodyDepth * .1), bodyLength * .45 * unit);
-        warm.addColorStop(0, 'rgba(255, 112, 78, .55)'); warm.addColorStop(1, 'rgba(255, 112, 78, 0)');
-        c.fillStyle = warm; c.fillRect(0, 0, W, H);
-        const cool = c.createRadialGradient(X(bodyCx - bodyLength * .2), Y(bodyCy - bodyDepth * .5), 0, X(bodyCx - bodyLength * .2), Y(bodyCy - bodyDepth * .5), bodyLength * .5 * unit);
-        cool.addColorStop(0, 'rgba(120, 214, 140, .35)'); cool.addColorStop(1, 'rgba(120, 214, 140, 0)');
-        c.fillStyle = cool; c.fillRect(0, 0, W, H);
-        // Very soft, with a halo, and the colours fringing off the edges (green one side, orange the other), like an
-        // old print slightly out of register.
-        const out = canvasOf(shape.width, shape.height), g = out.getContext('2d')!;
-        g.imageSmoothingQuality = 'high';
-        // Blur in proportion to the figure (drawn small on a phone, it would otherwise go to mush).
-        const blur = Math.max(.35, Math.min(1.3, unit / 256)) * ratio / 2;
-        const soft = soften(shape, Math.max(1.5, 7 * blur)), shift = .026 * unit * ratio;
-        const halo = soften(shape, Math.max(3, 16 * blur));
-        g.globalAlpha = .5; g.drawImage(tinted(halo, mix(light, '#fff4e4', .3)), 0, 0);
-        g.globalCompositeOperation = 'screen';
-        g.globalAlpha = .55; g.drawImage(tinted(soft, '#7fe0a0'), -shift, -shift * .4);
-        g.globalAlpha = .5; g.drawImage(tinted(soft, '#ff8a5c'), shift, shift * .4);
-        g.globalCompositeOperation = 'source-over';
-        g.globalAlpha = 1; g.drawImage(soft, 0, 0);
-        g.globalAlpha = .35; g.drawImage(soften(shape, Math.max(1.2, 3.5 * blur)), 0, 0);
-        return out;
-      };
-
-      // The body, head, ears, tail (and a dog's snout).
-      const shape = canvasOf(W * ratio, H * ratio), s = shape.getContext('2d')!;
-      s.scale(ratio, ratio); s.fillStyle = '#fff'; s.strokeStyle = '#fff'; s.lineCap = 'round';
-      s.beginPath(); s.ellipse(X(bodyCx), Y(bodyCy), bodyLength / 2 * unit, bodyDepth / 2 * unit, 0, 0, Math.PI * 2); s.fill();
-      // A round haunch at the back and a full chest at the front, for volume.
-      s.beginPath(); s.arc(X(bodyCx - bodyLength * .3), Y(bodyCy + bodyDepth * .05), bodyDepth * .55 * unit, 0, Math.PI * 2); s.fill();
-      s.beginPath(); s.arc(X(bodyCx + bodyLength * .3), Y(bodyCy - bodyDepth * .05), bodyDepth * .5 * unit, 0, Math.PI * 2); s.fill();
-      // Neck, from the shoulders up to the head.
-      s.beginPath(); s.moveTo(X(bodyCx + bodyLength * .28), Y(bodyCy - bodyDepth * .35)); s.lineTo(X(headX - headR * .3), Y(headY)); s.lineWidth = headR * 1.3 * unit; s.stroke();
-      s.beginPath(); s.arc(X(headX), Y(headY), headR * unit, 0, Math.PI * 2); s.fill();
-      if (dog) {
-        s.beginPath(); s.ellipse(X(headX + headR * .85), Y(headY + headR * .35), headR * .62 * unit, headR * .45 * unit, .1, 0, Math.PI * 2); s.fill();
+      const [light, mid, dark] = coatColours(look), colours = [mid, light, dark, SETTINGS.colours.pink];
+      const MID = 0, LIGHT = 1, DARK = 2, PINK = 3;
+      const cell = unit / 11, cellPx = cell * ratio;
+      // Proportions, in cells: small dogs stand low, big ones tall; chubby ones are deeper, thin ones shallower.
+      const legLen = dog ? [2, 3, 4][look.size] : 3;
+      const bodyH = look.build <= 2 ? 2 : look.build >= 7 ? 4 : 3;
+      const bodyLen = (dog ? [7, 8, 9][look.size] : 7) + (random() < .5 ? 0 : 1);
+      const headH = 4, snout = dog ? 2 : 0;
+      const hx0 = bodyLen - 3, hx1 = bodyLen; // The head's columns (it overhangs the chest by one).
+      const gw = hx1 + 1 + snout, gh = headH + bodyH; // Row 0 is for the ears; the body's top row is the head's last.
+      const grid = gridOf(gw, gh);
+      const set = (i: number, j: number, c: number) => { if (i >= 0 && j >= 0 && i < gw && j < gh) grid.cells[j * gw + i] = c; };
+      const get = (i: number, j: number) => (i >= 0 && j >= 0 && i < gw && j < gh ? grid.cells[j * gw + i] : -1);
+      for (let j = headH; j < gh; j++) for (let i = 0; i < bodyLen; i++) set(i, j, MID); // Body
+      for (let j = 1; j <= headH; j++) for (let i = hx0; i <= hx1; i++) set(i, j, MID); // Head
+      if (dog) { set(hx1 + 1, 2, MID); set(hx1 + 2, 2, DARK); set(hx1 + 1, 3, MID); set(hx1 + 2, 3, MID); } // Snout, nose at its tip
+      else set(hx1, 3, PINK); // A cat's pink nose
+      // Coat.
+      if (look.pattern === 1) {
+        for (let i = 1; i < bodyLen - 1; i += 3) { set(i, headH, DARK); if (bodyH > 2) set(i, headH + 1, DARK); }
+        set(hx0 + 1, 1, DARK);
+      } else if (look.pattern === 2) {
+        for (let i = 0; i < bodyLen; i++) { set(i, headH, DARK); if (bodyH > 3) set(i, headH + 1, DARK); set(i, gh - 1, LIGHT); }
+        for (let i = hx0; i <= hx1; i++) set(i, 1, DARK);
+        if (dog) { set(hx1 + 1, 3, LIGHT); set(hx1 + 2, 3, LIGHT); }
+      } else if (look.pattern === 3) {
+        for (let j = 1; j < gh; j++) for (let i = 0; i < gw; i++) if (get(i, j) === MID) { const r = random(); if (r < .32) set(i, j, DARK); else if (r < .45) set(i, j, LIGHT); }
       }
-      // Ears: floppy ones hang by the cheeks (most dogs); pointed ones stand up (cats, and dogs with pricked ears).
-      if (floppy) {
-        s.beginPath(); s.ellipse(X(earX), Y(earY), headR * .36 * unit, headR * .78 * unit, .35, 0, Math.PI * 2); s.fill();
-      } else {
-        for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
-          s.beginPath();
-          s.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .55));
-          s.lineTo(X(headX + headR * tip), Y(headY - headR * 1.55));
-          s.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .75));
-          s.closePath(); s.fill();
-        }
-      }
-      // Tail, on its own so it can move: a cat's rises in a soft curve; a dog's is shorter and points up.
-      const tailBaseX = bodyCx - bodyLength / 2 + .03, tailBaseY = bodyCy - bodyDepth * .2;
-      const tailShape = canvasOf(W * ratio, H * ratio), ts = tailShape.getContext('2d')!;
-      ts.scale(ratio, ratio); ts.strokeStyle = '#fff'; ts.lineCap = 'round'; ts.lineWidth = (dog ? .05 : .045) * unit;
-      ts.beginPath(); ts.moveTo(X(tailBaseX + .03), Y(tailBaseY + .01));
-      const tipX = tailBaseX - (dog ? .14 : .16), tipY = tailBaseY - (dog ? .2 : .34 + random() * .06);
-      if (dog) ts.quadraticCurveTo(X(tailBaseX - .12), Y(tailBaseY - .02), X(tipX), Y(tipY));
-      else ts.quadraticCurveTo(X(tailBaseX - .2), Y(tailBaseY - .02), X(tipX), Y(tipY));
-      ts.stroke();
-      // Tortoiseshell: blotches of its two darker colours, all over (the same scatter for body, tail and legs).
-      const blotches = (c: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, count: number) => {
-        let b = hash(soul.id + 'carey') || 7;
-        const next = () => { b = (b * 16807) % 2147483647; return (b - 1) / 2147483646; };
-        for (let i = 0; i < count; i++) {
-          c.fillStyle = next() < .55 ? dark : mix(mid, '#e8914a', .35); c.globalAlpha = .55 + next() * .3;
-          c.beginPath(); c.ellipse(X(x0 + next() * (x1 - x0)), Y(y0 + next() * (y1 - y0)), (.025 + next() * .05) * unit, (.02 + next() * .04) * unit, next() * Math.PI, 0, Math.PI * 2); c.fill();
-        }
-        c.globalAlpha = 1;
-      };
-      const white = mix(light, '#ffffff', .55);
-      const tail = finish(tailShape, (c) => {
-        c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
-        coat(c, W, H);
-        if (look.pattern === 1) { c.strokeStyle = dark; c.globalAlpha = .55; c.lineWidth = .028 * unit; for (let i = 1; i <= 3; i++) { c.beginPath(); c.arc(X(tailBaseX - .05 - i * .035), Y(tailBaseY - i * .08), .03 * unit, 0, Math.PI * 2); c.stroke(); } c.globalAlpha = 1; }
-        if (look.pattern === 2) { c.fillStyle = dark; c.globalAlpha = .6; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
-        if (look.pattern === 3) blotches(c, tipX - .06, tipY - .02, tailBaseX + .04, tailBaseY + .04, 6);
-        if (has('tailTip')) { c.fillStyle = white; c.beginPath(); c.arc(X(tipX), Y(tipY), .06 * unit, 0, Math.PI * 2); c.fill(); }
-      });
-      const body = finish(shape, (c) => {
-        c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
-        coat(c, W, H);
-        // Markings.
-        if (look.pattern === 1) {
-          // Tabby: soft curved stripes across the back, a few on the forehead (rings on the tail, painted with it).
-          c.strokeStyle = dark; c.globalAlpha = .55; c.lineCap = 'round'; c.lineWidth = .028 * unit;
-          for (let i = 0; i < 6; i++) {
-            const x = bodyCx - bodyLength * .38 + i * bodyLength * .15;
-            c.beginPath(); c.moveTo(X(x - .02), Y(bodyCy - bodyDepth * .55)); c.quadraticCurveTo(X(x + .03), Y(bodyCy), X(x - .01), Y(bodyCy + bodyDepth * .3)); c.stroke();
-          }
-          for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(X(headX + i * headR * .3), Y(headY - headR * .85)); c.lineTo(X(headX + i * headR * .25), Y(headY - headR * .4)); c.stroke(); }
-          c.globalAlpha = 1;
-        } else if (look.pattern === 2) {
-          // Patches: the darkest colour on the back and head, the lightest on the chest, belly and muzzle.
-          c.fillStyle = dark; c.globalAlpha = .7;
-          c.beginPath(); c.ellipse(X(bodyCx - bodyLength * .05), Y(bodyCy - bodyDepth * .2), bodyLength * .38 * unit, bodyDepth * .35 * unit, 0, 0, Math.PI * 2); c.fill();
-          c.beginPath(); c.arc(X(headX), Y(headY - headR * .3), headR * .85 * unit, 0, Math.PI * 2); c.fill();
-          c.fillStyle = mix(light, '#ffffff', .4); c.globalAlpha = .9;
-          c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .1), Y(bodyCy + bodyDepth * .3), bodyLength * .3 * unit, bodyDepth * .22 * unit, 0, 0, Math.PI * 2); c.fill();
-          c.beginPath(); c.ellipse(X(headX + headR * .3), Y(headY + headR * .45), headR * .5 * unit, headR * .4 * unit, 0, 0, Math.PI * 2); c.fill();
-          c.globalAlpha = 1;
-        }
-        if (look.pattern === 3) blotches(c, bodyCx - bodyLength * .55, headY - headR * 1.2, headX + headR * 1.2, bodyCy + bodyDepth * .5, 34);
-        // Markings asked for in the form.
-        if (has('saddle')) { c.fillStyle = dark; c.globalAlpha = .8; c.beginPath(); c.ellipse(X(bodyCx - bodyLength * .08), Y(bodyCy - bodyDepth * .32), bodyLength * .24 * unit, bodyDepth * .22 * unit, -.1, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; }
-        if (has('chest')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .34), Y(bodyCy + bodyDepth * .05), bodyDepth * .3 * unit, bodyDepth * .45 * unit, .3, 0, Math.PI * 2); c.fill(); }
-        if (has('ears')) {
-          c.fillStyle = dark;
-          if (!floppy) for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
-            c.beginPath(); c.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .5)); c.lineTo(X(headX + headR * tip), Y(headY - headR * 1.6)); c.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .7)); c.closePath(); c.fill();
-          }
-        }
-        if (has('mask')) { c.fillStyle = dark; c.globalAlpha = .9; c.beginPath(); c.ellipse(X((eyeXs[0] + eyeXs[1]) / 2), Y(eyeY), (eyeXs[1] - eyeXs[0]) * .5 * unit + headR * .3 * unit, headR * .34 * unit, 0, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; }
-        if (has('eye')) { c.fillStyle = has('eyeLight') ? white : dark; c.beginPath(); c.ellipse(X(eyeXs[1]), Y(eyeY), headR * .36 * unit, headR * .31 * unit, -.2, 0, Math.PI * 2); c.fill(); }
-        if (has('blaze')) { c.strokeStyle = white; c.lineCap = 'round'; c.lineWidth = headR * .22 * unit; c.beginPath(); c.moveTo(X(headX + headR * .12), Y(headY - headR * .85)); c.lineTo(X(headX + headR * (dog ? .7 : .35)), Y(headY + headR * .3)); c.stroke(); }
-        if (has('muzzle')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(headX + headR * (dog ? .9 : .45)), Y(headY + headR * (dog ? .4 : .45)), headR * (dog ? .55 : .42) * unit, headR * .36 * unit, .1, 0, Math.PI * 2); c.fill(); }
-        // Floppy ears, shaded so they read against the head: their colour deepening towards the tip, and a soft shadow
-        // where they lie on the cheek (darker still if the details ask for dark ears).
-        if (floppy) {
-          c.save();
-          c.translate(X(earX), Y(earY)); c.rotate(.35);
-          const rx = headR * .36 * unit, ry = headR * .78 * unit;
-          c.shadowColor = 'rgba(30, 18, 24, .6)'; c.shadowBlur = headR * .3 * unit; c.shadowOffsetX = headR * .08 * unit;
-          const shade = c.createLinearGradient(0, -ry, 0, ry);
-          const deep = has('ears') ? dark : mix(mid, dark, .78);
-          shade.addColorStop(0, mix(mid, dark, has('ears') ? .6 : .3)); shade.addColorStop(.5, deep); shade.addColorStop(1, mix(deep, '#000000', .3));
-          c.fillStyle = shade;
-          c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); c.fill();
-          c.restore();
-        }
-        // A lighter glow on the face and chest.
-        const face = c.createRadialGradient(X(headX), Y(headY), 0, X(headX), Y(headY), headR * 1.6 * unit);
-        face.addColorStop(0, 'rgba(255, 248, 236, .35)'); face.addColorStop(1, 'rgba(255, 248, 236, 0)');
-        c.fillStyle = face; c.fillRect(0, 0, W, H);
-      });
-
-      // The legs: back pair and front pair, the far one of each a little darker.
+      // Markings asked for in the form.
+      if (has('saddle')) for (let i = 1; i < hx0; i++) set(i, headH, DARK);
+      if (has('chest')) for (let j = headH + 1; j < gh; j++) { set(bodyLen - 1, j, LIGHT); set(bodyLen - 2, j, LIGHT); }
+      if (has('mask')) for (let i = hx0; i <= hx1; i++) set(i, 2, DARK);
+      if (has('eye')) { const c = has('eyeLight') ? LIGHT : DARK; set(hx1 - 1, 1, c); set(hx1 - 1, 2, c); set(hx1, 2, c); }
+      if (has('blaze')) { set(hx1, 1, LIGHT); set(hx1, 2, LIGHT); }
+      if (has('muzzle')) { if (dog) { set(hx1 + 1, 3, LIGHT); set(hx1 + 2, 3, LIGHT); set(hx1 + 1, 2, LIGHT); } else set(hx1 - 1, 3, LIGHT); }
+      // Ears: one-cell points (cats, and dogs with pricked ears), or a dark floppy ear down the back of a dog's head.
+      if (floppy) { set(hx0, 1, DARK); set(hx0, 2, DARK); set(hx0, 3, DARK); }
+      else { const c = has('ears') ? DARK : get(hx0, 1) === DARK ? DARK : MID; set(hx0, 0, c); set(hx1, 0, c); }
+      const bodyCanvas = canvasOf(gw * cellPx, gh * cellPx);
+      drawCells(bodyCanvas.getContext('2d')!, grid, cellPx, colours);
+      // In figure space, the origin is the middle of its feet.
+      const bx = -bodyLen / 2 * cell, by = -(gh + legLen) * cell;
+      // The tail: a column standing up from the back (a cat's long, a dog's short), with one more cell hidden behind the body.
+      const tailLen = dog ? 2 + (random() < .5 ? 0 : 1) : 4 + (random() < .5 ? 0 : 1);
+      const tail = gridOf(1, tailLen + 1);
+      for (let j = 0; j <= tailLen; j++) tail.cells[j] = look.pattern === 2 ? DARK : look.pattern === 1 && j % 2 ? DARK : look.pattern === 3 && random() < .4 ? DARK : MID;
+      if (has('tailTip')) tail.cells[0] = LIGHT;
+      const tailCanvas = canvasOf(cellPx, (tailLen + 1) * cellPx);
+      drawCells(tailCanvas.getContext('2d')!, tail, cellPx, colours);
+      // The legs: a back pair and a front pair, a cell apart; the far one of each in its darker colour.
       const legs: Leg[] = [];
-      const legLength = 1 - legTop;
-      for (const [lx, near, front] of [[bodyCx - bodyLength * .32, false, false], [bodyCx - bodyLength * .2, true, false], [bodyCx + bodyLength * .26, false, true], [bodyCx + bodyLength * .38, true, true]] as Array<[number, boolean, boolean]>) {
-        const lw = (legW + .3) * unit, lh = (legLength + .3) * unit;
-        const leg = canvasOf(lw * ratio, lh * ratio), l = leg.getContext('2d')!;
-        l.scale(ratio, ratio); l.fillStyle = '#fff';
-        const cx = lw / 2, top = .12 * unit;
-        l.beginPath(); l.roundRect(cx - legW / 2 * unit, top, legW * unit, legLength * unit, legW / 2 * unit); l.fill();
-        l.beginPath(); l.ellipse(cx + legW * .2 * unit, top + legLength * unit - legW * .25 * unit, legW * .62 * unit, legW * .42 * unit, 0, 0, Math.PI * 2); l.fill();
-        const painted = finish(leg, (c) => {
-          c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
-          const fill = c.createLinearGradient(0, top, 0, top + legLength * unit);
-          fill.addColorStop(0, mid); fill.addColorStop(1, near ? dark : mix(dark, '#1a1530', .3));
-          c.fillStyle = fill; c.fillRect(0, 0, lw, lh);
-          if (look.pattern === 2) { c.fillStyle = mix(light, '#ffffff', .4); c.globalAlpha = .85; c.fillRect(0, top + legLength * unit * .72, lw, lh); c.globalAlpha = 1; }
-          if (has('paws')) { c.fillStyle = white; c.fillRect(0, top + legLength * unit * .6, lw, lh); }
-          if (look.pattern === 3) { c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio); c.translate(-X(lx) + cx, -Y(legTop) + top); blotches(c, lx - legW, legTop, lx + legW, legTop + legLength * .6, 3); c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio); }
-          if (look.pattern === 1) { c.strokeStyle = dark; c.globalAlpha = .45; c.lineWidth = .022 * unit; for (let i = 1; i <= 2; i++) { c.beginPath(); c.moveTo(cx - legW * unit, top + legLength * unit * i * .3); c.lineTo(cx + legW * unit, top + legLength * unit * i * .3 + .01 * unit); c.stroke(); } c.globalAlpha = 1; }
-        });
-        // In figure space (origin at the middle of its feet): where the leg hangs from.
-        legs.push({ canvas: painted, x: (lx - bodyCx) * unit, y: (legTop - 1) * unit, w: lw, h: lh, pivotX: cx, pivotY: top, near, front });
+      for (const [col, near, front] of [[0, false, false], [2, true, false], [bodyLen - 3, false, true], [bodyLen - 1, true, true]] as Array<[number, boolean, boolean]>) {
+        const leg = gridOf(1, legLen);
+        for (let j = 0; j < legLen; j++) leg.cells[j] = near ? (look.pattern === 3 && random() < .3 ? DARK : MID) : DARK;
+        if (has('paws') || (look.pattern === 2 && near)) leg.cells[legLen - 1] = LIGHT;
+        const c = canvasOf(cellPx, legLen * cellPx);
+        drawCells(c.getContext('2d')!, leg, cellPx, colours);
+        legs.push({ canvas: c, x: bx + (col + .5) * cell, y: -legLen * cell, w: cell, h: legLen * cell, pivotX: cell / 2, pivotY: 0, near, front });
       }
-      // Eyes drawn dark where what is under them is light (a white coat, a white patch), light where it is dark.
-      const eyes = eyeXs.map((ex, i) => {
-        const under = (i === 1 && has('eye')) ? (has('eyeLight') ? 'light' : 'dark') : has('mask') ? 'dark' : whiteCoat(look) ? 'light' : 'coat';
-        return { x: (ex - bodyCx) * unit, y: (eyeY - 1) * unit, dark: under === 'light' };
-      });
       return {
-        body: { canvas: body, x: -X(bodyCx), y: -Y(1), w: W, h: H },
-        tail: { canvas: tail, x: -X(bodyCx), y: -Y(1), w: W, h: H, pivotX: X(tailBaseX), pivotY: Y(tailBaseY) },
-        legs, eyes, eyeR: headR * .16 * unit, legLength: legLength * unit, unit,
+        body: { canvas: bodyCanvas, x: bx, y: by, w: gw * cell, h: gh * cell },
+        tail: { canvas: tailCanvas, x: bx, y: by + (headH - tailLen) * cell, w: cell, h: (tailLen + 1) * cell, pivotX: cell / 2, pivotY: tailLen * cell },
+        legs, eyes: [{ x: bx + (hx1 - .5) * cell, y: by + 2.5 * cell, dark: rgbOf(grid.cells[2 * gw + hx1 - 1] >= 0 ? colours[grid.cells[2 * gw + hx1 - 1]] : mid).reduce((a, v) => a + v, 0) < 200 }], eyeR: cell * .36, legLength: legLen * cell, unit,
       };
     };
 
-    /** The caregiver: a soft, luminous girl with a bob and a short dress, warm white into pale lime, glowing orange from
-        her chest, with a layered halo; both arms drawn on their own so they can move. */
+    /** The caregiver: a girl drawn cell by cell like the figures of the references: a rust bob with a fringe, a warm
+        skin face with round holes for eyes, pink cheeks and a little mouth, a lime collar, a pink A-line dress with lime
+        dots, thin legs, lime socks and rust shoes. Both arms are drawn on their own so they can move. */
     let keeper: HTMLCanvasElement | null = null;
-    const KEEPER = .78; // Her height, as a share of the base size (the frame’s height when it is landscape).
+    const KEEPER = .72; // Her height, as a share of the base size (the frame’s height when it is landscape).
+    const HER_FEET = .91; // Where her feet stand, as a share of the height (a little back, so they show whole).
     type Limb = { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number; length: number };
     let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
     const UPPER = .13, FOREARM = .15; // Her upper arm and forearm, as shares of her height.
-    const KEEPER_PAD = .55; // Room around her for her halo, as a share of her height.
-    const HANDS = '#e6d6aa'; // Her hands' bone white.
+    const KEEPER_PAD = .55; // Room around her canvas, as a share of her height.
+    // Her, one letter per cell (h hair, s skin, e eyes, c cheek, m mouth, w collar, d dress, f dots on it, k socks,
+    // o shoes; a dot is empty).
+    const KEEPER_ART = [
+      '......hhhhh......',
+      '....hhhhhhhhh....',
+      '...hhhhhhhhhhh...',
+      '..hhhhhhhhhhhhh..',
+      '..hhhhhhhhhhhhh..',
+      '..hhssssssssshh..',
+      '..hhssesssesshh..',
+      '..hhcssssssschh..',
+      '..hhssssmsssshh..',
+      '..hh.sssssss.hh..',
+      '..hh...sss...hh..',
+      '......wwwww......',
+      '....dddwwwddd....',
+      '....ddddwdddd....',
+      '....ddddddddd....',
+      '....ddddddddd....',
+      '...ddfdddddfddd..',
+      '...ddddddddddd...',
+      '..ddddddddddddd..',
+      '..ddddddfdddddd..',
+      '.ddddddddddddddd.',
+      '.ddfdddddddddfdd.',
+      '.ddddddddddddddd.',
+      '..ddddddddddddd..',
+      ...Array(5).fill('......s...s......'),
+      '......k...k......',
+      '......k...k......',
+      '.....oo...oo.....',
+    ];
+    const KEEPER_GRID = (() => {
+      const letters = 'hscmwdfkoe', gw = KEEPER_ART[0].length, grid = gridOf(gw, KEEPER_ART.length);
+      KEEPER_ART.forEach((row, j) => [...row].forEach((letter, i) => { grid.cells[j * gw + i] = letters.indexOf(letter); }));
+      return grid;
+    })();
+    const KEEPER_CELLS = KEEPER_GRID.gh; // Grid cells over her height.
     const paintKeeper = (size: number) => {
-      const w = size * .56, pad = size * KEEPER_PAD;
-      const shape = canvasOf(w + pad * 2, size + pad * 2), s = shape.getContext('2d')!;
-      const cx = (w + pad * 2) / 2, top = pad, u = size;
-      s.fillStyle = '#fff';
-      const round = (x: number, y: number, rw: number, rh: number, r: number) => { s.beginPath(); s.roundRect(cx + x * u - rw * u / 2, top + y * u, rw * u, rh * u, r * u); s.fill(); };
-      // Like the girl in the references: a bob haircut, a short A-line dress, bare legs and little shoes.
-      s.beginPath(); s.ellipse(cx, top + .1 * u, .1 * u, .1 * u, 0, 0, Math.PI * 2); s.fill(); // Head and crown
-      round(0, .08, .21, .14, .05); // The bob, down to the chin
-      round(0, .2, .05, .04, .02); // Neck
-      s.beginPath(); // The dress, from the shoulders out to a rounded hem above the knee.
-      s.moveTo(cx - .085 * u, top + .23 * u); s.quadraticCurveTo(cx, top + .21 * u, cx + .085 * u, top + .23 * u);
-      s.quadraticCurveTo(cx + .14 * u, top + .42 * u, cx + .19 * u, top + .62 * u);
-      s.quadraticCurveTo(cx, top + .67 * u, cx - .19 * u, top + .62 * u);
-      s.quadraticCurveTo(cx - .14 * u, top + .42 * u, cx - .085 * u, top + .23 * u);
-      s.fill();
-      round(-.045, .6, .048, .36, .024); round(.045, .6, .048, .36, .024); // Legs
-      s.beginPath(); s.ellipse(cx - .05 * u, top + .965 * u, .04 * u, .02 * u, 0, 0, Math.PI * 2); s.fill(); // Shoes
-      s.beginPath(); s.ellipse(cx + .05 * u, top + .965 * u, .04 * u, .02 * u, 0, 0, Math.PI * 2); s.fill();
-      const W = w + pad * 2, H = size + pad * 2;
+      const { lime, pink, rust, skin } = SETTINGS.colours;
+      const w = size * .56, pad = size * KEEPER_PAD, u = size, cell = u / KEEPER_CELLS;
+      const W = w + pad * 2, H = size + pad * 2, cx = W / 2, top = pad;
+      const colours = [rust, skin, pink, '#c4607c', lime, pink, lime, lime, rust, SETTINGS.eyes.dark]; // (Her mouth a deeper pink.)
+      const gw = KEEPER_GRID.gw, grid = KEEPER_GRID;
       const out = canvasOf(W * ratio, H * ratio), g = out.getContext('2d')!;
-      g.scale(ratio, ratio);
-      g.imageSmoothingQuality = 'high';
-      // Ethereal: no edge anywhere. Her halo fades out in layers, wider and fainter each time, then her body, itself
-      // mostly glow; all of it in her colours: warm white into a pale lime, a warm orange glow in her chest.
-      // (The blur itself spreads it into the room around her; it is never scaled past her canvas, or its edge would show.)
-      // (Blurs in proportion to her size: smaller on a phone, so she stays as soft, not softer.)
-      const soft = Math.max(.45, Math.min(1.3, u / 620));
-      for (const [blur, alpha] of [[90, .2], [64, .22], [40, .26], [24, .3], [12, .38]] as Array<[number, number]>) {
-        g.globalAlpha = alpha; g.drawImage(soften(shape, blur * soft), 0, 0, W, H);
-      }
-      g.globalAlpha = .95; g.drawImage(soften(shape, Math.max(1.5, 7 * soft)), 0, 0, W, H);
-      g.drawImage(soften(shape, Math.max(1.2, 4.5 * soft)), 0, 0, W, H);
-      g.globalAlpha = 1;
-      g.globalCompositeOperation = 'source-in';
-      const fill = g.createLinearGradient(0, top, 0, top + size);
-      fill.addColorStop(0, '#fffdf6'); fill.addColorStop(.3, '#f9f6e6'); fill.addColorStop(.6, '#eef6c4'); fill.addColorStop(1, '#bfe8a4');
-      g.fillStyle = fill; g.fillRect(0, 0, W, H);
-      g.globalCompositeOperation = 'source-atop';
-      const heart = g.createRadialGradient(cx, top + .4 * u, 0, cx, top + .4 * u, .24 * u);
-      heart.addColorStop(0, 'rgba(255, 130, 80, .55)'); heart.addColorStop(.55, 'rgba(255, 175, 140, .18)'); heart.addColorStop(1, 'rgba(255, 175, 140, 0)');
-      g.fillStyle = heart; g.fillRect(0, 0, W, H);
-      // Her face, a warm peach glow.
-      g.globalCompositeOperation = 'source-over';
-      const face = g.createRadialGradient(cx, top + .13 * u, 0, cx, top + .13 * u, .075 * u);
-      face.addColorStop(0, 'rgba(255, 150, 112, .8)'); face.addColorStop(.6, 'rgba(255, 175, 140, .35)'); face.addColorStop(1, 'rgba(255, 175, 140, 0)');
-      g.fillStyle = face; g.fillRect(cx - .1 * u, top + .03 * u, .2 * u, .2 * u);
-      // Her eyes, white.
-      for (const ex of [-.026, .03]) drawEye(g, cx + ex * u, top + .135 * u, .008 * u, false, false, '#ffffff');
+      const cellPx = cell * ratio;
+      drawCells(g, grid, cellPx, colours, (cx - gw * cell / 2) * ratio, top * ratio);
+      // A little light in each eye.
+      g.fillStyle = SETTINGS.eyes.shine;
+      for (const i of [6, 10]) { g.beginPath(); g.arc((cx - gw * cell / 2 + (i + .68) * cell) * ratio, (top + 6.32 * cell) * ratio, cell * .16 * ratio, 0, Math.PI * 2); g.fill(); }
       keeper = out;
-      // Her arms, each an upper arm from the shoulder and a forearm with the hand from the elbow, tapering, soft and
-      // glowing like her. The shoulder melts into her body; arms and hands are a yellowish bone white.
-      // Like the reference: a puffed sleeve at the shoulder, a slender arm, and a hand with soft fingers; pale at the
-      // sleeve, turning lilac-blue towards the hand.
-      const limb = (length: number, from: number, to: number, colours: string[], hand: boolean, sleeve: boolean): Limb => {
-        const lp = .08 * u, form = canvasOf(lp * 2 + from * 3.2, length + lp * 2 + (hand ? .07 * u : 0)), a = form.getContext('2d')!;
-        const ax = form.width / 2, y0 = lp, y1 = lp + length;
-        a.fillStyle = '#fff'; a.strokeStyle = '#fff'; a.lineCap = 'round';
+      // Her arms, each an upper arm from the shoulder (in the dress's pink, a puffed sleeve) and a forearm with the hand
+      // from the elbow in her skin, rebuilt on her grid.
+      const limb = (length: number, from: number, to: number, colour: string, hand: boolean, sleeve: boolean): Limb => {
+        const lp = .08 * u, form = canvasOf((lp * 2 + from * 3.2) * ratio, (length + lp * 2 + (hand ? .07 * u : 0)) * ratio), a = form.getContext('2d')!;
+        a.scale(ratio, ratio);
+        const ax = form.width / ratio / 2, y0 = lp, y1 = lp + length;
+        a.fillStyle = colour;
         a.beginPath(); a.arc(ax, y0, from, 0, Math.PI * 2); a.fill();
         a.beginPath(); a.arc(ax, y1, to, 0, Math.PI * 2); a.fill();
         a.beginPath(); a.moveTo(ax - from, y0); a.quadraticCurveTo(ax - (from + to) * .45, (y0 + y1) / 2, ax - to, y1); a.lineTo(ax + to, y1); a.quadraticCurveTo(ax + (from + to) * .5, (y0 + y1) / 2, ax + from, y0); a.fill();
-        if (sleeve) { a.beginPath(); a.ellipse(ax, y0 + length * .22, from * 1.55, length * .3, 0, 0, Math.PI * 2); a.fill(); }
-        if (hand) {
-          // A small palm and four slim fingers, slightly spread, resting downwards.
-          a.beginPath(); a.ellipse(ax, y1 + to * .9, to * 1.25, to * 1.4, 0, 0, Math.PI * 2); a.fill();
-          a.lineWidth = to * .55;
-          [-.9, -.3, .3, .9].forEach((spread, i) => { a.beginPath(); a.moveTo(ax + spread * to * .8, y1 + to * 1.8); a.lineTo(ax + spread * to * 1.3, y1 + to * (3.6 + (i === 1 || i === 2 ? .5 : 0))); a.stroke(); });
-        }
-        const done = canvasOf(form.width * ratio, form.height * ratio), d = done.getContext('2d')!;
-        d.scale(ratio, ratio); d.imageSmoothingQuality = 'high';
-        d.globalAlpha = .35; d.drawImage(soften(form, Math.max(2, 10 * soft)), 0, 0, form.width, form.height);
-        d.globalAlpha = .95; d.drawImage(soften(form, Math.max(1.1, 2.6 * soft)), 0, 0, form.width, form.height);
-        d.globalCompositeOperation = 'source-in';
-        const tint = d.createLinearGradient(0, y0, 0, form.height - lp);
-        colours.forEach((colour, i) => tint.addColorStop(i / (colours.length - 1), colour));
-        d.fillStyle = tint; d.fillRect(0, 0, form.width, form.height);
-        if (sleeve) {
-          // The shoulder melts into her body.
-          d.globalCompositeOperation = 'destination-out';
-          const fade = d.createLinearGradient(0, 0, 0, y0 + length * .35);
-          fade.addColorStop(0, 'rgba(0, 0, 0, 1)'); fade.addColorStop(.5, 'rgba(0, 0, 0, .45)'); fade.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          d.fillStyle = fade; d.fillRect(0, 0, form.width, y0 + length * .35);
-        }
-        return { canvas: done, w: form.width, h: form.height, pivotX: ax, pivotY: y0, length };
+        if (sleeve) { a.beginPath(); a.ellipse(ax, y0 + length * .22, from * 1.5, length * .3, 0, 0, Math.PI * 2); a.fill(); }
+        if (hand) { a.beginPath(); a.ellipse(ax, y1 + to * 1.1, to * 1.3, to * 1.6, 0, 0, Math.PI * 2); a.fill(); }
+        const done = blockify(form, cellPx, [colour], .45, alignTo(ax * ratio, cellPx), alignTo(y0 * ratio, cellPx));
+        return { canvas: done, w: form.width / ratio, h: form.height / ratio, pivotX: ax, pivotY: y0, length };
       };
+      // (A little thicker than a drawn arm, so the grid keeps them whole.)
       keeperArms = {
-        reachUpper: limb(UPPER * u, .028 * u, .019 * u, ['#f8f0dc', '#efe3c2'], false, true),
-        reachLower: limb(FOREARM * u, .019 * u, .013 * u, ['#efe3c2', '#ebddb6', HANDS], true, false),
-        restUpper: limb(UPPER * u, .028 * u, .019 * u, ['#f8f0dc', '#efe3c2'], false, true),
-        restLower: limb(FOREARM * u, .019 * u, .013 * u, ['#efe3c2', '#ebddb6', HANDS], true, false),
+        reachUpper: limb(UPPER * u, .032 * u, .024 * u, pink, false, true),
+        reachLower: limb(FOREARM * u, .02 * u, .018 * u, skin, true, false),
+        restUpper: limb(UPPER * u, .032 * u, .024 * u, pink, false, true),
+        restLower: limb(FOREARM * u, .02 * u, .018 * u, skin, true, false),
       };
     };
     // Until when she is stroking an animal, and with which hand (-1 our left, 1 our right).
     let petting = 0, pettingSide: -1 | 1 = -1;
+    // When she next blinks, and when she next closes her mouth (for a moment).
+    const keeperFace = { blink: 0, mouth: 0 };
     // Her shoulders and her hands, in the frame (shares of width and height).
-    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.09 * K() * height) / width, y: 1.02 - K() + .245 * K() });
+    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.12 * K() * height) / width, y: HER_FEET - K() + .38 * K() });
     // At rest (angles from straight down; positive swings to her right, our left): both arms hang a little out with the
     // elbows softly bent towards the animals, one to each side, the second a touch closer to her.
     const UPPER_ANGLE = .26, FOREARM_ANGLE = .5, REST_UPPER = -.22, REST_FOREARM = -.4;
@@ -750,73 +653,128 @@ const { label } = Astro.props;
       context.restore();
     };
 
-    /** Plants, blurred like they are out of focus: flowers on round heads along the horizon, and tall leafy stems in
-        front, near the edges. Each sways from its base. */
+    /** Plants, as grid motifs: cross-shaped flowers (four round petals around a hole) on stems a cell wide along the
+        horizon, and tall stems with leaves in front, near the edges. Each sways from its base. */
     let plants: { back: Plant[]; front: Plant[] } = { back: [], front: [] };
-    const paintPlant = (kind: 'flower' | 'leaves', w: number, h: number, seed: number, blur: number) => {
+    const paintPlant = (kind: 'flower' | 'leaves', cell: number, seed: number, stems: [number, number] = [3, 8]) => {
       let n = seed;
       const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
-      const shape = canvasOf(w, h), s = shape.getContext('2d')!;
-      s.lineCap = 'round';
+      const { lime, pink, rust, khaki, grey, mauve, caramel } = SETTINGS.colours;
+      let grid: Cells, colours: string[];
       if (kind === 'flower') {
-        const stems = 1 + Math.floor(random() * 3);
-        for (let i = 0; i < stems; i++) {
-          const bx = w * (.35 + random() * .3), tx = bx + (random() - .5) * w * .4, ty = h * (.08 + random() * .35);
-          s.strokeStyle = SETTINGS.plants.stem; s.lineWidth = Math.max(1, w * .05);
-          s.beginPath(); s.moveTo(bx, h); s.quadraticCurveTo(bx, (h + ty) / 2, tx, ty); s.stroke();
-          s.fillStyle = SETTINGS.plants.back;
-          s.beginPath(); s.arc(tx, ty, w * (.1 + random() * .07), 0, Math.PI * 2); s.fill();
-        }
+        // A stem, now and then a leaf, and the flower on top.
+        const stem = stems[0] + Math.floor(random() * (stems[1] - stems[0] + 1)), gw = 5, gh = stem + 3;
+        grid = gridOf(gw, gh); colours = [random() < .3 ? caramel : khaki, [lime, pink, rust, lime, pink, mauve][Math.floor(random() * 6)]];
+        for (let j = 3; j < gh; j++) grid.cells[j * gw + 2] = 0;
+        if (stem > 4) grid.cells[(3 + Math.floor(stem / 2)) * gw + (random() < .5 ? 1 : 3)] = 0;
+        for (const [i, j] of [[2, 0], [1, 1], [3, 1], [2, 2]]) grid.cells[j * gw + i] = 1;
       } else {
-        s.strokeStyle = SETTINGS.plants.front; s.fillStyle = SETTINGS.plants.front;
-        const bx = w * .5;
-        s.lineWidth = Math.max(1, w * .035);
-        s.beginPath(); s.moveTo(bx, h); s.quadraticCurveTo(bx + w * .1, h * .5, bx - w * .05, 0); s.stroke();
-        const leaves = 5 + Math.floor(random() * 4);
-        for (let i = 0; i < leaves; i++) {
-          const y = h * (.12 + .8 * (i / leaves)), side = i % 2 ? 1 : -1, len = w * (.3 + random() * .2);
-          s.save(); s.translate(bx + w * .03 * (1 - y / h), y); s.rotate(side * (.6 + random() * .5));
-          s.beginPath(); s.ellipse(side * len / 2, 0, len / 2, len * .14, side * -.5, 0, Math.PI * 2); s.fill(); s.restore();
-        }
+        // A tall stem with pairs of leaves, two cells long, every few cells.
+        const gw = 5, gh = 14 + Math.floor(random() * 6);
+        grid = gridOf(gw, gh); colours = [lime, grey];
+        for (let j = 0; j < gh; j++) grid.cells[j * gw + 2] = 0;
+        for (let j = 2; j < gh - 3; j += 3 + Math.floor(random() * 2)) { const side = (j % 2 ? 1 : -1); grid.cells[j * gw + 2 + side] = 0; grid.cells[j * gw + 2 + side * 2] = 0; }
       }
-      const out = canvasOf(w * ratio, h * ratio), g = out.getContext('2d')!;
-      g.imageSmoothingQuality = 'high';
-      if (kind === 'leaves') {
-        // The leaves in front keep a coarser, blotchy blur (one jump down and back up): soft patches, like the reference.
-        const tiny = canvasOf(shape.width / blur, shape.height / blur), t = tiny.getContext('2d')!;
-        t.imageSmoothingQuality = 'high';
-        t.drawImage(shape, 0, 0, tiny.width, tiny.height);
-        g.drawImage(tiny, 0, 0, out.width, out.height);
-      } else g.drawImage(soften(shape, blur), 0, 0, out.width, out.height);
-      return out;
+      const sprite = canvasOf(grid.gw * cell * ratio, grid.gh * cell * ratio);
+      drawCells(sprite.getContext('2d')!, grid, cell * ratio, colours);
+      return { sprite, w: grid.gw * cell, h: grid.gh * cell };
     };
     const growPlants = () => {
       let n = 17;
       const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
       const back: Plant[] = [], front: Plant[] = [];
-      const horizon = height * SETTINGS.horizon;
-      const variants = Array.from({ length: 8 }, (_, i) => { const h = base * (.13 + random() * .14), w = h * .7; return { sprite: paintPlant('flower', w, h, 31 + i * 7, 4), w, h }; });
-      for (let x = -width * .02; x < width * 1.02; x += width * (.022 + random() * .025)) {
+      const horizon = height * SETTINGS.horizon, cell = base * SETTINGS.cell;
+      const variants = Array.from({ length: 8 }, (_, i) => paintPlant('flower', cell * (.7 + random() * .35), 31 + i * 7));
+      for (let x = -width * .02; x < width * 1.02; x += width * (.016 + random() * .022)) {
         const v = variants[Math.floor(random() * variants.length)];
-        back.push({ ...v, x, y: horizon + height * (random() * .06 - .01), phase: random() * 6.28, sway: .04 + random() * .04 });
+        back.push({ ...v, x, y: horizon + height * (random() * .07 - .01), phase: random() * 6.28, sway: .03 + random() * .03, bend: 0, bendV: 0 });
       }
+      // Little flowers dotted over the ground (on short stems; none right behind her), drawn nearest last.
+      const little = Array.from({ length: 6 }, (_, i) => paintPlant('flower', cell * (.75 + random() * .25), 211 + i * 13, [0, 2]));
+      for (let i = 0; i < Math.round(26 * width / Math.max(1, height)); i++) {
+        const x = random(), y = SETTINGS.horizon + .1 + random() * (1 - SETTINGS.horizon - .12);
+        if (Math.abs(x - .5) < .1) continue;
+        const v = little[Math.floor(random() * little.length)];
+        back.push({ ...v, x: x * width, y: y * height, phase: random() * 6.28, sway: .03 + random() * .03, bend: 0, bendV: 0, loose: true });
+      }
+      back.sort((a, b) => a.y - b.y);
       for (const [x, lean] of [[.03, 1], [.1, 1], [.18, 1], [.84, -1], [.92, -1], [.98, -1]] as Array<[number, number]>) {
+        const v = paintPlant('leaves', cell * 1.05, 101 + Math.round(x * 100));
         // Never so tall that their tips poke up near the horizon.
-        const h = Math.min(base * (.32 + random() * .22), height * .4), w = h * .5;
-        front.push({ sprite: paintPlant('leaves', w, h, 101 + Math.round(x * 100), 7), x: width * x + lean * random() * width * .02, y: height * 1.04, w, h, phase: random() * 6.28, sway: .05 + random() * .03 });
+        const k = Math.min(1, height * .4 / v.h);
+        front.push({ sprite: v.sprite, w: v.w * k, h: v.h * k, x: width * x + lean * random() * width * .02, y: height * 1.04, phase: random() * 6.28, sway: .04 + random() * .03, bend: 0, bendV: 0 });
       }
       plants = { back, front };
     };
-    const drawPlant = (plant: Plant, t: number, alpha: number) => {
+    /** The ground, drawn once per size: dark brown with a very fine grain (one speck per device pixel), a faint grid of
+        small rounded-square rings in pinkish grey above the horizon and rows of short wavy dashes in caramel below it,
+        like the panels of the references. */
+    let ground: HTMLCanvasElement | null = null;
+    const paintGround = () => {
+      const { mauve, caramel } = SETTINGS.colours;
+      const out = canvasOf(width * ratio, height * ratio), g = out.getContext('2d')!;
+      const [r, gr, b] = rgbOf(SETTINGS.colours.ground), img = g.createImageData(out.width, out.height), data = img.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const v = (Math.random() - .5) * 2 * SETTINGS.fineGrain;
+        data[i] = r + v; data[i + 1] = gr + v; data[i + 2] = b + v; data[i + 3] = 255;
+      }
+      g.putImageData(img, 0, 0);
+      g.scale(ratio, ratio);
+      const cell = base * SETTINGS.cell, horizon = height * SETTINGS.horizon, step = cell * 4;
+      g.strokeStyle = mauve; g.globalAlpha = .08; g.lineWidth = cell * .28;
+      for (let y = step / 2; y < horizon - cell; y += step) for (let x = (width % step) / 2; x < width; x += step) {
+        g.beginPath(); g.roundRect(x - cell * .55, y - cell * .55, cell * 1.1, cell * 1.1, cell * .35); g.stroke();
+      }
+      g.strokeStyle = caramel; g.globalAlpha = .3; g.lineWidth = cell * .24; g.lineCap = 'round'; g.lineJoin = 'round';
+      for (let y = horizon + cell * 1.6, row = 0; y < height; y += cell * 2.4, row++) {
+        g.beginPath();
+        for (let x = -cell + (row % 2) * cell * 1.2; x < width + cell; x += cell * 2.4) {
+          g.moveTo(x, y); g.lineTo(x + cell * .3, y - cell * .22); g.lineTo(x + cell * .6, y);
+        }
+        g.stroke();
+      }
+      g.globalAlpha = 1;
+      ground = out;
+    };
+    const SWAY = Math.PI / 3; // Radians per second: one sway every 6 seconds.
+    const drawPlant = (plant: Plant, t: number, alpha: number, now: number) => {
+      if (plant.regrow && now < plant.regrow) return;
       context.save();
+      if (plant.fly) {
+        // Blown away: tumbling off on the wind, fading as it goes.
+        const f = plant.fly;
+        context.globalAlpha = alpha * Math.min(1, Math.max(0, (5000 - (now - f.since)) / 1200));
+        context.translate(f.x, f.y); context.rotate(f.rot);
+        context.drawImage(plant.sprite, -plant.w / 2, -plant.h / 2, plant.w, plant.h);
+        context.restore();
+        return;
+      }
       context.globalAlpha = alpha;
       context.translate(plant.x, plant.y);
-      context.rotate(calm ? 0 : Math.sin(t * .7 + plant.phase) * plant.sway + Math.sin(t * 1.9 + plant.phase * 2) * plant.sway * .25);
+      // Growing back where it was, from nothing.
+      if (plant.regrow) { const grow = ease(Math.min(1, (now - plant.regrow) / 1200)); context.scale(grow, grow); if (grow >= 1) plant.regrow = undefined; }
+      // (Its sway repeats every 6 seconds, so a recorded loop of it closes seamlessly.)
+      context.rotate(calm ? 0 : Math.sin(t * SWAY + plant.phase) * plant.sway + Math.sin(t * SWAY * 2 + plant.phase * 2) * plant.sway * .25 + plant.bend);
       context.drawImage(plant.sprite, -plant.w / 2, -plant.h, plant.w, plant.h);
       context.restore();
     };
+    /** The wind on the flowers, each frame: bent ones spring back; blown ones drift and tumble until gone, then grow back. */
+    let windAt = 0;
+    const blow = (now: number, t: number) => {
+      const dt = windAt ? Math.min(.05, (now - windAt) / 1000) : 0;
+      windAt = now;
+      for (const plant of [...plants.back, ...plants.front]) {
+        plant.bendV += (-plant.bend * 26 - plant.bendV * 4) * dt;
+        plant.bend = Math.max(-.2, Math.min(.2, plant.bend + plant.bendV * dt));
+        const f = plant.fly;
+        if (!f) continue;
+        f.vx *= Math.pow(.7, dt); f.vy += 14 * dt; f.vx += Math.sin(t * 1.6 + plant.phase) * 14 * dt;
+        f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt;
+        if (now - f.since > 5000 || f.x < -60 || f.x > width + 60 || f.y < -60 || f.y > height + 60) { plant.fly = undefined; plant.regrow = now + 4000 + Math.random() * 6000; }
+      }
+    };
 
-    const HER_LINE = .86; // Feet above this line are drawn behind her, below it in front.
+    const HER_LINE = HER_FEET; // Feet above this line are drawn behind her, below it in front.
     // Homes: rings around the caregiver, on the ground (feet between the horizon and the bottom), nearest first.
     let homes: Array<{ x: number; y: number }> = [];
     const layout = () => {
@@ -839,7 +797,7 @@ const { label } = Astro.props;
     // Behind her (her figure from head to feet, with a little room for their width): nobody should stand still there,
     // out of sight; a spot there is moved out to the nearer side of her.
     const herHalf = () => (.21 * K() * height) / Math.max(1, width);
-    const hidden = (x: number, y: number) => y < HER_LINE && y > 1.02 - K() && Math.abs(x - .5) < herHalf();
+    const hidden = (x: number, y: number) => y < HER_LINE && y > HER_FEET - K() && Math.abs(x - .5) < herHalf();
     const besideHer = (x: number) => Math.min(.95, Math.max(.05, .5 + (x < .5 ? -1 : 1) * (herHalf() + .04 + Math.random() * .08)));
     const PAINT_AT = .32; // Figures are painted at the largest size they can have (share of the height), then drawn smaller.
 
@@ -887,6 +845,7 @@ const { label } = Astro.props;
       width = Math.round(rect.width); height = Math.round(rect.height); base = Math.min(height, width * .88);
       canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
       paintKeeper(base * KEEPER);
+      paintGround();
       growPlants();
       souls.forEach((soul) => { soul.figure = undefined; });
     };
@@ -896,29 +855,9 @@ const { label } = Astro.props;
       const t = calm ? 0 : time / 1000, now = performance.now();
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
       context.globalCompositeOperation = 'source-over';
-      // Coral sky into lavender ground; a warm glow on the floor beneath her.
-      const sky = context.createLinearGradient(0, 0, 0, height);
-      SETTINGS.sky.forEach(([at, color]) => sky.addColorStop(at, color));
-      context.fillStyle = sky; context.fillRect(0, 0, width, height);
-      // The nebulae, each a soft round cloud stretched wide, wandering in a slow loop.
-      SETTINGS.nebulae.forEach(([colour, nx, ny, nr, alpha, period], i) => {
-        const a = t / period * Math.PI * 2 + i * 1.7;
-        const x = (nx + Math.sin(a) * .12) * width, y = (ny + Math.cos(a * .8 + i) * .08) * height, r = nr * Math.max(width, height);
-        const [cr, cg, cb] = rgbOf(colour);
-        const cloud = context.createRadialGradient(x, y, 0, x, y, r);
-        cloud.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${alpha})`); cloud.addColorStop(.55, `rgba(${cr}, ${cg}, ${cb}, ${alpha * .4})`); cloud.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
-        context.save(); context.translate(x, y); context.scale(1.5, .75); context.translate(-x, -y);
-        context.fillStyle = cloud; context.fillRect(x - r, y - r, r * 2, r * 2);
-        context.restore();
-      });
-      const pool = context.createRadialGradient(width * .5, height * .9, 0, width * .5, height * .9, width * .3);
-      pool.addColorStop(0, `rgba(240, 120, 96, ${.6 + .08 * Math.sin(t * .6)})`); pool.addColorStop(1, 'rgba(240, 120, 96, 0)');
-      context.save(); context.translate(0, height * .9); context.scale(1, .4); context.translate(0, -height * .9);
-      context.fillStyle = pool; context.fillRect(0, 0, width, height * 2.5); context.restore();
-      plants.back.forEach((plant) => drawPlant(plant, t, .85));
-      const aura = context.createRadialGradient(width * .5, height * .45, 0, width * .5, height * .45, height * .55);
-      aura.addColorStop(0, `rgba(255, 236, 205, ${.55 + .08 * Math.sin(t * .7)})`); aura.addColorStop(1, 'rgba(255, 236, 205, 0)');
-      context.fillStyle = aura; context.fillRect(0, 0, width, height);
+      if (ground) context.drawImage(ground, 0, 0, width, height);
+      if (!calm) blow(now, t);
+      plants.back.forEach((plant) => drawPlant(plant, t, 1, now));
 
       const drawSoul = (soul: Soul) => {
         if (!calm && now > soul.actEnd) decide(soul, now);
@@ -1005,8 +944,8 @@ const { label } = Astro.props;
         context.globalAlpha = fade;
         context.translate(soul.x * width, soul.y * height - lift);
         // A soft shadow on the floor.
-        context.save(); context.globalAlpha = fade * .22 * (1 - Math.min(1, lift / unit)); context.scale(1, .18);
-        const shade = context.createRadialGradient(0, 0, 0, 0, 0, unit * .55); shade.addColorStop(0, '#2b2166'); shade.addColorStop(1, 'rgba(43, 33, 102, 0)');
+        context.save(); context.globalAlpha = fade * .6 * (1 - Math.min(1, lift / unit)); context.scale(1, .18);
+        const shade = context.createRadialGradient(0, 0, 0, 0, 0, unit * .55); shade.addColorStop(0, '#120c07'); shade.addColorStop(1, 'rgba(18, 12, 7, 0)');
         context.fillStyle = shade; context.fillRect(-unit, -unit, unit * 2, unit * 2); context.restore();
         context.rotate(tilt);
         // Bowing pivots on its back paws, so its body goes diagonal: chest low, rear and tail up.
@@ -1053,7 +992,23 @@ const { label } = Astro.props;
       const sway = calm ? 0 : Math.sin(t * .5) * height * .003;
       if (keeper) {
         const w = keeper.width / ratio, h = keeper.height / ratio, size = base * KEEPER;
-        context.drawImage(keeper, width * .5 - w / 2, height * 1.02 - (size * KEEPER_PAD + size) + sway, w, h);
+        context.drawImage(keeper, width * .5 - w / 2, height * HER_FEET - (size * KEEPER_PAD + size) + sway, w, h);
+        // Her face lives: she blinks now and then, and every so often closes her mouth for a moment.
+        if (!calm) {
+          // (Each is the time it next starts: a blink lasts 150 ms, a closed mouth 1.6 s.)
+          if (now > keeperFace.blink + 150) keeperFace.blink = now + 3200 + Math.random() * 2600;
+          if (now > keeperFace.mouth + 1600) keeperFace.mouth = now + 4000 + Math.random() * 5000;
+          const blinking = now >= keeperFace.blink;
+          const cell = size / KEEPER_CELLS, ox = width * .5 - KEEPER_GRID.gw * cell / 2, oy = height * HER_FEET - size + sway;
+          const shut = (i: number, j: number, colour: string) => {
+            context.fillStyle = SETTINGS.colours.skin;
+            context.fillRect(ox + i * cell - .5, oy + j * cell - .5, cell + 1, cell + 1);
+            context.fillStyle = colour;
+            context.beginPath(); context.roundRect(ox + (i + .12) * cell, oy + (j + .42) * cell, cell * .76, cell * .24, cell * .12); context.fill();
+          };
+          if (blinking) { shut(6, 6, SETTINGS.eyes.dark); shut(10, 6, SETTINGS.eyes.dark); }
+          if (now > keeperFace.mouth && now < keeperFace.mouth + 1600) shut(8, 8, '#c4607c');
+        }
       }
       order.filter((soul) => soul.y >= herLine).forEach(drawSoul);
       if (keeperArms) {
@@ -1068,7 +1023,7 @@ const { label } = Astro.props;
             side < 0 ? keeperArms.reachUpper : keeperArms.restUpper, side < 0 ? keeperArms.reachLower : keeperArms.restLower, sway);
         }
       }
-      plants.front.forEach((plant) => drawPlant(plant, t, .8));
+      plants.front.forEach((plant) => drawPlant(plant, t, .8, now));
       // Whoever is in the air, over everything.
       if (held && now - held.lastT > 60) { held.vx *= .85; held.ax = 0; }
       souls.filter((soul) => soul.act === 'held' || soul.act === 'fall').forEach(drawSoul);
@@ -1082,9 +1037,9 @@ const { label } = Astro.props;
         context.globalAlpha = nameAlpha;
         context.font = `400 ${Math.max(11, Math.round(base * .028))}px ${getComputedStyle(root).fontFamily}`;
         context.textAlign = 'center';
-        context.fillStyle = '#fffaf0';
-        context.shadowColor = 'rgba(80, 60, 140, .6)';
-        context.shadowBlur = 8;
+        context.fillStyle = SETTINGS.colours.lime;
+        context.shadowColor = 'rgba(18, 12, 7, .8)';
+        context.shadowBlur = 6;
         context.fillText(named.look.name!, named.x * width, (named.air ?? named.y * height) - unit * 1.05);
         context.restore();
       }
@@ -1151,6 +1106,27 @@ const { label } = Astro.props;
       grabbable(!!soul);
       if (soul) { nameShown.id = soul.id; nameShown.until = performance.now() + 900; }
     });
+    // Wind: the pointer (or a finger) moving over the flowers bends them its way, and blows the little ones on the
+    // ground away.
+    const breeze = { x: 0, y: 0, t: 0 };
+    root.addEventListener('pointermove', (event) => {
+      if (calm || busy()) return;
+      const { x, y } = local(event), now = performance.now(), dt = Math.max(.008, (now - breeze.t) / 1000);
+      const fresh = now - breeze.t < 120, vx = fresh ? (x - breeze.x) / dt : 0, vy = fresh ? (y - breeze.y) / dt : 0;
+      breeze.x = x; breeze.y = y; breeze.t = now;
+      const speed = Math.hypot(vx, vy);
+      if (!speed) return;
+      const reach = base * .07;
+      for (const plant of [...plants.back, ...plants.front]) {
+        if (plant.fly || plant.regrow) continue;
+        const d = Math.hypot((x - plant.x) / (plant.w / 2 + reach), (y - (plant.y - plant.h * .6)) / (plant.h * .6 + reach));
+        if (d > 1) continue;
+        plant.bendV += (1 - d) * Math.max(-1, Math.min(1, vx / 1200)) * 1.6;
+        if (plant.loose && speed > 900) {
+          plant.fly = { x: plant.x, y: plant.y - plant.h / 2, vx: Math.max(-160, Math.min(160, vx * .12)), vy: -40 - Math.random() * 40, rot: 0, vr: (Math.random() - .5) * 1.5 + Math.sign(vx) * .8, since: now };
+        }
+      }
+    });
     const release = (event: PointerEvent) => {
       if (!held || event.pointerId !== held.id) return;
       // A click (pressed and let go without dragging): it stays where it is and answers with its tail (and a cat bows).
@@ -1202,7 +1178,14 @@ const { label } = Astro.props;
         entries = localSouls();
       }
       // Markings the server adds by hand (to souls left before they could be chosen) join their own.
-      souls = entries.map((entry) => { const look = readLook(entry.id); if (look && entry.marks) look.marks = (look.marks ?? 0) | entry.marks; return { ...entry, look }; }).filter((entry): entry is Entry & { look: Look } => !!entry.look).map(({ id, look, photo }, i) => ({ ...meet(id, look, i, 0), photo }));
+      souls = entries.map((entry) => {
+        const look = readLook(entry.id);
+        if (look && entry.marks) look.marks = (look.marks ?? 0) | entry.marks;
+        // Coats corrected by hand.
+        const fix = FIXES[stemOf(entry.id)];
+        if (look && fix) { if (fix.pattern !== undefined) look.pattern = fix.pattern; if (fix.colours) look.colours = fix.colours; if (fix.marks) look.marks = (look.marks ?? 0) | fix.marks; }
+        return { ...entry, look };
+      }).filter((entry): entry is Entry & { look: Look } => !!entry.look).map(({ id, look, photo }, i) => ({ ...meet(id, look, i, 0), photo }));
       draw(performance.now());
       showFull();
     };
@@ -1468,13 +1451,13 @@ const { label } = Astro.props;
   .souls-field-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
   /* The little form, in Side B's dark: white type, hairline fields, the page's own buttons. */
   .souls-dialog { width: min(420px, calc(100vw - 32px)); padding: 0; border: 1px solid rgb(250 250 250 / .25); border-radius: 14px; background: #202020; color: #fafafa; font: inherit; font-size: 16px; line-height: 1.25; }
-  .souls-dialog::backdrop { background: rgb(20 14 30 / .55); backdrop-filter: blur(3px); }
+  .souls-dialog::backdrop { background: rgb(18 12 7 / .6); backdrop-filter: blur(3px); }
   .souls-form { display: grid; gap: 13px; padding: 20px 22px; }
   .souls-dialog:not(.souls-list) { max-height: calc(100dvh - 24px); overflow: auto; }
   .souls-form-build span { display: flex; align-items: center; gap: 10px; }
   .souls-form-build small { font-size: 12px; opacity: .7; }
   .souls-form-build input[type='range'] { flex: 1; width: auto; min-width: 0; padding: 0; border: 0; accent-color: #fafafa; }
-  .souls-form-preview { display: block; width: 100%; height: 150px; border-radius: 10px; background: linear-gradient(#ec7d60 0%, #f19a7c 45%, #a198e2 56%, #8380d8 100%); }
+  .souls-form-preview { display: block; width: 100%; height: 150px; border-radius: 10px; background: #2a2017; }
   .souls-form-title { margin: 0; font-size: 22px; line-height: 1.1; }
   .souls-form-field { display: grid; gap: 6px; font-size: 13px; }
   .souls-form-field input { width: 100%; padding: 8px 0; border: 0; border-bottom: 1px solid rgb(250 250 250 / .4); background: transparent; color: inherit; font: inherit; font-size: 16px; }
