@@ -90,10 +90,11 @@ const { label } = Astro.props;
     // The palette, after the references: a dark brown ground, lime, pink, warm greys, a pinkish grey, rust, caramel
     // and khaki.
     colours: { ground: '#2a2017', lime: '#d4ec3c', pink: '#e8a7bb', grey: '#968b82', mauve: '#ab9285', rust: '#a9481d', caramel: '#7f4316', khaki: '#857348', skin: '#edd3c0' },
-    // Coats are drawn in the nearest of these (pale grey for white coats, taupe for black ones, so they show on the dark).
-    coats: ['#d6cbbf', '#ab9285', '#a39890', '#6f645c', '#a9481d', '#7f4316', '#8f7d4c'],
+    // Coats are drawn in the nearest of these: white, pale grey, pinkish grey, grey, taupe, black, rust, caramel, beige.
+    coats: ['#ece5da', '#d6cbbf', '#ab9285', '#a39890', '#6f645c', '#1c1819', '#a9481d', '#7f4316', '#857348'],
     horizon: .38, // Where the ground starts, as a share of the height (high, so there's plenty of ground for them).
     cell: .022, // Grid cell of the plants, as a share of the base size.
+    eyes: { dark: '#140e0a', light: '#e9e0d3', shine: '#f6ecdc' }, // Solid eyes, with a little light in them.
     grain: .12, // Strength of the film grain over everything.
     fineGrain: 9, // The ground's fine grain: how far each speck strays from the brown (0–255).
     // How big each kind is next to the others (a medium dog is 1).
@@ -176,14 +177,15 @@ const { label } = Astro.props;
   const ease = (p: number) => p * p * (3 - 2 * p);
   const hex = (rgb: number[]) => `#${rgb.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')}`;
   const rgbOf = (colour: string) => [1, 3, 5].map((i) => parseInt(colour.slice(i, i + 2), 16));
-  /** An eye: a round hole onto the ground colour, like the holes punched in the motifs; asleep, a short rounded bar. */
-  const drawEye = (g: CanvasRenderingContext2D, x: number, y: number, r: number, asleep = false, _dark = false, colour?: string) => {
+  /** An eye: a solid round dot with a little light in it (dark, or light on a dark coat); asleep, a short rounded bar. */
+  const drawEye = (g: CanvasRenderingContext2D, x: number, y: number, r: number, asleep = false, onDark = false) => {
     g.save();
-    g.fillStyle = colour ?? SETTINGS.colours.ground;
+    g.fillStyle = onDark ? SETTINGS.eyes.light : SETTINGS.eyes.dark;
     g.beginPath();
     if (asleep) g.roundRect(x - r * 1.1, y - r * .32, r * 2.2, r * .64, r * .32);
     else g.arc(x, y, r, 0, Math.PI * 2);
     g.fill();
+    if (!asleep) { g.fillStyle = onDark ? SETTINGS.eyes.dark : SETTINGS.eyes.shine; g.beginPath(); g.arc(x + r * .35, y - r * .35, r * .32, 0, Math.PI * 2); g.fill(); }
     g.restore();
   };
   /** The nearest of a few colours (weighted, roughly as the eye sees it). */
@@ -261,7 +263,7 @@ const { label } = Astro.props;
 
   // Souls kept on this device, when the shared place cannot be reached. `?souls=reset` in the address clears them.
   try { if (new URLSearchParams(location.search).get('souls') === 'reset') localStorage.removeItem(STORE); } catch { /* No storage. */ }
-  type Entry = { id: string; photo?: string; marks?: number };
+  type Entry = { id: string; photo?: string; marks?: number; pattern?: number; colours?: [string, string, string] };
   const localSouls = (): Entry[] => {
     try {
       const list = JSON.parse(localStorage.getItem(STORE) ?? '[]');
@@ -510,7 +512,7 @@ const { label } = Astro.props;
       return {
         body: { canvas: bodyCanvas, x: bx, y: by, w: gw * cell, h: gh * cell },
         tail: { canvas: tailCanvas, x: bx, y: by + (headH - tailLen) * cell, w: cell, h: (tailLen + 1) * cell, pivotX: cell / 2, pivotY: tailLen * cell },
-        legs, eyes: [{ x: bx + (hx1 - .5) * cell, y: by + 2.5 * cell, dark: false }], eyeR: cell * .34, legLength: legLen * cell, unit,
+        legs, eyes: [{ x: bx + (hx1 - .5) * cell, y: by + 2.5 * cell, dark: rgbOf(grid.cells[2 * gw + hx1 - 1] >= 0 ? colours[grid.cells[2 * gw + hx1 - 1]] : mid).reduce((a, v) => a + v, 0) < 200 }], eyeR: cell * .36, legLength: legLen * cell, unit,
       };
     };
 
@@ -524,8 +526,8 @@ const { label } = Astro.props;
     let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
     const UPPER = .13, FOREARM = .15; // Her upper arm and forearm, as shares of her height.
     const KEEPER_PAD = .55; // Room around her canvas, as a share of her height.
-    // Her, one letter per cell (h hair, s skin, c cheek, m mouth, w collar, d dress, f dots on it, k socks, o shoes; a
-    // dot is empty, so the two inside her face are her eyes).
+    // Her, one letter per cell (h hair, s skin, e eyes, c cheek, m mouth, w collar, d dress, f dots on it, k socks,
+    // o shoes; a dot is empty).
     const KEEPER_ART = [
       '......hhhhh......',
       '....hhhhhhhhh....',
@@ -533,7 +535,7 @@ const { label } = Astro.props;
       '..hhhhhhhhhhhhh..',
       '..hhhhhhhhhhhhh..',
       '..hhssssssssshh..',
-      '..hhss.sss.sshh..',
+      '..hhssesssesshh..',
       '..hhcssssssschh..',
       '..hhssssmsssshh..',
       '..hh.sssssss.hh..',
@@ -557,7 +559,7 @@ const { label } = Astro.props;
       '.....oo...oo.....',
     ];
     const KEEPER_GRID = (() => {
-      const letters = 'hscmwdfko', gw = KEEPER_ART[0].length, grid = gridOf(gw, KEEPER_ART.length);
+      const letters = 'hscmwdfkoe', gw = KEEPER_ART[0].length, grid = gridOf(gw, KEEPER_ART.length);
       KEEPER_ART.forEach((row, j) => [...row].forEach((letter, i) => { grid.cells[j * gw + i] = letters.indexOf(letter); }));
       return grid;
     })();
@@ -566,11 +568,14 @@ const { label } = Astro.props;
       const { lime, pink, rust, skin } = SETTINGS.colours;
       const w = size * .56, pad = size * KEEPER_PAD, u = size, cell = u / KEEPER_CELLS;
       const W = w + pad * 2, H = size + pad * 2, cx = W / 2, top = pad;
-      const colours = [rust, skin, pink, '#c4607c', lime, pink, lime, lime, rust]; // (Her mouth a deeper pink.)
+      const colours = [rust, skin, pink, '#c4607c', lime, pink, lime, lime, rust, SETTINGS.eyes.dark]; // (Her mouth a deeper pink.)
       const gw = KEEPER_GRID.gw, grid = KEEPER_GRID;
       const out = canvasOf(W * ratio, H * ratio), g = out.getContext('2d')!;
       const cellPx = cell * ratio;
       drawCells(g, grid, cellPx, colours, (cx - gw * cell / 2) * ratio, top * ratio);
+      // A little light in each eye.
+      g.fillStyle = SETTINGS.eyes.shine;
+      for (const i of [6, 10]) { g.beginPath(); g.arc((cx - gw * cell / 2 + (i + .68) * cell) * ratio, (top + 6.32 * cell) * ratio, cell * .16 * ratio, 0, Math.PI * 2); g.fill(); }
       keeper = out;
       // Her arms, each an upper arm from the shoulder (in the dress's pink, a puffed sleeve) and a forearm with the hand
       // from the elbow in her skin, rebuilt on her grid.
@@ -728,10 +733,10 @@ const { label } = Astro.props;
       windAt = now;
       for (const plant of [...plants.back, ...plants.front]) {
         plant.bendV += (-plant.bend * 26 - plant.bendV * 4) * dt;
-        plant.bend = Math.max(-.9, Math.min(.9, plant.bend + plant.bendV * dt));
+        plant.bend = Math.max(-.2, Math.min(.2, plant.bend + plant.bendV * dt));
         const f = plant.fly;
         if (!f) continue;
-        f.vx *= Math.pow(.55, dt); f.vy += 70 * dt; f.vx += Math.sin(t * 2.3 + plant.phase) * 40 * dt;
+        f.vx *= Math.pow(.7, dt); f.vy += 14 * dt; f.vx += Math.sin(t * 1.6 + plant.phase) * 14 * dt;
         f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt;
         if (now - f.since > 5000 || f.x < -60 || f.x > width + 60 || f.y < -60 || f.y > height + 60) { plant.fly = undefined; plant.regrow = now + 4000 + Math.random() * 6000; }
       }
@@ -969,7 +974,7 @@ const { label } = Astro.props;
             context.fillStyle = colour;
             context.beginPath(); context.roundRect(ox + (i + .12) * cell, oy + (j + .42) * cell, cell * .76, cell * .24, cell * .12); context.fill();
           };
-          if (blinking) { shut(6, 6, SETTINGS.colours.ground); shut(10, 6, SETTINGS.colours.ground); }
+          if (blinking) { shut(6, 6, SETTINGS.eyes.dark); shut(10, 6, SETTINGS.eyes.dark); }
           if (now > keeperFace.mouth && now < keeperFace.mouth + 1600) shut(8, 8, '#c4607c');
         }
       }
@@ -1084,9 +1089,9 @@ const { label } = Astro.props;
         if (plant.fly || plant.regrow) continue;
         const d = Math.hypot((x - plant.x) / (plant.w / 2 + reach), (y - (plant.y - plant.h * .6)) / (plant.h * .6 + reach));
         if (d > 1) continue;
-        plant.bendV += (1 - d) * Math.max(-1, Math.min(1, vx / 900)) * 9;
-        if (plant.loose && speed > 380) {
-          plant.fly = { x: plant.x, y: plant.y - plant.h / 2, vx: vx * .5 + (Math.random() - .5) * 80, vy: Math.min(-120, vy * .4) - Math.random() * 120, rot: 0, vr: (Math.random() - .5) * 6 + Math.sign(vx) * 4, since: now };
+        plant.bendV += (1 - d) * Math.max(-1, Math.min(1, vx / 1200)) * 1.6;
+        if (plant.loose && speed > 900) {
+          plant.fly = { x: plant.x, y: plant.y - plant.h / 2, vx: Math.max(-160, Math.min(160, vx * .12)), vy: -40 - Math.random() * 40, rot: 0, vr: (Math.random() - .5) * 1.5 + Math.sign(vx) * .8, since: now };
         }
       }
     });
@@ -1141,7 +1146,14 @@ const { label } = Astro.props;
         entries = localSouls();
       }
       // Markings the server adds by hand (to souls left before they could be chosen) join their own.
-      souls = entries.map((entry) => { const look = readLook(entry.id); if (look && entry.marks) look.marks = (look.marks ?? 0) | entry.marks; return { ...entry, look }; }).filter((entry): entry is Entry & { look: Look } => !!entry.look).map(({ id, look, photo }, i) => ({ ...meet(id, look, i, 0), photo }));
+      souls = entries.map((entry) => {
+        const look = readLook(entry.id);
+        if (look && entry.marks) look.marks = (look.marks ?? 0) | entry.marks;
+        // Coats the server corrects by hand.
+        if (look && entry.pattern !== undefined) look.pattern = Math.min(3, Math.max(0, entry.pattern)) as Look['pattern'];
+        if (look && entry.colours?.every((c) => /^#[0-9a-f]{6}$/.test(c))) look.colours = entry.colours;
+        return { ...entry, look };
+      }).filter((entry): entry is Entry & { look: Look } => !!entry.look).map(({ id, look, photo }, i) => ({ ...meet(id, look, i, 0), photo }));
       draw(performance.now());
       showFull();
     };
