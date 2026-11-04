@@ -263,7 +263,19 @@ const { label } = Astro.props;
 
   // Souls kept on this device, when the shared place cannot be reached. `?souls=reset` in the address clears them.
   try { if (new URLSearchParams(location.search).get('souls') === 'reset') localStorage.removeItem(STORE); } catch { /* No storage. */ }
-  type Entry = { id: string; photo?: string; marks?: number; pattern?: number; colours?: [string, string, string] };
+  type Entry = { id: string; photo?: string; marks?: number };
+  // Coats corrected by hand (by stem), where the photo read them wrong: the coat pattern (0 plain … 3 tortoiseshell), its
+  // three colours (light, middle, dark) and markings to add. Malbec is all black; Kimchi all grey with pricked ears;
+  // Morita beige; Mirko white; Obi a beagle (tan, a black saddle, white chest, paws, muzzle and tail tip); Miley in
+  // Morita's beige.
+  const FIXES: Record<string, { pattern?: Look['pattern']; colours?: [string, string, string]; marks?: number }> = {
+    'mv42v257-2fdc6494': { pattern: 0, colours: ['#4a4446', '#1c1819', '#120f10'] },
+    'mv43lknk-47461bb0': { pattern: 0, marks: 1024 },
+    'mv438i86-aaf7d16e': { pattern: 0, colours: ['#a8966a', '#857348', '#5e5233'] },
+    'mv459j8u-ca3564ca': { pattern: 0, colours: ['#f4efe6', '#ece5da', '#b9b0a5'] },
+    'mv4dm2l9-4064d8f8': { pattern: 0, colours: ['#ece5da', '#a9481d', '#1c1819'], marks: 8 | 16 | 32 | 256 | 512 },
+    'mv6m63zd-1e500404': { pattern: 0, colours: ['#a8966a', '#857348', '#5e5233'] },
+  };
   const localSouls = (): Entry[] => {
     try {
       const list = JSON.parse(localStorage.getItem(STORE) ?? '[]');
@@ -1149,9 +1161,9 @@ const { label } = Astro.props;
       souls = entries.map((entry) => {
         const look = readLook(entry.id);
         if (look && entry.marks) look.marks = (look.marks ?? 0) | entry.marks;
-        // Coats the server corrects by hand.
-        if (look && entry.pattern !== undefined) look.pattern = Math.min(3, Math.max(0, entry.pattern)) as Look['pattern'];
-        if (look && entry.colours?.every((c) => /^#[0-9a-f]{6}$/.test(c))) look.colours = entry.colours;
+        // Coats corrected by hand.
+        const fix = FIXES[stemOf(entry.id)];
+        if (look && fix) { if (fix.pattern !== undefined) look.pattern = fix.pattern; if (fix.colours) look.colours = fix.colours; if (fix.marks) look.marks = (look.marks ?? 0) | fix.marks; }
         return { ...entry, look };
       }).filter((entry): entry is Entry & { look: Look } => !!entry.look).map(({ id, look, photo }, i) => ({ ...meet(id, look, i, 0), photo }));
       draw(performance.now());
