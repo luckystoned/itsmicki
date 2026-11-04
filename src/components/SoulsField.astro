@@ -161,7 +161,12 @@ const { label } = Astro.props;
     hx: number; hy: number; x: number; y: number; fromX: number; fromY: number; toX: number; toY: number;
     act: Act; actStart: number; actEnd: number; face: number; faceShown: number; blink: number; phase: number; drawn: number;
   };
-  type Plant = { sprite: HTMLCanvasElement; x: number; y: number; w: number; h: number; phase: number; sway: number };
+  type Plant = {
+    sprite: HTMLCanvasElement; x: number; y: number; w: number; h: number; phase: number; sway: number;
+    // The wind: how far it is bent, and how fast; the little ones on the ground can blow away (`fly`) and grow back.
+    bend: number; bendV: number; loose?: boolean; regrow?: number;
+    fly?: { x: number; y: number; vx: number; vy: number; rot: number; vr: number; since: number };
+  };
 
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const STORE = 'missing-souls';
@@ -513,7 +518,8 @@ const { label } = Astro.props;
         skin face with round holes for eyes, pink cheeks and a little mouth, a lime collar, a pink A-line dress with lime
         dots, thin legs, lime socks and rust shoes. Both arms are drawn on their own so they can move. */
     let keeper: HTMLCanvasElement | null = null;
-    const KEEPER = .78; // Her height, as a share of the base size (the frame’s height when it is landscape).
+    const KEEPER = .72; // Her height, as a share of the base size (the frame’s height when it is landscape).
+    const HER_FEET = .91; // Where her feet stand, as a share of the height (a little back, so they show whole).
     type Limb = { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number; length: number };
     let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
     const UPPER = .13, FOREARM = .15; // Her upper arm and forearm, as shares of her height.
@@ -591,8 +597,10 @@ const { label } = Astro.props;
     };
     // Until when she is stroking an animal, and with which hand (-1 our left, 1 our right).
     let petting = 0, pettingSide: -1 | 1 = -1;
+    // When she next blinks, and when she next closes her mouth (for a moment).
+    const keeperFace = { blink: 0, mouth: 0 };
     // Her shoulders and her hands, in the frame (shares of width and height).
-    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.12 * K() * height) / width, y: 1.02 - K() + .38 * K() });
+    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.12 * K() * height) / width, y: HER_FEET - K() + .38 * K() });
     // At rest (angles from straight down; positive swings to her right, our left): both arms hang a little out with the
     // elbows softly bent towards the animals, one to each side, the second a touch closer to her.
     const UPPER_ANGLE = .26, FOREARM_ANGLE = .5, REST_UPPER = -.22, REST_FOREARM = -.4;
@@ -646,7 +654,7 @@ const { label } = Astro.props;
       } else {
         // A tall stem with pairs of leaves, two cells long, every few cells.
         const gw = 5, gh = 14 + Math.floor(random() * 6);
-        grid = gridOf(gw, gh); colours = [[lime, khaki, caramel][Math.floor(random() * 3)], grey];
+        grid = gridOf(gw, gh); colours = [lime, grey];
         for (let j = 0; j < gh; j++) grid.cells[j * gw + 2] = 0;
         for (let j = 2; j < gh - 3; j += 3 + Math.floor(random() * 2)) { const side = (j % 2 ? 1 : -1); grid.cells[j * gw + 2 + side] = 0; grid.cells[j * gw + 2 + side * 2] = 0; }
       }
@@ -662,7 +670,7 @@ const { label } = Astro.props;
       const variants = Array.from({ length: 8 }, (_, i) => paintPlant('flower', cell * (.7 + random() * .35), 31 + i * 7));
       for (let x = -width * .02; x < width * 1.02; x += width * (.016 + random() * .022)) {
         const v = variants[Math.floor(random() * variants.length)];
-        back.push({ ...v, x, y: horizon + height * (random() * .07 - .01), phase: random() * 6.28, sway: .03 + random() * .03 });
+        back.push({ ...v, x, y: horizon + height * (random() * .07 - .01), phase: random() * 6.28, sway: .03 + random() * .03, bend: 0, bendV: 0 });
       }
       // Little flowers dotted over the ground (on short stems; none right behind her), drawn nearest last.
       const little = Array.from({ length: 6 }, (_, i) => paintPlant('flower', cell * (.75 + random() * .25), 211 + i * 13, [0, 2]));
@@ -670,14 +678,14 @@ const { label } = Astro.props;
         const x = random(), y = SETTINGS.horizon + .1 + random() * (1 - SETTINGS.horizon - .12);
         if (Math.abs(x - .5) < .1) continue;
         const v = little[Math.floor(random() * little.length)];
-        back.push({ ...v, x: x * width, y: y * height, phase: random() * 6.28, sway: .03 + random() * .03 });
+        back.push({ ...v, x: x * width, y: y * height, phase: random() * 6.28, sway: .03 + random() * .03, bend: 0, bendV: 0, loose: true });
       }
       back.sort((a, b) => a.y - b.y);
       for (const [x, lean] of [[.03, 1], [.1, 1], [.18, 1], [.84, -1], [.92, -1], [.98, -1]] as Array<[number, number]>) {
         const v = paintPlant('leaves', cell * 1.05, 101 + Math.round(x * 100));
         // Never so tall that their tips poke up near the horizon.
         const k = Math.min(1, height * .4 / v.h);
-        front.push({ sprite: v.sprite, w: v.w * k, h: v.h * k, x: width * x + lean * random() * width * .02, y: height * 1.04, phase: random() * 6.28, sway: .04 + random() * .03 });
+        front.push({ sprite: v.sprite, w: v.w * k, h: v.h * k, x: width * x + lean * random() * width * .02, y: height * 1.04, phase: random() * 6.28, sway: .04 + random() * .03, bend: 0, bendV: 0 });
       }
       plants = { back, front };
     };
@@ -693,16 +701,43 @@ const { label } = Astro.props;
       g.putImageData(img, 0, 0);
       ground = out;
     };
-    const drawPlant = (plant: Plant, t: number, alpha: number) => {
+    const drawPlant = (plant: Plant, t: number, alpha: number, now: number) => {
+      if (plant.regrow && now < plant.regrow) return;
       context.save();
+      if (plant.fly) {
+        // Blown away: tumbling off on the wind, fading as it goes.
+        const f = plant.fly;
+        context.globalAlpha = alpha * Math.min(1, Math.max(0, (5000 - (now - f.since)) / 1200));
+        context.translate(f.x, f.y); context.rotate(f.rot);
+        context.drawImage(plant.sprite, -plant.w / 2, -plant.h / 2, plant.w, plant.h);
+        context.restore();
+        return;
+      }
       context.globalAlpha = alpha;
       context.translate(plant.x, plant.y);
-      context.rotate(calm ? 0 : Math.sin(t * .7 + plant.phase) * plant.sway + Math.sin(t * 1.9 + plant.phase * 2) * plant.sway * .25);
+      // Growing back where it was, from nothing.
+      if (plant.regrow) { const grow = ease(Math.min(1, (now - plant.regrow) / 1200)); context.scale(grow, grow); if (grow >= 1) plant.regrow = undefined; }
+      context.rotate(calm ? 0 : Math.sin(t * .7 + plant.phase) * plant.sway + Math.sin(t * 1.9 + plant.phase * 2) * plant.sway * .25 + plant.bend);
       context.drawImage(plant.sprite, -plant.w / 2, -plant.h, plant.w, plant.h);
       context.restore();
     };
+    /** The wind on the flowers, each frame: bent ones spring back; blown ones drift and tumble until gone, then grow back. */
+    let windAt = 0;
+    const blow = (now: number, t: number) => {
+      const dt = windAt ? Math.min(.05, (now - windAt) / 1000) : 0;
+      windAt = now;
+      for (const plant of [...plants.back, ...plants.front]) {
+        plant.bendV += (-plant.bend * 26 - plant.bendV * 4) * dt;
+        plant.bend = Math.max(-.9, Math.min(.9, plant.bend + plant.bendV * dt));
+        const f = plant.fly;
+        if (!f) continue;
+        f.vx *= Math.pow(.55, dt); f.vy += 70 * dt; f.vx += Math.sin(t * 2.3 + plant.phase) * 40 * dt;
+        f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt;
+        if (now - f.since > 5000 || f.x < -60 || f.x > width + 60 || f.y < -60 || f.y > height + 60) { plant.fly = undefined; plant.regrow = now + 4000 + Math.random() * 6000; }
+      }
+    };
 
-    const HER_LINE = .86; // Feet above this line are drawn behind her, below it in front.
+    const HER_LINE = HER_FEET; // Feet above this line are drawn behind her, below it in front.
     // Homes: rings around the caregiver, on the ground (feet between the horizon and the bottom), nearest first.
     let homes: Array<{ x: number; y: number }> = [];
     const layout = () => {
@@ -725,7 +760,7 @@ const { label } = Astro.props;
     // Behind her (her figure from head to feet, with a little room for their width): nobody should stand still there,
     // out of sight; a spot there is moved out to the nearer side of her.
     const herHalf = () => (.21 * K() * height) / Math.max(1, width);
-    const hidden = (x: number, y: number) => y < HER_LINE && y > 1.02 - K() && Math.abs(x - .5) < herHalf();
+    const hidden = (x: number, y: number) => y < HER_LINE && y > HER_FEET - K() && Math.abs(x - .5) < herHalf();
     const besideHer = (x: number) => Math.min(.95, Math.max(.05, .5 + (x < .5 ? -1 : 1) * (herHalf() + .04 + Math.random() * .08)));
     const PAINT_AT = .32; // Figures are painted at the largest size they can have (share of the height), then drawn smaller.
 
@@ -784,7 +819,8 @@ const { label } = Astro.props;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
       context.globalCompositeOperation = 'source-over';
       if (ground) context.drawImage(ground, 0, 0, width, height);
-      plants.back.forEach((plant) => drawPlant(plant, t, 1));
+      if (!calm) blow(now, t);
+      plants.back.forEach((plant) => drawPlant(plant, t, 1, now));
 
       const drawSoul = (soul: Soul) => {
         if (!calm && now > soul.actEnd) decide(soul, now);
@@ -919,7 +955,23 @@ const { label } = Astro.props;
       const sway = calm ? 0 : Math.sin(t * .5) * height * .003;
       if (keeper) {
         const w = keeper.width / ratio, h = keeper.height / ratio, size = base * KEEPER;
-        context.drawImage(keeper, width * .5 - w / 2, height * 1.02 - (size * KEEPER_PAD + size) + sway, w, h);
+        context.drawImage(keeper, width * .5 - w / 2, height * HER_FEET - (size * KEEPER_PAD + size) + sway, w, h);
+        // Her face lives: she blinks now and then, and every so often closes her mouth for a moment.
+        if (!calm) {
+          // (Each is the time it next starts: a blink lasts 150 ms, a closed mouth 1.6 s.)
+          if (now > keeperFace.blink + 150) keeperFace.blink = now + 3200 + Math.random() * 2600;
+          if (now > keeperFace.mouth + 1600) keeperFace.mouth = now + 4000 + Math.random() * 5000;
+          const blinking = now >= keeperFace.blink;
+          const cell = size / KEEPER_CELLS, ox = width * .5 - KEEPER_GRID.gw * cell / 2, oy = height * HER_FEET - size + sway;
+          const shut = (i: number, j: number, colour: string) => {
+            context.fillStyle = SETTINGS.colours.skin;
+            context.fillRect(ox + i * cell - .5, oy + j * cell - .5, cell + 1, cell + 1);
+            context.fillStyle = colour;
+            context.beginPath(); context.roundRect(ox + (i + .12) * cell, oy + (j + .42) * cell, cell * .76, cell * .24, cell * .12); context.fill();
+          };
+          if (blinking) { shut(6, 6, SETTINGS.colours.ground); shut(10, 6, SETTINGS.colours.ground); }
+          if (now > keeperFace.mouth && now < keeperFace.mouth + 1600) shut(8, 8, '#c4607c');
+        }
       }
       order.filter((soul) => soul.y >= herLine).forEach(drawSoul);
       if (keeperArms) {
@@ -934,7 +986,7 @@ const { label } = Astro.props;
             side < 0 ? keeperArms.reachUpper : keeperArms.restUpper, side < 0 ? keeperArms.reachLower : keeperArms.restLower, sway);
         }
       }
-      plants.front.forEach((plant) => drawPlant(plant, t, .8));
+      plants.front.forEach((plant) => drawPlant(plant, t, .8, now));
       // Whoever is in the air, over everything.
       if (held && now - held.lastT > 60) { held.vx *= .85; held.ax = 0; }
       souls.filter((soul) => soul.act === 'held' || soul.act === 'fall').forEach(drawSoul);
@@ -1016,6 +1068,27 @@ const { label } = Astro.props;
       const soul = busy() ? null : nearest(event);
       grabbable(!!soul);
       if (soul) { nameShown.id = soul.id; nameShown.until = performance.now() + 900; }
+    });
+    // Wind: the pointer (or a finger) moving over the flowers bends them its way, and blows the little ones on the
+    // ground away.
+    const breeze = { x: 0, y: 0, t: 0 };
+    root.addEventListener('pointermove', (event) => {
+      if (calm || busy()) return;
+      const { x, y } = local(event), now = performance.now(), dt = Math.max(.008, (now - breeze.t) / 1000);
+      const fresh = now - breeze.t < 120, vx = fresh ? (x - breeze.x) / dt : 0, vy = fresh ? (y - breeze.y) / dt : 0;
+      breeze.x = x; breeze.y = y; breeze.t = now;
+      const speed = Math.hypot(vx, vy);
+      if (!speed) return;
+      const reach = base * .07;
+      for (const plant of [...plants.back, ...plants.front]) {
+        if (plant.fly || plant.regrow) continue;
+        const d = Math.hypot((x - plant.x) / (plant.w / 2 + reach), (y - (plant.y - plant.h * .6)) / (plant.h * .6 + reach));
+        if (d > 1) continue;
+        plant.bendV += (1 - d) * Math.max(-1, Math.min(1, vx / 900)) * 9;
+        if (plant.loose && speed > 380) {
+          plant.fly = { x: plant.x, y: plant.y - plant.h / 2, vx: vx * .5 + (Math.random() - .5) * 80, vy: Math.min(-120, vy * .4) - Math.random() * 120, rot: 0, vr: (Math.random() - .5) * 6 + Math.sign(vx) * 4, since: now };
+        }
+      }
     });
     const release = (event: PointerEvent) => {
       if (!held || event.pointerId !== held.id) return;
