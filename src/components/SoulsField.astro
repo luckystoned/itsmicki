@@ -88,7 +88,7 @@ const { label } = Astro.props;
     people: .2, // Photos are shown in the list: a crop where people fill more than this share is turned down.
     photoSide: 1000, // The photo kept: cropped around the animal, at most this many pixels on its longer side.
     // The palette, after the references: a dark brown ground, lime, pink, warm greys, rust and khaki.
-    colours: { ground: '#2a2017', lime: '#d4ec3c', pink: '#e8a7bb', grey: '#968b82', rust: '#a9481d', khaki: '#857348' },
+    colours: { ground: '#2a2017', lime: '#d4ec3c', pink: '#e8a7bb', grey: '#968b82', rust: '#a9481d', khaki: '#857348', skin: '#edd3c0' },
     // Coats are drawn in the nearest of these (pale grey for white coats, taupe for black ones, so they show on the dark).
     coats: ['#d6cbbf', '#a39890', '#6f645c', '#a9481d', '#8f7d4c'],
     horizon: .38, // Where the ground starts, as a share of the height (high, so there's plenty of ground for them).
@@ -598,61 +598,59 @@ const { label } = Astro.props;
       };
     };
 
-    /** The caregiver: a blocky girl with a rust bob, a pink A-line dress, lime face, arms and legs, and round holes for
-        eyes; behind her, a large four-lobed flower motif in khaki, like a printed emblem. Both arms are drawn on their own
-        so they can move. */
+    /** The caregiver: a girl drawn cell by cell like the figures of the references: a rust bob with a fringe, a warm
+        skin face with round holes for eyes, pink cheeks and a little mouth, a lime collar, a pink A-line dress with lime
+        dots, thin legs and rust shoes. Both arms are drawn on their own so they can move. */
     let keeper: HTMLCanvasElement | null = null;
     const KEEPER = .78; // Her height, as a share of the base size (the frame’s height when it is landscape).
     type Limb = { canvas: HTMLCanvasElement; w: number; h: number; pivotX: number; pivotY: number; length: number };
     let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
     const UPPER = .13, FOREARM = .15; // Her upper arm and forearm, as shares of her height.
-    const KEEPER_PAD = .55; // Room around her for the motif behind her, as a share of her height.
-    const KEEPER_CELLS = 18; // Grid cells over her height (as chunky as the animals').
+    const KEEPER_PAD = .55; // Room around her canvas, as a share of her height.
+    // Her, one letter per cell (h hair, s skin, c cheek, m mouth, w collar, d dress, f dots on it, o shoes; a dot is
+    // empty, so the two inside her face are her eyes).
+    const KEEPER_ART = [
+      '......hhhhh......',
+      '....hhhhhhhhh....',
+      '...hhhhhhhhhhh...',
+      '..hhhhhhhhhhhhh..',
+      '..hhhhhhhhhhhhh..',
+      '..hhssssssssshh..',
+      '..hhss.sss.sshh..',
+      '..hhcssssssschh..',
+      '..hhssssmsssshh..',
+      '..hh.sssssss.hh..',
+      '..hh...sss...hh..',
+      '......wwwww......',
+      '....dddwwwddd....',
+      '....ddddwdddd....',
+      '....ddddddddd....',
+      '....ddddddddd....',
+      '...ddfdddddfddd..',
+      '...ddddddddddd...',
+      '..ddddddddddddd..',
+      '..ddddddfdddddd..',
+      '.ddddddddddddddd.',
+      '.ddfdddddddddfdd.',
+      '.ddddddddddddddd.',
+      '..ddddddddddddd..',
+      ...Array(7).fill('......s...s......'),
+      '.....oo...oo.....',
+    ];
+    const KEEPER_CELLS = KEEPER_ART.length; // Grid cells over her height.
     const paintKeeper = (size: number) => {
-      const { lime, pink, rust, khaki } = SETTINGS.colours;
+      const { lime, pink, rust, skin } = SETTINGS.colours;
       const w = size * .56, pad = size * KEEPER_PAD, u = size, cell = u / KEEPER_CELLS;
       const W = w + pad * 2, H = size + pad * 2, cx = W / 2, top = pad;
-      const shape = canvasOf(W * ratio, H * ratio), s = shape.getContext('2d')!;
-      s.scale(ratio, ratio);
-      const round = (x: number, y: number, rw: number, rh: number, r: number) => { s.beginPath(); s.roundRect(cx + x * u - rw * u / 2, top + y * u, rw * u, rh * u, r * u); s.fill(); };
-      // Behind her: four round lobes around a ring, cut by a cross, with a hole in each lobe (the big flower of the references).
-      const motif = canvasOf(W * ratio, H * ratio), m = motif.getContext('2d')!;
-      m.scale(ratio, ratio); m.fillStyle = '#fff';
-      const mx = cx, my = top + .34 * u, R = .36 * u;
-      for (const [dx, dy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { m.beginPath(); m.arc(mx + dx * R * .52, my + dy * R * .52, R * .5, 0, Math.PI * 2); m.fill(); }
-      m.globalCompositeOperation = 'destination-out';
-      m.fillRect(mx - cell * .6, my - R * 1.2, cell * 1.2, R * 2.4); m.fillRect(mx - R * 1.2, my - cell * .6, R * 2.4, cell * 1.2);
-      for (const [dx, dy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { m.beginPath(); m.arc(mx + dx * R * .5, my + dy * R * .5, cell * 1.1, 0, Math.PI * 2); m.fill(); }
-      m.globalCompositeOperation = 'source-over';
-      m.beginPath(); m.arc(mx, my, R * .22, 0, Math.PI * 2); m.fill();
-      m.globalCompositeOperation = 'destination-out';
-      m.beginPath(); m.arc(mx, my, R * .1, 0, Math.PI * 2); m.fill();
-      // Like the girl in the references: a bob haircut, a short A-line dress, bare legs and little shoes.
-      s.fillStyle = lime;
-      round(-.056, .6, .062, .36, .03); round(.056, .6, .062, .36, .03); // Legs, a cell wide
-      s.fillStyle = rust;
-      s.beginPath(); s.ellipse(cx - .05 * u, top + .965 * u, .045 * u, .025 * u, 0, 0, Math.PI * 2); s.fill(); // Shoes
-      s.beginPath(); s.ellipse(cx + .05 * u, top + .965 * u, .045 * u, .025 * u, 0, 0, Math.PI * 2); s.fill();
-      s.fillStyle = lime; round(0, .19, .06, .05, .02); // Neck
-      s.fillStyle = pink;
-      s.beginPath(); // The dress, from the shoulders out to a rounded hem above the knee.
-      s.moveTo(cx - .085 * u, top + .23 * u); s.quadraticCurveTo(cx, top + .21 * u, cx + .085 * u, top + .23 * u);
-      s.quadraticCurveTo(cx + .14 * u, top + .42 * u, cx + .19 * u, top + .62 * u);
-      s.quadraticCurveTo(cx, top + .67 * u, cx - .19 * u, top + .62 * u);
-      s.quadraticCurveTo(cx - .14 * u, top + .42 * u, cx - .085 * u, top + .23 * u);
-      s.fill();
-      s.fillStyle = rust; round(0, .0, .27, .21, .06); // The bob, down to the chin
-      s.fillStyle = lime; s.beginPath(); s.ellipse(cx, top + .145 * u, .088 * u, .075 * u, 0, 0, Math.PI * 2); s.fill(); // Face, under a fringe
+      const letters = 'hscmwdfo', colours = [rust, skin, pink, '#c4607c', lime, pink, lime, rust]; // (Her mouth a deeper pink.)
+      const gw = KEEPER_ART[0].length, grid = gridOf(gw, KEEPER_CELLS);
+      KEEPER_ART.forEach((row, j) => [...row].forEach((letter, i) => { grid.cells[j * gw + i] = letters.indexOf(letter); }));
       const out = canvasOf(W * ratio, H * ratio), g = out.getContext('2d')!;
-      const cellPx = cell * ratio, ox = alignTo(cx * ratio, cellPx);
-      g.globalAlpha = .3; g.drawImage(blockify(motif, cellPx, [khaki], .5, ox, alignTo(my * ratio, cellPx)), 0, 0); g.globalAlpha = 1;
-      g.drawImage(blockify(shape, cellPx, [pink, lime, rust], .45, ox, alignTo(top * ratio, cellPx)), 0, 0);
-      // Her eyes: two round holes.
-      g.scale(ratio, ratio);
-      for (const ex of [-.032, .032]) drawEye(g, cx + ex * u, top + .15 * u, cell * .34);
+      const cellPx = cell * ratio;
+      drawCells(g, grid, cellPx, colours, (cx - gw * cell / 2) * ratio, top * ratio);
       keeper = out;
-      // Her arms, each an upper arm from the shoulder (in the dress's pink, a puffed sleeve) and a lime forearm with the
-      // hand from the elbow, rebuilt on her grid.
+      // Her arms, each an upper arm from the shoulder (in the dress's pink, a puffed sleeve) and a forearm with the hand
+      // from the elbow in her skin, rebuilt on her grid.
       const limb = (length: number, from: number, to: number, colour: string, hand: boolean, sleeve: boolean): Limb => {
         const lp = .08 * u, form = canvasOf((lp * 2 + from * 3.2) * ratio, (length + lp * 2 + (hand ? .07 * u : 0)) * ratio), a = form.getContext('2d')!;
         a.scale(ratio, ratio);
@@ -668,16 +666,16 @@ const { label } = Astro.props;
       };
       // (A little thicker than a drawn arm, so the grid keeps them whole.)
       keeperArms = {
-        reachUpper: limb(UPPER * u, .036 * u, .03 * u, pink, false, true),
-        reachLower: limb(FOREARM * u, .03 * u, .03 * u, lime, true, false),
-        restUpper: limb(UPPER * u, .036 * u, .03 * u, pink, false, true),
-        restLower: limb(FOREARM * u, .03 * u, .03 * u, lime, true, false),
+        reachUpper: limb(UPPER * u, .032 * u, .024 * u, pink, false, true),
+        reachLower: limb(FOREARM * u, .02 * u, .018 * u, skin, true, false),
+        restUpper: limb(UPPER * u, .032 * u, .024 * u, pink, false, true),
+        restLower: limb(FOREARM * u, .02 * u, .018 * u, skin, true, false),
       };
     };
     // Until when she is stroking an animal, and with which hand (-1 our left, 1 our right).
     let petting = 0, pettingSide: -1 | 1 = -1;
     // Her shoulders and her hands, in the frame (shares of width and height).
-    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.09 * K() * height) / width, y: 1.02 - K() + .245 * K() });
+    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.12 * K() * height) / width, y: 1.02 - K() + .38 * K() });
     // At rest (angles from straight down; positive swings to her right, our left): both arms hang a little out with the
     // elbows softly bent towards the animals, one to each side, the second a touch closer to her.
     const UPPER_ANGLE = .26, FOREARM_ANGLE = .5, REST_UPPER = -.22, REST_FOREARM = -.4;
@@ -716,14 +714,14 @@ const { label } = Astro.props;
     /** Plants, as grid motifs: cross-shaped flowers (four round petals around a hole) on stems a cell wide along the
         horizon, and tall stems with leaves in front, near the edges. Each sways from its base. */
     let plants: { back: Plant[]; front: Plant[] } = { back: [], front: [] };
-    const paintPlant = (kind: 'flower' | 'leaves', cell: number, seed: number) => {
+    const paintPlant = (kind: 'flower' | 'leaves', cell: number, seed: number, stems: [number, number] = [3, 8]) => {
       let n = seed;
       const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
       const { lime, pink, rust, khaki, grey } = SETTINGS.colours;
       let grid: Cells, colours: string[];
       if (kind === 'flower') {
         // A stem, now and then a leaf, and the flower on top.
-        const stem = 3 + Math.floor(random() * 6), gw = 5, gh = stem + 3;
+        const stem = stems[0] + Math.floor(random() * (stems[1] - stems[0] + 1)), gw = 5, gh = stem + 3;
         grid = gridOf(gw, gh); colours = [khaki, [lime, pink, rust, lime, pink][Math.floor(random() * 5)]];
         for (let j = 3; j < gh; j++) grid.cells[j * gw + 2] = 0;
         if (stem > 4) grid.cells[(3 + Math.floor(stem / 2)) * gw + (random() < .5 ? 1 : 3)] = 0;
@@ -745,10 +743,19 @@ const { label } = Astro.props;
       const back: Plant[] = [], front: Plant[] = [];
       const horizon = height * SETTINGS.horizon, cell = base * SETTINGS.cell;
       const variants = Array.from({ length: 8 }, (_, i) => paintPlant('flower', cell * (.7 + random() * .35), 31 + i * 7));
-      for (let x = -width * .02; x < width * 1.02; x += width * (.03 + random() * .03)) {
+      for (let x = -width * .02; x < width * 1.02; x += width * (.016 + random() * .022)) {
         const v = variants[Math.floor(random() * variants.length)];
-        back.push({ ...v, x, y: horizon + height * (random() * .06 - .01), phase: random() * 6.28, sway: .03 + random() * .03 });
+        back.push({ ...v, x, y: horizon + height * (random() * .07 - .01), phase: random() * 6.28, sway: .03 + random() * .03 });
       }
+      // Little flowers dotted over the ground (on short stems; none right behind her), drawn nearest last.
+      const little = Array.from({ length: 6 }, (_, i) => paintPlant('flower', cell * (.75 + random() * .25), 211 + i * 13, [0, 2]));
+      for (let i = 0; i < Math.round(26 * width / Math.max(1, height)); i++) {
+        const x = random(), y = SETTINGS.horizon + .1 + random() * (1 - SETTINGS.horizon - .12);
+        if (Math.abs(x - .5) < .1) continue;
+        const v = little[Math.floor(random() * little.length)];
+        back.push({ ...v, x: x * width, y: y * height, phase: random() * 6.28, sway: .03 + random() * .03 });
+      }
+      back.sort((a, b) => a.y - b.y);
       for (const [x, lean] of [[.03, 1], [.1, 1], [.18, 1], [.84, -1], [.92, -1], [.98, -1]] as Array<[number, number]>) {
         const v = paintPlant('leaves', cell * 1.05, 101 + Math.round(x * 100));
         // Never so tall that their tips poke up near the horizon.
