@@ -15,8 +15,6 @@ export type SideBProject = {
 
 /** Mkp & Hair's muted 5-second loop (square), on its carousel card (the larger grid card keeps the sharper photo). */
 const MKP_LOOP = '/04_SideB/Projects/01_MkpHair/00_MkpHair_Loop.mp4';
-/** Missing souls' muted 6-second loop (square): a detail of its lilac flowers swaying, the sky melting from orange into lilac. */
-const SOULS_LOOP = '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Loop.mp4';
 /** Nostalgia as Agony's grid loop: 12 muted seconds recorded from the piece (landscape), like its carousel card. */
 const NOSTALGIA_LOOP = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Loop.mp4';
 /** Its carousel card: 12 muted seconds recorded from the piece itself: the home videos as Super 8, under its tracking
@@ -27,7 +25,7 @@ export const sideBProjects: SideBProject[] = [
   { slug: 'mkp-hair', title: 'Mkp & Hair', label: '01_Mkp & Hair_Art Direction+AI Image Generation', gridCover: '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp' },
   { slug: 'contained-alienation', title: 'Contained Alienation', label: '02_Contained Alienation_Art Direction+Photography+Mkp & Styling', gridCover: '/04_SideB/Home/02_SideBProjects.webp' },
   { slug: 'general-immersive', title: 'General', label: '03_General_Art Direction+Immersive Interaction Design', gridCover: '/04_SideB/Home/03_SideBProjects.webp', gridVideo: '/04_SideB/Home/03_SideBProjects.mp4' },
-  { slug: 'missing-souls', title: 'Missing souls', label: '04_Missing souls_Art Direction+Immersive Design', gridCover: '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Cover.webp', gridVideo: SOULS_LOOP },
+  { slug: 'missing-souls', title: 'Missing souls', label: '04_Missing souls_Art Direction+Immersive Design', gridCover: '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Cover.webp' },
   { slug: 'nostalgia-as-agony', title: 'Nostalgia as Agony', label: '05_Nostalgia as Agony_Concept & Art direction', gridCover: '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Cover.webp', gridVideo: NOSTALGIA_LOOP },
 ];
 
@@ -40,7 +38,7 @@ const carouselCards: Array<{ width: number; height: number; alt: string; video?:
   { width: 357, height: 355, alt: 'Portrait with moss-green brows, flushed cheeks and spiky tufts tied with pink ribbon.', video: MKP_LOOP, project: 0 },
   { width: 358, height: 474, alt: 'Blurred black-and-white portrait repeated across the frame.', project: 1 },
   { width: 355, height: 234, alt: 'Amber, olive and dark cells drifting under a microscope.', video: true, project: 2 },
-  { width: 357, height: 354, alt: 'Lilac flowers on green stems swaying against a coral sky melting into lilac.', video: SOULS_LOOP, project: 3 },
+  { width: 357, height: 354, alt: 'A blocky girl in a pink dress among grey and rust cats and dogs and cross-shaped lime and pink flowers, on dark brown.', project: 3 },
   { width: 358, height: 474, alt: 'Home videos from 1999 on warm, grainy Super 8, stretched into vertical streaks with outlined tracking boxes where a girl in pink, a smiling girl, a grandmother and a laughing man show through, breaking into horizontal slices.', video: NOSTALGIA_CARD, project: 4 },
 ];
 
