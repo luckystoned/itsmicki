@@ -18,9 +18,9 @@ export const loadVision = () => {
   return vision;
 };
 
-/** Front camera, small: enough for tracking and light on the device. */
-export const openCamera = async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+/** Front camera, small by default: enough for tracking and light on the device (the recording page asks for more, to show it). */
+export const openCamera = async (width = 640) => {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: width }, height: { ideal: Math.round(width * .75) } }, audio: false });
   const video = document.createElement('video');
   video.muted = true;
   video.playsInline = true;
