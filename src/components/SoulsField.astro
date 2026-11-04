@@ -1,5 +1,5 @@
 ---
-// Missing souls: a place drawn like a printed textile (dark brown ground, lime, pink, warm greys, rust and khaki; every
+// Missing souls: a place drawn like a printed textile (dark brown ground, lime, pink, warm greys, rust, caramel and khaki; every
 // shape built from grid cells with rounded corners, round holes for eyes, cross-shaped flowers swaying) where a
 // caregiver looks after the animals people leave with her. Anyone can add their cat or dog from a photo where its face shows. The photo is read on
 // their device (MediaPipe finds the animal, reads its colours and markings, and turns down photos full of people), then
@@ -87,13 +87,15 @@ const { label } = Astro.props;
     classes: { cat: 8, dog: 12, person: 15 }, // DeepLab v3 (PASCAL VOC) labels.
     people: .2, // Photos are shown in the list: a crop where people fill more than this share is turned down.
     photoSide: 1000, // The photo kept: cropped around the animal, at most this many pixels on its longer side.
-    // The palette, after the references: a dark brown ground, lime, pink, warm greys, rust and khaki.
-    colours: { ground: '#2a2017', lime: '#d4ec3c', pink: '#e8a7bb', grey: '#968b82', rust: '#a9481d', khaki: '#857348', skin: '#edd3c0' },
+    // The palette, after the references: a dark brown ground, lime, pink, warm greys, a pinkish grey, rust, caramel
+    // and khaki.
+    colours: { ground: '#2a2017', lime: '#d4ec3c', pink: '#e8a7bb', grey: '#968b82', mauve: '#ab9285', rust: '#a9481d', caramel: '#7f4316', khaki: '#857348', skin: '#edd3c0' },
     // Coats are drawn in the nearest of these (pale grey for white coats, taupe for black ones, so they show on the dark).
-    coats: ['#d6cbbf', '#a39890', '#6f645c', '#a9481d', '#8f7d4c'],
+    coats: ['#d6cbbf', '#ab9285', '#a39890', '#6f645c', '#a9481d', '#7f4316', '#8f7d4c'],
     horizon: .38, // Where the ground starts, as a share of the height (high, so there's plenty of ground for them).
-    cell: .022, // Grid cell of the plants and the background motifs, as a share of the base size.
+    cell: .022, // Grid cell of the plants, as a share of the base size.
     grain: .12, // Strength of the film grain over everything.
+    fineGrain: 9, // The ground's fine grain: how far each speck strays from the brown (0–255).
     // How big each kind is next to the others (a medium dog is 1).
     scale: { cat: [.6, .78, .9], dog: [.66, .92, 1.2] },
     // What they do, and how often; lengths in seconds.
@@ -632,19 +634,19 @@ const { label } = Astro.props;
     const paintPlant = (kind: 'flower' | 'leaves', cell: number, seed: number, stems: [number, number] = [3, 8]) => {
       let n = seed;
       const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
-      const { lime, pink, rust, khaki, grey } = SETTINGS.colours;
+      const { lime, pink, rust, khaki, grey, mauve, caramel } = SETTINGS.colours;
       let grid: Cells, colours: string[];
       if (kind === 'flower') {
         // A stem, now and then a leaf, and the flower on top.
         const stem = stems[0] + Math.floor(random() * (stems[1] - stems[0] + 1)), gw = 5, gh = stem + 3;
-        grid = gridOf(gw, gh); colours = [khaki, [lime, pink, rust, lime, pink][Math.floor(random() * 5)]];
+        grid = gridOf(gw, gh); colours = [random() < .3 ? caramel : khaki, [lime, pink, rust, lime, pink, mauve][Math.floor(random() * 6)]];
         for (let j = 3; j < gh; j++) grid.cells[j * gw + 2] = 0;
         if (stem > 4) grid.cells[(3 + Math.floor(stem / 2)) * gw + (random() < .5 ? 1 : 3)] = 0;
         for (const [i, j] of [[2, 0], [1, 1], [3, 1], [2, 2]]) grid.cells[j * gw + i] = 1;
       } else {
         // A tall stem with pairs of leaves, two cells long, every few cells.
         const gw = 5, gh = 14 + Math.floor(random() * 6);
-        grid = gridOf(gw, gh); colours = [random() < .5 ? lime : khaki, grey];
+        grid = gridOf(gw, gh); colours = [[lime, khaki, caramel][Math.floor(random() * 3)], grey];
         for (let j = 0; j < gh; j++) grid.cells[j * gw + 2] = 0;
         for (let j = 2; j < gh - 3; j += 3 + Math.floor(random() * 2)) { const side = (j % 2 ? 1 : -1); grid.cells[j * gw + 2 + side] = 0; grid.cells[j * gw + 2 + side * 2] = 0; }
       }
@@ -679,28 +681,16 @@ const { label } = Astro.props;
       }
       plants = { back, front };
     };
-    /** The ground, drawn once per size: dark brown with a grid of small rounded-square rings in grey above the horizon
-        and rows of short wavy dashes in khaki below it, like the panels of the references. */
+    /** The ground, drawn once per size: dark brown with a very fine grain, one speck per device pixel. */
     let ground: HTMLCanvasElement | null = null;
     const paintGround = () => {
-      const { ground: brown, grey, khaki } = SETTINGS.colours;
       const out = canvasOf(width * ratio, height * ratio), g = out.getContext('2d')!;
-      g.scale(ratio, ratio);
-      g.fillStyle = brown; g.fillRect(0, 0, width, height);
-      const cell = base * SETTINGS.cell, horizon = height * SETTINGS.horizon, step = cell * 4;
-      g.strokeStyle = grey; g.globalAlpha = .07; g.lineWidth = cell * .28;
-      for (let y = step / 2; y < horizon - cell; y += step) for (let x = (width % step) / 2; x < width; x += step) {
-        g.beginPath(); g.roundRect(x - cell * .55, y - cell * .55, cell * 1.1, cell * 1.1, cell * .35); g.stroke();
+      const [r, gr, b] = rgbOf(SETTINGS.colours.ground), img = g.createImageData(out.width, out.height), data = img.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const v = (Math.random() - .5) * 2 * SETTINGS.fineGrain;
+        data[i] = r + v; data[i + 1] = gr + v; data[i + 2] = b + v; data[i + 3] = 255;
       }
-      g.strokeStyle = khaki; g.globalAlpha = .12; g.lineWidth = cell * .24; g.lineCap = 'round'; g.lineJoin = 'round';
-      for (let y = horizon + cell * 1.6, row = 0; y < height; y += cell * 2.4, row++) {
-        g.beginPath();
-        for (let x = -cell + (row % 2) * cell * 1.2; x < width + cell; x += cell * 2.4) {
-          g.moveTo(x, y); g.lineTo(x + cell * .3, y - cell * .22); g.lineTo(x + cell * .6, y);
-        }
-        g.stroke();
-      }
-      g.globalAlpha = 1;
+      g.putImageData(img, 0, 0);
       ground = out;
     };
     const drawPlant = (plant: Plant, t: number, alpha: number) => {
