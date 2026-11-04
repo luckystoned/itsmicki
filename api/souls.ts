@@ -33,13 +33,15 @@ const PHOTOS: Record<string, string> = { 'mv4c70zh-7573a7b7': '/04_SideB/Project
 const MARKS: Record<string, number> = { 'mv459j8u-ca3564ca': 1024, 'mv4c70zh-7573a7b7': 1024 };
 // Coats corrected by hand (by stem), where the photo read them wrong: the coat pattern (0 plain … 3 tortoiseshell), its
 // three colours (light, middle, dark) and markings to add. Malbec is all black; Kimchi all grey with pricked ears;
-// Morita beige; Mirko white; Obi a beagle (tan, a black saddle, white chest, paws, muzzle and tail tip).
+// Morita beige; Mirko white; Obi a beagle (tan, a black saddle, white chest, paws, muzzle and tail tip); Miley lighter,
+// in Morita's beige.
 const LOOKS: Record<string, { pattern?: number; colours?: [string, string, string]; marks?: number }> = {
   'mv42v257-2fdc6494': { pattern: 0, colours: ['#4a4446', '#1c1819', '#120f10'] },
   'mv43lknk-47461bb0': { pattern: 0, marks: 1024 },
   'mv438i86-aaf7d16e': { pattern: 0, colours: ['#a8966a', '#857348', '#5e5233'] },
   'mv459j8u-ca3564ca': { pattern: 0, colours: ['#f4efe6', '#ece5da', '#b9b0a5'] },
   'mv4dm2l9-4064d8f8': { pattern: 0, colours: ['#ece5da', '#a9481d', '#1c1819'], marks: 8 | 16 | 32 | 256 | 512 },
+  'mv6m63zd-1e500404': { pattern: 0, colours: ['#a8966a', '#857348', '#5e5233'] },
 };
 
 const json = (body: unknown, status = 200, cache = 'no-store') =>
