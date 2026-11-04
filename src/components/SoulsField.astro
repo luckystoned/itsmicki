@@ -706,9 +706,12 @@ const { label } = Astro.props;
       }
       plants = { back, front };
     };
-    /** The ground, drawn once per size: dark brown with a very fine grain, one speck per device pixel. */
+    /** The ground, drawn once per size: dark brown with a very fine grain (one speck per device pixel), a faint grid of
+        small rounded-square rings in pinkish grey above the horizon and rows of short wavy dashes in caramel below it,
+        like the panels of the references. */
     let ground: HTMLCanvasElement | null = null;
     const paintGround = () => {
+      const { mauve, caramel } = SETTINGS.colours;
       const out = canvasOf(width * ratio, height * ratio), g = out.getContext('2d')!;
       const [r, gr, b] = rgbOf(SETTINGS.colours.ground), img = g.createImageData(out.width, out.height), data = img.data;
       for (let i = 0; i < data.length; i += 4) {
@@ -716,8 +719,24 @@ const { label } = Astro.props;
         data[i] = r + v; data[i + 1] = gr + v; data[i + 2] = b + v; data[i + 3] = 255;
       }
       g.putImageData(img, 0, 0);
+      g.scale(ratio, ratio);
+      const cell = base * SETTINGS.cell, horizon = height * SETTINGS.horizon, step = cell * 4;
+      g.strokeStyle = mauve; g.globalAlpha = .08; g.lineWidth = cell * .28;
+      for (let y = step / 2; y < horizon - cell; y += step) for (let x = (width % step) / 2; x < width; x += step) {
+        g.beginPath(); g.roundRect(x - cell * .55, y - cell * .55, cell * 1.1, cell * 1.1, cell * .35); g.stroke();
+      }
+      g.strokeStyle = caramel; g.globalAlpha = .3; g.lineWidth = cell * .24; g.lineCap = 'round'; g.lineJoin = 'round';
+      for (let y = horizon + cell * 1.6, row = 0; y < height; y += cell * 2.4, row++) {
+        g.beginPath();
+        for (let x = -cell + (row % 2) * cell * 1.2; x < width + cell; x += cell * 2.4) {
+          g.moveTo(x, y); g.lineTo(x + cell * .3, y - cell * .22); g.lineTo(x + cell * .6, y);
+        }
+        g.stroke();
+      }
+      g.globalAlpha = 1;
       ground = out;
     };
+    const SWAY = Math.PI / 3; // Radians per second: one sway every 6 seconds.
     const drawPlant = (plant: Plant, t: number, alpha: number, now: number) => {
       if (plant.regrow && now < plant.regrow) return;
       context.save();
@@ -734,7 +753,8 @@ const { label } = Astro.props;
       context.translate(plant.x, plant.y);
       // Growing back where it was, from nothing.
       if (plant.regrow) { const grow = ease(Math.min(1, (now - plant.regrow) / 1200)); context.scale(grow, grow); if (grow >= 1) plant.regrow = undefined; }
-      context.rotate(calm ? 0 : Math.sin(t * .7 + plant.phase) * plant.sway + Math.sin(t * 1.9 + plant.phase * 2) * plant.sway * .25 + plant.bend);
+      // (Its sway repeats every 6 seconds, so a recorded loop of it closes seamlessly.)
+      context.rotate(calm ? 0 : Math.sin(t * SWAY + plant.phase) * plant.sway + Math.sin(t * SWAY * 2 + plant.phase * 2) * plant.sway * .25 + plant.bend);
       context.drawImage(plant.sprite, -plant.w / 2, -plant.h, plant.w, plant.h);
       context.restore();
     };
