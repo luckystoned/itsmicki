@@ -431,182 +431,79 @@ const { label } = Astro.props;
       g.putImageData(img, 0, 0);
     }
 
-    /** A pet as a blocky figure, facing right, in the palette colours nearest its own and its markings: a body, a head
-        with ears (pointed for a cat, floppy with a snout for a dog), a tail, and four legs on their own so they can walk
-        and fold. Everything is drawn in unit space (feet at y = 1, about one unit tall), then rebuilt from grid cells
-        with rounded corners, about twelve to a unit. */
+    /** A pet built cell by cell, like the animals of the references, facing right: a long block for the body, a square
+        head on its front end with one-cell ears (or a dark floppy ear, and a snout, for a dog), a tail standing up from
+        its back and four legs a cell wide, on their own so they can walk and fold. In the palette colours nearest its
+        own, its coat and markings painted on the cells; about eleven cells from its feet to the tips of its ears. */
     const paintFigure = (soul: Soul, unit: number): Figure => {
       const { look } = soul, dog = look.kind === 'dog';
       const marks = look.marks ?? 0, has = (mark: keyof typeof MARKS) => (marks & MARKS[mark]) !== 0;
       const floppy = dog && !has('pointedEars');
       let n = hash(soul.id) || 1;
       const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
-      const [light, mid, dark] = coatColours(look), { pink } = SETTINGS.colours, palette = [...new Set([mid, light, dark, pink])];
-      const cell = unit / 15, cellPx = cell * ratio; // Grid cell, in units of the figure and in canvas pixels.
-      // Proportions, a little different for every one; small dogs have shorter legs and bigger heads, big dogs longer.
-      // Rounder, softer volumes than a drawing, like the references; and as thin or chubby as they are (build 0–9).
-      const build = .72 + look.build * .08;
-      const legScale = dog ? [.66, .9, 1.02][look.size] : [.78, .88, .92][look.size];
-      const legTop = 1 - (dog ? .34 : .3) * legScale * (.94 + random() * .12);
-      const bodyLength = (dog ? .64 : .56) * (.95 + random() * .1) * (.94 + build * .06), bodyDepth = (dog ? .34 : .32) * (.94 + random() * .12) * build;
-      const bodyCx = .56, bodyCy = legTop - bodyDepth * .28;
-      const headR = (dog ? [.18, .155, .145][look.size] : [.18, .16, .15][look.size]) * (.95 + random() * .1) * (.94 + build * .06);
-      const headX = bodyCx + bodyLength / 2 + headR * .4, headY = bodyCy - bodyDepth * .5 - headR * .5;
-      const eyeY = headY - headR * .1, eyeXs = dog ? [headX + headR * .05, headX + headR * .55] : [headX - headR * .15, headX + headR * .45];
-      // A floppy ear hangs from the back of the head, by the cheek.
-      const earX = headX - headR * .55, earY = headY + headR * .32;
-      // At least a cell wide, so no leg is lost to the grid.
-      const legW = Math.max(1.3 / 15, (dog ? [.09, .095, .1][look.size] : .08) * (.85 + build * .15));
-      const pad = .3; // Room around the figure, in units.
-      const W = (1.45 + pad * 2) * unit, H = (1.15 + pad * 2) * unit, ox = pad * unit, oy = (pad + .15) * unit; // Unit (0,0) → canvas (ox,oy).
-      const X = (u: number) => ox + u * unit, Y = (u: number) => oy + u * unit;
-
-      // Its coat: one flat colour, like a print; the markings in its lighter and darker ones.
-      const coat = (g: CanvasRenderingContext2D, w: number, h: number) => { g.fillStyle = mid; g.fillRect(0, 0, w, h); };
-      const finish = (shape: HTMLCanvasElement, colour: (g: CanvasRenderingContext2D) => void, ox = 0, oy = 0) => {
-        const c = shape.getContext('2d')!;
-        c.globalCompositeOperation = 'source-atop';
-        colour(c);
-        return blockify(shape, cellPx, palette, .42, ox, oy);
-      };
-
-      // The body, head, ears, tail (and a dog's snout).
-      const shape = canvasOf(W * ratio, H * ratio), s = shape.getContext('2d')!;
-      s.scale(ratio, ratio); s.fillStyle = '#fff'; s.strokeStyle = '#fff'; s.lineCap = 'round';
-      s.beginPath(); s.ellipse(X(bodyCx), Y(bodyCy), bodyLength / 2 * unit, bodyDepth / 2 * unit, 0, 0, Math.PI * 2); s.fill();
-      // A round haunch at the back and a full chest at the front, for volume.
-      s.beginPath(); s.arc(X(bodyCx - bodyLength * .3), Y(bodyCy + bodyDepth * .05), bodyDepth * .55 * unit, 0, Math.PI * 2); s.fill();
-      s.beginPath(); s.arc(X(bodyCx + bodyLength * .3), Y(bodyCy - bodyDepth * .05), bodyDepth * .5 * unit, 0, Math.PI * 2); s.fill();
-      // Neck, from the shoulders up to the head.
-      s.beginPath(); s.moveTo(X(bodyCx + bodyLength * .28), Y(bodyCy - bodyDepth * .35)); s.lineTo(X(headX - headR * .3), Y(headY)); s.lineWidth = headR * 1.3 * unit; s.stroke();
-      s.beginPath(); s.arc(X(headX), Y(headY), headR * unit, 0, Math.PI * 2); s.fill();
-      if (dog) {
-        s.beginPath(); s.ellipse(X(headX + headR * .85), Y(headY + headR * .35), headR * .62 * unit, headR * .45 * unit, .1, 0, Math.PI * 2); s.fill();
+      const [light, mid, dark] = coatColours(look), colours = [mid, light, dark, SETTINGS.colours.pink];
+      const MID = 0, LIGHT = 1, DARK = 2, PINK = 3;
+      const cell = unit / 11, cellPx = cell * ratio;
+      // Proportions, in cells: small dogs stand low, big ones tall; chubby ones are deeper, thin ones shallower.
+      const legLen = dog ? [2, 3, 4][look.size] : 3;
+      const bodyH = look.build <= 2 ? 2 : look.build >= 7 ? 4 : 3;
+      const bodyLen = (dog ? [7, 8, 9][look.size] : 7) + (random() < .5 ? 0 : 1);
+      const headH = 4, snout = dog ? 2 : 0;
+      const hx0 = bodyLen - 3, hx1 = bodyLen; // The head's columns (it overhangs the chest by one).
+      const gw = hx1 + 1 + snout, gh = headH + bodyH; // Row 0 is for the ears; the body's top row is the head's last.
+      const grid = gridOf(gw, gh);
+      const set = (i: number, j: number, c: number) => { if (i >= 0 && j >= 0 && i < gw && j < gh) grid.cells[j * gw + i] = c; };
+      const get = (i: number, j: number) => (i >= 0 && j >= 0 && i < gw && j < gh ? grid.cells[j * gw + i] : -1);
+      for (let j = headH; j < gh; j++) for (let i = 0; i < bodyLen; i++) set(i, j, MID); // Body
+      for (let j = 1; j <= headH; j++) for (let i = hx0; i <= hx1; i++) set(i, j, MID); // Head
+      if (dog) { set(hx1 + 1, 2, MID); set(hx1 + 2, 2, DARK); set(hx1 + 1, 3, MID); set(hx1 + 2, 3, MID); } // Snout, nose at its tip
+      else set(hx1, 3, PINK); // A cat's pink nose
+      // Coat.
+      if (look.pattern === 1) {
+        for (let i = 1; i < bodyLen - 1; i += 3) { set(i, headH, DARK); if (bodyH > 2) set(i, headH + 1, DARK); }
+        set(hx0 + 1, 1, DARK);
+      } else if (look.pattern === 2) {
+        for (let i = 0; i < bodyLen; i++) { set(i, headH, DARK); if (bodyH > 3) set(i, headH + 1, DARK); set(i, gh - 1, LIGHT); }
+        for (let i = hx0; i <= hx1; i++) set(i, 1, DARK);
+        if (dog) { set(hx1 + 1, 3, LIGHT); set(hx1 + 2, 3, LIGHT); }
+      } else if (look.pattern === 3) {
+        for (let j = 1; j < gh; j++) for (let i = 0; i < gw; i++) if (get(i, j) === MID) { const r = random(); if (r < .32) set(i, j, DARK); else if (r < .45) set(i, j, LIGHT); }
       }
-      // Ears: floppy ones hang by the cheeks (most dogs); pointed ones stand up (cats, and dogs with pricked ears).
-      if (floppy) {
-        s.beginPath(); s.ellipse(X(earX), Y(earY), headR * .36 * unit, headR * .78 * unit, .35, 0, Math.PI * 2); s.fill();
-      } else {
-        for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
-          s.beginPath();
-          s.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .55));
-          s.lineTo(X(headX + headR * tip), Y(headY - headR * 1.55));
-          s.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .75));
-          s.closePath(); s.fill();
-        }
-      }
-      // Tail, on its own so it can move: a cat's rises in a soft curve; a dog's is shorter and points up.
-      const tailBaseX = bodyCx - bodyLength / 2 + .03, tailBaseY = bodyCy - bodyDepth * .2;
-      const tailShape = canvasOf(W * ratio, H * ratio), ts = tailShape.getContext('2d')!;
-      ts.scale(ratio, ratio); ts.strokeStyle = '#fff'; ts.lineCap = 'round'; ts.lineWidth = cell * 1.4;
-      ts.beginPath(); ts.moveTo(X(tailBaseX + .03), Y(tailBaseY + .01));
-      const tipX = tailBaseX - (dog ? .14 : .16), tipY = tailBaseY - (dog ? .2 : .34 + random() * .06);
-      if (dog) ts.quadraticCurveTo(X(tailBaseX - .12), Y(tailBaseY - .02), X(tipX), Y(tipY));
-      else ts.quadraticCurveTo(X(tailBaseX - .2), Y(tailBaseY - .02), X(tipX), Y(tipY));
-      ts.stroke();
-      // Tortoiseshell: blotches of its two darker colours, all over (the same scatter for body, tail and legs).
-      const blotches = (c: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, count: number) => {
-        let b = hash(soul.id + 'carey') || 7;
-        const next = () => { b = (b * 16807) % 2147483647; return (b - 1) / 2147483646; };
-        for (let i = 0; i < count; i++) {
-          c.fillStyle = next() < .55 ? dark : light;
-          c.beginPath(); c.ellipse(X(x0 + next() * (x1 - x0)), Y(y0 + next() * (y1 - y0)), (.06 + next() * .06) * unit, (.05 + next() * .04) * unit, next() * Math.PI, 0, Math.PI * 2); c.fill();
-        }
-      };
-      const white = light;
-      const tail = finish(tailShape, (c) => {
-        c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
-        coat(c, W, H);
-        if (look.pattern === 1) { c.fillStyle = dark; for (let i = 1; i <= 2; i++) { c.beginPath(); c.arc(X(tailBaseX - .05 - i * .05), Y(tailBaseY - i * .12), cell * .9, 0, Math.PI * 2); c.fill(); } }
-        if (look.pattern === 2) { c.fillStyle = dark; c.fillRect(0, 0, W, H); }
-        if (look.pattern === 3) blotches(c, tipX - .06, tipY - .02, tailBaseX + .04, tailBaseY + .04, 3);
-        if (has('tailTip')) { c.fillStyle = white; c.beginPath(); c.arc(X(tipX), Y(tipY), cell * 1.2, 0, Math.PI * 2); c.fill(); }
-      });
-      const body = finish(shape, (c) => {
-        c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
-        coat(c, W, H);
-        // Markings.
-        if (look.pattern === 1) {
-          // Tabby: stripes a cell wide down the back, two on the forehead (bands on the tail, painted with it).
-          c.strokeStyle = dark; c.lineCap = 'round'; c.lineWidth = cell * 1.1;
-          for (let i = 0; i < 4; i++) {
-            const x = bodyCx - bodyLength * .36 + i * bodyLength * .22;
-            c.beginPath(); c.moveTo(X(x - .02), Y(bodyCy - bodyDepth * .55)); c.quadraticCurveTo(X(x + .03), Y(bodyCy), X(x - .01), Y(bodyCy + bodyDepth * .3)); c.stroke();
-          }
-          for (const i of [-1, 1]) { c.beginPath(); c.moveTo(X(headX + i * headR * .35), Y(headY - headR * .85)); c.lineTo(X(headX + i * headR * .3), Y(headY - headR * .4)); c.stroke(); }
-        } else if (look.pattern === 2) {
-          // Patches: the darkest colour on the back and head, the lightest on the chest, belly and muzzle.
-          c.fillStyle = dark;
-          c.beginPath(); c.ellipse(X(bodyCx - bodyLength * .05), Y(bodyCy - bodyDepth * .2), bodyLength * .38 * unit, bodyDepth * .35 * unit, 0, 0, Math.PI * 2); c.fill();
-          c.beginPath(); c.arc(X(headX), Y(headY - headR * .3), headR * .85 * unit, 0, Math.PI * 2); c.fill();
-          c.fillStyle = light;
-          c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .1), Y(bodyCy + bodyDepth * .3), bodyLength * .3 * unit, bodyDepth * .22 * unit, 0, 0, Math.PI * 2); c.fill();
-          c.beginPath(); c.ellipse(X(headX + headR * .3), Y(headY + headR * .45), headR * .5 * unit, headR * .4 * unit, 0, 0, Math.PI * 2); c.fill();
-        }
-        if (look.pattern === 3) blotches(c, bodyCx - bodyLength * .55, headY - headR * 1.2, headX + headR * 1.2, bodyCy + bodyDepth * .5, 12);
-        // Markings asked for in the form.
-        if (has('saddle')) { c.fillStyle = dark; c.beginPath(); c.ellipse(X(bodyCx - bodyLength * .08), Y(bodyCy - bodyDepth * .32), bodyLength * .24 * unit, bodyDepth * .22 * unit, -.1, 0, Math.PI * 2); c.fill(); }
-        if (has('chest')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(bodyCx + bodyLength * .34), Y(bodyCy + bodyDepth * .05), bodyDepth * .3 * unit, bodyDepth * .45 * unit, .3, 0, Math.PI * 2); c.fill(); }
-        if (has('ears')) {
-          c.fillStyle = dark;
-          if (!floppy) for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
-            c.beginPath(); c.moveTo(X(headX + headR * (bx - .3)), Y(headY - headR * .5)); c.lineTo(X(headX + headR * tip), Y(headY - headR * 1.6)); c.lineTo(X(headX + headR * (bx + .45)), Y(headY - headR * .7)); c.closePath(); c.fill();
-          }
-        }
-        if (has('mask')) { c.fillStyle = dark; c.beginPath(); c.ellipse(X((eyeXs[0] + eyeXs[1]) / 2), Y(eyeY), (eyeXs[1] - eyeXs[0]) * .5 * unit + headR * .3 * unit, headR * .34 * unit, 0, 0, Math.PI * 2); c.fill(); }
-        if (has('eye')) { c.fillStyle = has('eyeLight') ? white : dark; c.beginPath(); c.ellipse(X(eyeXs[1]), Y(eyeY), headR * .36 * unit, headR * .31 * unit, -.2, 0, Math.PI * 2); c.fill(); }
-        if (has('blaze')) { c.strokeStyle = white; c.lineCap = 'round'; c.lineWidth = cell; c.beginPath(); c.moveTo(X(headX + headR * .12), Y(headY - headR * .85)); c.lineTo(X(headX + headR * (dog ? .7 : .35)), Y(headY + headR * .3)); c.stroke(); }
-        if (has('muzzle')) { c.fillStyle = white; c.beginPath(); c.ellipse(X(headX + headR * (dog ? .9 : .45)), Y(headY + headR * (dog ? .4 : .45)), headR * (dog ? .55 : .42) * unit, headR * .36 * unit, .1, 0, Math.PI * 2); c.fill(); }
-        // Floppy ears in its darker colour, so they read against the head.
-        if (floppy) {
-          c.save();
-          c.translate(X(earX), Y(earY)); c.rotate(.35);
-          c.fillStyle = dark;
-          c.beginPath(); c.ellipse(0, 0, headR * .36 * unit, headR * .78 * unit, 0, 0, Math.PI * 2); c.fill();
-          c.restore();
-        }
-        // Inside its pointed ears, a little pink; and its nose: pink on a cat, dark at the tip of a dog's snout.
-        if (!floppy && !has('ears')) {
-          c.fillStyle = pink;
-          for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
-            c.beginPath(); c.moveTo(X(headX + headR * (bx - .12)), Y(headY - headR * .7)); c.lineTo(X(headX + headR * (tip * .9 + .02)), Y(headY - headR * 1.28)); c.lineTo(X(headX + headR * (bx + .3)), Y(headY - headR * .82)); c.closePath(); c.fill();
-          }
-        }
-        c.fillStyle = dog ? dark : pink;
-        c.beginPath();
-        if (dog) c.ellipse(X(headX + headR * 1.4), Y(headY + headR * .2), cell * 1.1, cell * .9, 0, 0, Math.PI * 2);
-        else c.ellipse(X(headX + headR * .78), Y(headY + headR * .3), cell * .9, cell * .75, 0, 0, Math.PI * 2);
-        c.fill();
-      });
-
-      // The legs: back pair and front pair, the far one of each a little darker.
+      // Markings asked for in the form.
+      if (has('saddle')) for (let i = 1; i < hx0; i++) set(i, headH, DARK);
+      if (has('chest')) for (let j = headH + 1; j < gh; j++) { set(bodyLen - 1, j, LIGHT); set(bodyLen - 2, j, LIGHT); }
+      if (has('mask')) for (let i = hx0; i <= hx1; i++) set(i, 2, DARK);
+      if (has('eye')) { const c = has('eyeLight') ? LIGHT : DARK; set(hx1 - 1, 1, c); set(hx1 - 1, 2, c); set(hx1, 2, c); }
+      if (has('blaze')) { set(hx1, 1, LIGHT); set(hx1, 2, LIGHT); }
+      if (has('muzzle')) { if (dog) { set(hx1 + 1, 3, LIGHT); set(hx1 + 2, 3, LIGHT); set(hx1 + 1, 2, LIGHT); } else set(hx1 - 1, 3, LIGHT); }
+      // Ears: one-cell points (cats, and dogs with pricked ears), or a dark floppy ear down the back of a dog's head.
+      if (floppy) { set(hx0, 1, DARK); set(hx0, 2, DARK); set(hx0, 3, DARK); }
+      else { const c = has('ears') ? DARK : get(hx0, 1) === DARK ? DARK : MID; set(hx0, 0, c); set(hx1, 0, c); }
+      const bodyCanvas = canvasOf(gw * cellPx, gh * cellPx);
+      drawCells(bodyCanvas.getContext('2d')!, grid, cellPx, colours);
+      // In figure space, the origin is the middle of its feet.
+      const bx = -bodyLen / 2 * cell, by = -(gh + legLen) * cell;
+      // The tail: a column standing up from the back (a cat's long, a dog's short), with one more cell hidden behind the body.
+      const tailLen = dog ? 2 + (random() < .5 ? 0 : 1) : 4 + (random() < .5 ? 0 : 1);
+      const tail = gridOf(1, tailLen + 1);
+      for (let j = 0; j <= tailLen; j++) tail.cells[j] = look.pattern === 2 ? DARK : look.pattern === 1 && j % 2 ? DARK : look.pattern === 3 && random() < .4 ? DARK : MID;
+      if (has('tailTip')) tail.cells[0] = LIGHT;
+      const tailCanvas = canvasOf(cellPx, (tailLen + 1) * cellPx);
+      drawCells(tailCanvas.getContext('2d')!, tail, cellPx, colours);
+      // The legs: a back pair and a front pair, a cell apart; the far one of each in its darker colour.
       const legs: Leg[] = [];
-      const legLength = 1 - legTop;
-      for (const [lx, near, front] of [[bodyCx - bodyLength * .32, false, false], [bodyCx - bodyLength * .2, true, false], [bodyCx + bodyLength * .26, false, true], [bodyCx + bodyLength * .38, true, true]] as Array<[number, boolean, boolean]>) {
-        const lw = (legW + .3) * unit, lh = (legLength + .3) * unit;
-        const leg = canvasOf(lw * ratio, lh * ratio), l = leg.getContext('2d')!;
-        l.scale(ratio, ratio); l.fillStyle = '#fff';
-        const cx = lw / 2, top = .12 * unit;
-        l.beginPath(); l.roundRect(cx - legW / 2 * unit, top, legW * unit, legLength * unit, legW / 2 * unit); l.fill();
-        l.beginPath(); l.ellipse(cx + legW * .2 * unit, top + legLength * unit - legW * .25 * unit, legW * .62 * unit, legW * .42 * unit, 0, 0, Math.PI * 2); l.fill();
-        const painted = finish(leg, (c) => {
-          c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio);
-          // The far legs in its darker colour, for depth.
-          c.fillStyle = near ? mid : dark; c.fillRect(0, 0, lw, lh);
-          if (look.pattern === 2) { c.fillStyle = light; c.fillRect(0, top + legLength * unit * .72, lw, lh); }
-          if (has('paws')) { c.fillStyle = white; c.fillRect(0, top + legLength * unit * .6, lw, lh); }
-          if (look.pattern === 3) { c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio); c.translate(-X(lx) + cx, -Y(legTop) + top); blotches(c, lx - legW, legTop, lx + legW, legTop + legLength * .6, 3); c.setTransform(1, 0, 0, 1, 0, 0); c.scale(ratio, ratio); }
-          if (look.pattern === 1 && near) { c.fillStyle = dark; c.fillRect(0, top + legLength * unit * .35, lw, cell); }
-        }, alignTo(cx * ratio, cellPx), alignTo(top * ratio, cellPx));
-        // In figure space (origin at the middle of its feet): where the leg hangs from.
-        legs.push({ canvas: painted, x: (lx - bodyCx) * unit, y: (legTop - 1) * unit, w: lw, h: lh, pivotX: cx, pivotY: top, near, front });
+      for (const [col, near, front] of [[0, false, false], [2, true, false], [bodyLen - 3, false, true], [bodyLen - 1, true, true]] as Array<[number, boolean, boolean]>) {
+        const leg = gridOf(1, legLen);
+        for (let j = 0; j < legLen; j++) leg.cells[j] = near ? (look.pattern === 3 && random() < .3 ? DARK : MID) : DARK;
+        if (has('paws') || (look.pattern === 2 && near)) leg.cells[legLen - 1] = LIGHT;
+        const c = canvasOf(cellPx, legLen * cellPx);
+        drawCells(c.getContext('2d')!, leg, cellPx, colours);
+        legs.push({ canvas: c, x: bx + (col + .5) * cell, y: -legLen * cell, w: cell, h: legLen * cell, pivotX: cell / 2, pivotY: 0, near, front });
       }
-      // Eyes: round holes.
-      const eyes = eyeXs.map((ex) => ({ x: (ex - bodyCx) * unit, y: (eyeY - 1) * unit, dark: false }));
       return {
-        body: { canvas: body, x: -X(bodyCx), y: -Y(1), w: W, h: H },
-        tail: { canvas: tail, x: -X(bodyCx), y: -Y(1), w: W, h: H, pivotX: X(tailBaseX), pivotY: Y(tailBaseY) },
-        legs, eyes, eyeR: cell * .6, legLength: legLength * unit, unit,
+        body: { canvas: bodyCanvas, x: bx, y: by, w: gw * cell, h: gh * cell },
+        tail: { canvas: tailCanvas, x: bx, y: by + (headH - tailLen) * cell, w: cell, h: (tailLen + 1) * cell, pivotX: cell / 2, pivotY: tailLen * cell },
+        legs, eyes: [{ x: bx + (hx1 - .5) * cell, y: by + 2.5 * cell, dark: false }], eyeR: cell * .34, legLength: legLen * cell, unit,
       };
     };
 
