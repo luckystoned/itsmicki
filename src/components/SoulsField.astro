@@ -441,8 +441,8 @@ const { label } = Astro.props;
       const floppy = dog && !has('pointedEars');
       let n = hash(soul.id) || 1;
       const random = () => { n = (n * 16807) % 2147483647; return (n - 1) / 2147483646; };
-      const [light, mid, dark] = coatColours(look), palette = [...new Set([mid, light, dark])];
-      const cell = unit / 12, cellPx = cell * ratio; // Grid cell, in units of the figure and in canvas pixels.
+      const [light, mid, dark] = coatColours(look), { pink } = SETTINGS.colours, palette = [...new Set([mid, light, dark, pink])];
+      const cell = unit / 20, cellPx = cell * ratio; // Grid cell, in units of the figure and in canvas pixels.
       // Proportions, a little different for every one; small dogs have shorter legs and bigger heads, big dogs longer.
       // Rounder, softer volumes than a drawing, like the references; and as thin or chubby as they are (build 0–9).
       const build = .72 + look.build * .08;
@@ -456,7 +456,7 @@ const { label } = Astro.props;
       // A floppy ear hangs from the back of the head, by the cheek.
       const earX = headX - headR * .55, earY = headY + headR * .32;
       // At least a cell wide, so no leg is lost to the grid.
-      const legW = Math.max(1.05 / 12, (dog ? [.09, .095, .1][look.size] : .08) * (.85 + build * .15));
+      const legW = Math.max(1.7 / 20, (dog ? [.09, .095, .1][look.size] : .08) * (.85 + build * .15));
       const pad = .3; // Room around the figure, in units.
       const W = (1.45 + pad * 2) * unit, H = (1.15 + pad * 2) * unit, ox = pad * unit, oy = (pad + .15) * unit; // Unit (0,0) → canvas (ox,oy).
       const X = (u: number) => ox + u * unit, Y = (u: number) => oy + u * unit;
@@ -498,7 +498,7 @@ const { label } = Astro.props;
       // Tail, on its own so it can move: a cat's rises in a soft curve; a dog's is shorter and points up.
       const tailBaseX = bodyCx - bodyLength / 2 + .03, tailBaseY = bodyCy - bodyDepth * .2;
       const tailShape = canvasOf(W * ratio, H * ratio), ts = tailShape.getContext('2d')!;
-      ts.scale(ratio, ratio); ts.strokeStyle = '#fff'; ts.lineCap = 'round'; ts.lineWidth = cell * 1.1;
+      ts.scale(ratio, ratio); ts.strokeStyle = '#fff'; ts.lineCap = 'round'; ts.lineWidth = cell * 1.8;
       ts.beginPath(); ts.moveTo(X(tailBaseX + .03), Y(tailBaseY + .01));
       const tipX = tailBaseX - (dog ? .14 : .16), tipY = tailBaseY - (dog ? .2 : .34 + random() * .06);
       if (dog) ts.quadraticCurveTo(X(tailBaseX - .12), Y(tailBaseY - .02), X(tipX), Y(tipY));
@@ -528,7 +528,7 @@ const { label } = Astro.props;
         // Markings.
         if (look.pattern === 1) {
           // Tabby: stripes a cell wide down the back, two on the forehead (bands on the tail, painted with it).
-          c.strokeStyle = dark; c.lineCap = 'round'; c.lineWidth = cell;
+          c.strokeStyle = dark; c.lineCap = 'round'; c.lineWidth = cell * 1.3;
           for (let i = 0; i < 4; i++) {
             const x = bodyCx - bodyLength * .36 + i * bodyLength * .22;
             c.beginPath(); c.moveTo(X(x - .02), Y(bodyCy - bodyDepth * .55)); c.quadraticCurveTo(X(x + .03), Y(bodyCy), X(x - .01), Y(bodyCy + bodyDepth * .3)); c.stroke();
@@ -565,6 +565,18 @@ const { label } = Astro.props;
           c.beginPath(); c.ellipse(0, 0, headR * .36 * unit, headR * .78 * unit, 0, 0, Math.PI * 2); c.fill();
           c.restore();
         }
+        // Inside its pointed ears, a little pink; and its nose: pink on a cat, dark at the tip of a dog's snout.
+        if (!floppy && !has('ears')) {
+          c.fillStyle = pink;
+          for (const [bx, tip] of [[-.55, -.62], [.35, .5]] as Array<[number, number]>) {
+            c.beginPath(); c.moveTo(X(headX + headR * (bx - .12)), Y(headY - headR * .7)); c.lineTo(X(headX + headR * (tip * .9 + .02)), Y(headY - headR * 1.28)); c.lineTo(X(headX + headR * (bx + .3)), Y(headY - headR * .82)); c.closePath(); c.fill();
+          }
+        }
+        c.fillStyle = dog ? dark : pink;
+        c.beginPath();
+        if (dog) c.ellipse(X(headX + headR * 1.4), Y(headY + headR * .2), cell * 1.3, cell * 1, 0, 0, Math.PI * 2);
+        else c.ellipse(X(headX + headR * .78), Y(headY + headR * .3), cell * 1, cell * .8, 0, 0, Math.PI * 2);
+        c.fill();
       });
 
       // The legs: back pair and front pair, the far one of each a little darker.
@@ -594,7 +606,7 @@ const { label } = Astro.props;
       return {
         body: { canvas: body, x: -X(bodyCx), y: -Y(1), w: W, h: H },
         tail: { canvas: tail, x: -X(bodyCx), y: -Y(1), w: W, h: H, pivotX: X(tailBaseX), pivotY: Y(tailBaseY) },
-        legs, eyes, eyeR: cell * .38, legLength: legLength * unit, unit,
+        legs, eyes, eyeR: cell * .8, legLength: legLength * unit, unit,
       };
     };
 
@@ -607,44 +619,51 @@ const { label } = Astro.props;
     let keeperArms: { reachUpper: Limb; reachLower: Limb; restUpper: Limb; restLower: Limb } | null = null;
     const UPPER = .13, FOREARM = .15; // Her upper arm and forearm, as shares of her height.
     const KEEPER_PAD = .55; // Room around her canvas, as a share of her height.
-    // Her, one letter per cell (h hair, s skin, c cheek, m mouth, w collar, d dress, f dots on it, o shoes; a dot is
-    // empty, so the two inside her face are her eyes).
-    const KEEPER_ART = [
-      '......hhhhh......',
-      '....hhhhhhhhh....',
-      '...hhhhhhhhhhh...',
-      '..hhhhhhhhhhhhh..',
-      '..hhhhhhhhhhhhh..',
-      '..hhssssssssshh..',
-      '..hhss.sss.sshh..',
-      '..hhcssssssschh..',
-      '..hhssssmsssshh..',
-      '..hh.sssssss.hh..',
-      '..hh...sss...hh..',
-      '......wwwww......',
-      '....dddwwwddd....',
-      '....ddddwdddd....',
-      '....ddddddddd....',
-      '....ddddddddd....',
-      '...ddfdddddfddd..',
-      '...ddddddddddd...',
-      '..ddddddddddddd..',
-      '..ddddddfdddddd..',
-      '.ddddddddddddddd.',
-      '.ddfdddddddddfdd.',
-      '.ddddddddddddddd.',
-      '..ddddddddddddd..',
-      ...Array(7).fill('......s...s......'),
-      '.....oo...oo.....',
-    ];
-    const KEEPER_CELLS = KEEPER_ART.length; // Grid cells over her height.
+    // Her, built cell by cell on a 34 × 64 grid: colour indices into the list in paintKeeper (-1 empty, so the holes in
+    // her face are her eyes and the hearts of the flowers on her dress show the ground).
+    const KEEPER_GRID = (() => {
+      const gw = 34, gh = 64, grid = gridOf(gw, gh);
+      const HAIR = 0, SKIN = 1, CHEEK = 2, MOUTH = 3, COLLAR = 4, DRESS = 5, DOTS = 6, SHOES = 7, SOCKS = 8;
+      const set = (i: number, j: number, c: number) => { if (i >= 0 && j >= 0 && i < gw && j < gh) grid.cells[j * gw + i] = c; };
+      const ellipse = (cx: number, cy: number, rx: number, ry: number, c: number) => {
+        for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) if (((i + .5 - cx) / rx) ** 2 + ((j + .5 - cy) / ry) ** 2 <= 1) set(i, j, c);
+      };
+      const rect = (i0: number, j0: number, i1: number, j1: number, c: number) => { for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) set(i, j, c); };
+      // A bob: a round crown, falling straight to the chin, a little wider at the ends.
+      ellipse(17, 11, 12.5, 10.5, HAIR); rect(5, 11, 28, 21, HAIR); rect(4, 18, 29, 22, HAIR);
+      // Her face, an oval, under a fringe with a wavy edge.
+      ellipse(17, 15.5, 8.6, 8.2, SKIN);
+      rect(9, 5, 25, 8, HAIR);
+      for (let i = 9; i <= 25; i++) set(i, 9, (i - 9) % 4 < 2 ? HAIR : SKIN);
+      // Eyes: two round holes; pink cheeks; a small smile.
+      rect(12, 13, 13, 14, -1); rect(21, 13, 22, 14, -1);
+      rect(10, 17, 11, 17, CHEEK); rect(23, 17, 24, 17, CHEEK);
+      set(15, 18, MOUTH); set(19, 18, MOUTH); rect(16, 19, 18, 19, MOUTH);
+      // Neck, and a round (Peter Pan) collar.
+      rect(15, 22, 19, 24, SKIN);
+      // The dress: an A-line from the shoulders to a rounded hem above the knee.
+      for (let j = 24; j <= 46; j++) {
+        const half = 6 + (j - 24) * .42 - (j >= 45 ? (j - 44) * 1.2 : 0);
+        for (let i = 0; i < gw; i++) if (Math.abs(i + .5 - 17) <= half) set(i, j, DRESS);
+      }
+      ellipse(14.2, 25, 3.4, 1.8, COLLAR); ellipse(19.8, 25, 3.4, 1.8, COLLAR); rect(16, 23, 18, 23, COLLAR);
+      // Little flowers on the dress: four petals around a hole.
+      for (const [x, y] of [[12, 31], [22, 29], [17, 36], [9, 41], [25, 40], [17, 43]]) {
+        set(x, y - 1, DOTS); set(x - 1, y, DOTS); set(x + 1, y, DOTS); set(x, y + 1, DOTS); set(x, y, -1);
+      }
+      // Thin legs, ankle socks and Mary Janes.
+      rect(13, 47, 14, 60, SKIN); rect(20, 47, 21, 60, SKIN);
+      rect(13, 58, 14, 60, SOCKS); rect(20, 58, 21, 60, SOCKS);
+      rect(11, 61, 15, 63, SHOES); rect(19, 61, 23, 63, SHOES);
+      return grid;
+    })();
+    const KEEPER_CELLS = KEEPER_GRID.gh; // Grid cells over her height.
     const paintKeeper = (size: number) => {
       const { lime, pink, rust, skin } = SETTINGS.colours;
       const w = size * .56, pad = size * KEEPER_PAD, u = size, cell = u / KEEPER_CELLS;
       const W = w + pad * 2, H = size + pad * 2, cx = W / 2, top = pad;
-      const letters = 'hscmwdfo', colours = [rust, skin, pink, '#c4607c', lime, pink, lime, rust]; // (Her mouth a deeper pink.)
-      const gw = KEEPER_ART[0].length, grid = gridOf(gw, KEEPER_CELLS);
-      KEEPER_ART.forEach((row, j) => [...row].forEach((letter, i) => { grid.cells[j * gw + i] = letters.indexOf(letter); }));
+      const colours = [rust, skin, pink, '#c4607c', lime, pink, lime, rust, lime]; // (Her mouth a deeper pink.)
+      const gw = KEEPER_GRID.gw, grid = KEEPER_GRID;
       const out = canvasOf(W * ratio, H * ratio), g = out.getContext('2d')!;
       const cellPx = cell * ratio;
       drawCells(g, grid, cellPx, colours, (cx - gw * cell / 2) * ratio, top * ratio);
@@ -666,16 +685,16 @@ const { label } = Astro.props;
       };
       // (A little thicker than a drawn arm, so the grid keeps them whole.)
       keeperArms = {
-        reachUpper: limb(UPPER * u, .032 * u, .024 * u, pink, false, true),
-        reachLower: limb(FOREARM * u, .02 * u, .018 * u, skin, true, false),
-        restUpper: limb(UPPER * u, .032 * u, .024 * u, pink, false, true),
-        restLower: limb(FOREARM * u, .02 * u, .018 * u, skin, true, false),
+        reachUpper: limb(UPPER * u, .03 * u, .02 * u, pink, false, true),
+        reachLower: limb(FOREARM * u, .017 * u, .015 * u, skin, true, false),
+        restUpper: limb(UPPER * u, .03 * u, .02 * u, pink, false, true),
+        restLower: limb(FOREARM * u, .017 * u, .015 * u, skin, true, false),
       };
     };
     // Until when she is stroking an animal, and with which hand (-1 our left, 1 our right).
     let petting = 0, pettingSide: -1 | 1 = -1;
     // Her shoulders and her hands, in the frame (shares of width and height).
-    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.12 * K() * height) / width, y: 1.02 - K() + .38 * K() });
+    const shoulder = (side: -1 | 1) => ({ x: .5 + side * (.105 * K() * height) / width, y: 1.02 - K() + .385 * K() });
     // At rest (angles from straight down; positive swings to her right, our left): both arms hang a little out with the
     // elbows softly bent towards the animals, one to each side, the second a touch closer to her.
     const UPPER_ANGLE = .26, FOREARM_ANGLE = .5, REST_UPPER = -.22, REST_FOREARM = -.4;
