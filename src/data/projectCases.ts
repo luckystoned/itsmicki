@@ -585,7 +585,7 @@ export const sideBCases: Record<SideBCaseSlug, ProjectCase> = {
     nutshell: `I created a space where those who are no longer with us can be left in the care of a caregiver. Here, our animals can find one another and keep each other company for a while, until the day we’re reunited with them.`,
     drags: [],
     blocks: [
-      single(souls('A soft, glowing caregiver surrounded by luminous cats and dogs that visitors have left in her care.', '1556 / 870')),
+      single(souls('A blocky caregiver in a pink dress, drawn like a printed textile on dark brown, surrounded by the cats and dogs visitors have left in her care, among cross-shaped lime and pink flowers.', '1556 / 870')),
     ],
     credits: [],
   },
