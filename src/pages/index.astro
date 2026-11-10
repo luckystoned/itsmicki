@@ -1,23 +1,12 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import HomeStage, { type HomeCard } from '@/components/HomeStage.astro';
-import { imageMetadata } from '@/data/imageMetadata';
-import { carouselProjects } from '@/data/carousel';
+import HomeStage from '@/components/HomeStage.astro';
 
-const cards: HomeCard[] = carouselProjects.map((project) => ({
-  title: project.title,
-  label: project.carouselLayout.label,
-  src: project.carouselCover,
-  alt: `${project.title} project`,
-  width: project.carouselLayout.width,
-  height: project.carouselLayout.height,
-  imageWidth: imageMetadata[project.carouselCover]?.width,
-  imageHeight: imageMetadata[project.carouselCover]?.height,
-  href: project.comingSoon ? undefined : `/projects/${project.slug}`,
-  video: project.carouselLayout.video,
-}));
+// Side A home (Figma 884:635): instead of the carousel, one GIF that flashes through the twelve project compositions of
+// Figma 990:1323 (Winona, Lumen, Max Maher, Outliant, Genova, Blend360, Textures & Body), 0.1 s each, in a loop.
 ---
 <BaseLayout
+  title="itsmicki©2026"
   hideFooter
   customCursor
   themeColor="#fafafa"
@@ -29,7 +18,7 @@ const cards: HomeCard[] = carouselProjects.map((project) => ({
       "For the past 10 years, I've worked across every medium I could get my hands on—analog craft, print, digital, and my favorite, web and product design. When inspiration strikes, you'll catch me illustrating, shooting and editing photos, or animating",
     ]}
     plusHref="/deets"
-    cards={cards}
+    reel={{ base: '/01_Home/01_Home_Reel', label: 'Photos from Winona, Lumen, Max Maher, Outliant, Genova, Blend360 and Textures & Body', width: 582, height: 328, href: '/projects' }}
     wordmark="Itsmicki"
   />
 </BaseLayout>
