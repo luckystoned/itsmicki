@@ -1,6 +1,7 @@
 ---
-// The home page, shared by Side A (/) and Side B (/sideb): intro copy, the infinite carousel and the footer with the big
-// wordmark. Side B is the same page in inverted colours, with its own copy, cards and wordmark.
+// The home page, shared by Side A (/) and Side B (/sideb): intro copy, the projects and the footer with the big wordmark.
+// Side A (Figma 884:635, frames in 990:1323) shows one centred GIF that flashes through the project photos; Side B is the
+// same page in inverted colours, with its own copy, the infinite carousel of cards and its wordmark.
 import LiquidHover from '@/components/LiquidHover.astro';
 import { cardLength } from '@/data/carousel';
 
@@ -19,24 +20,38 @@ export type HomeCard = {
   video?: string;
 };
 
+/** Looping GIF in place of the carousel: `<base>.gif`, with `<base>.webp` (its first frame) for reduced motion. */
+export type HomeReel = { base: string; label: string; width: number; height: number; /** Page the GIF opens. */ href: string };
+
 type Props = {
   side?: 'a' | 'b';
   /** The two intro paragraphs (HTML), without their closing "(+)". */
   intro: [string, string];
   plusHref: string;
-  cards: HomeCard[];
+  cards?: HomeCard[];
+  reel?: HomeReel;
   wordmark: string;
 };
 
-const { side = 'a', intro, plusHref, cards, wordmark } = Astro.props;
+const { side = 'a', intro, plusHref, cards = [], reel, wordmark } = Astro.props;
 const loops = [0, 1, 2];
 ---
-  <div class:list={['home-stage', { 'home-stage-b': side === 'b' }]}>
+  <div class:list={['home-stage', { 'home-stage-b': side === 'b', 'home-stage-reel': reel }]}>
     <section class="home-intro" data-reveal>
       <p><Fragment set:html={intro[0]} /><span class="desktop-period">.</span><span class="mobile-plus"> <a class="intro-plus" href={plusHref} aria-label="More about me">(+)</a>.</span></p>
       <p><Fragment set:html={intro[1]} /> <a class="intro-plus" href={plusHref} aria-label="More about me">(+)</a>.</p>
     </section>
 
+    {reel ? (
+      <section class="home-reel" aria-label="Selected projects" data-reveal>
+        <a class="home-reel-link" href={reel.href}>
+          <picture>
+            <source srcset={`${reel.base}.webp`} type="image/webp" media="(prefers-reduced-motion: reduce)" />
+            <img src={`${reel.base}.gif`} alt={reel.label} width={reel.width} height={reel.height} fetchpriority="high" decoding="async" />
+          </picture>
+        </a>
+      </section>
+    ) : (
     <section class="home-carousel" aria-label="Selected projects" data-carousel data-reveal>
       <div class="carousel-track" data-carousel-track>
         {loops.map((loop) => cards.map((card, index) => {
@@ -56,6 +71,7 @@ const loops = [0, 1, 2];
         }))}
       </div>
     </section>
+    )}
 
     <footer class="home-footer" data-reveal>
       <div class="home-footer-meta">
@@ -135,7 +151,7 @@ const loops = [0, 1, 2];
       }, { passive: false });
     }
   </script>
-  <LiquidHover />
+  {!reel && <LiquidHover />}
 
 <style>
   /* Side A is light; Side B (`.home-stage-b`) is the same page in inverted colours. The footer labels are boxes in
@@ -146,9 +162,9 @@ const loops = [0, 1, 2];
   @media (max-width: 760px) { :global(html:has(.home-stage-b)) { --home-chip: #fafafa; --home-chip-ink: #202020; } }
   @font-face { font-family: 'OT Neue Montreal Home'; src: url('/fonts/OTNeueMontreal-MediumSemiSqueezed.otf') format('opentype'); font-style: normal; font-weight: 400 600; font-display: swap; }
   @font-face { font-family: 'OT Neue Montreal Home Extra'; src: url('/fonts/OTNeueMontreal-MediumExtraSqueezed.otf') format('opentype'); font-style: normal; font-weight: 400 600; font-display: swap; }
-  :global(body:has(.home-carousel)) { background: var(--home-paper); color: var(--home-ink); }
-  :global(body:has(.home-carousel) .cursor) { display: none !important; }
-  :global(body:has(.home-carousel) .site-header) { background: color-mix(in srgb, var(--home-paper) 90%, transparent); color: var(--home-ink); font-family: 'OT Neue Montreal Home', 'Arial Narrow', sans-serif; font-weight: 500; }
+  :global(body:has(.home-stage)) { background: var(--home-paper); color: var(--home-ink); }
+  :global(body:has(.home-stage) .cursor) { display: none !important; }
+  :global(body:has(.home-stage) .site-header) { background: color-mix(in srgb, var(--home-paper) 90%, transparent); color: var(--home-ink); font-family: 'OT Neue Montreal Home', 'Arial Narrow', sans-serif; font-weight: 500; }
   .home-intro, .home-carousel, .home-footer { font-family: 'OT Neue Montreal Home', 'Arial Narrow', sans-serif; font-weight: 500; }
   .home-intro { grid-template-columns: 29% 46%; justify-content: space-between; min-height: clamp(250px, 17.4vw, 278px); padding-top: clamp(36px, 4.35vw, 70px); font-size: clamp(13px, 1.42vw, 24px); line-height: 1.24; letter-spacing: -.01em; }
   .home-intro sup { font-size: .55em; }
@@ -252,10 +268,10 @@ const loops = [0, 1, 2];
     .footer-rights { left: min(1261.94px, 78.87125vw, 122.162633svh); }
     .home-socials { right: 0; text-align: left; }
     /* Side B footer row (Figma 922:1494): one "say hi", with the email and the rights notice further left. */
-    .home-stage-b .footer-say-two { display: none; }
-    .home-stage-b .footer-say-one { left: min(345px, 21.5625vw, 33.397870svh); }
-    .home-stage-b .footer-mail { left: min(456px, 28.5vw, 44.143272svh); }
-    .home-stage-b .footer-rights { left: min(707px, 44.1875vw, 68.441433svh); }
+    .home-stage-b:not(.home-stage-reel) .footer-say-two { display: none; }
+    .home-stage-b:not(.home-stage-reel) .footer-say-one { left: min(345px, 21.5625vw, 33.397870svh); }
+    .home-stage-b:not(.home-stage-reel) .footer-mail { left: min(456px, 28.5vw, 44.143272svh); }
+    .home-stage-b:not(.home-stage-reel) .footer-rights { left: min(707px, 44.1875vw, 68.441433svh); }
   }
   @media (max-width: 760px) {
     :global(body:has(.home-stage)) { height: 100svh; overflow: hidden; }
@@ -311,4 +327,42 @@ const loops = [0, 1, 2];
   [data-name-scroll].is-long .name-line { animation: name-scroll var(--name-duration, 6s) ease-in-out infinite alternate; }
   @keyframes name-scroll { 0%, 18% { transform: none; } 82%, 100% { transform: translateX(var(--name-shift, 0)); } }
   @media (prefers-reduced-motion: reduce) { [data-name-scroll].is-long .name-line { animation: none; } }
+
+  /* Side A GIF (Figma 990:1323): one 582.4×327.6 frame centred between the intro and the wordmark, above the wordmark.
+     Its frames are the Figma compositions as they are, page-coloured margins included. */
+  .home-reel { position: relative; z-index: 2; overflow: hidden; aspect-ratio: 582.4 / 327.6; background: var(--home-paper); }
+  .home-reel-link { display: block; width: 100%; height: 100%; cursor: pointer; }
+  .home-reel-link:focus-visible { outline: 2px solid var(--home-ink); outline-offset: -4px; }
+  .home-reel img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .home-stage-reel { font-family: 'OT Neue Montreal Home', 'Arial Narrow', sans-serif; }
+
+  /* Side A desktop follows the 1893×1024 Figma frame: every length is its Figma value in px, capped by both viewport
+     axes (value / 18.93 vw and value / 10.24 svh), so the page keeps the frame's proportions on any screen. */
+  @media (min-width: 761px) {
+    :global(body:has(.home-stage-reel) .site-header) { gap: min(10px, .528262vw, .976563svh); padding: min(23.21px, 1.226096vw, 2.266602svh) min(23.73px, 1.253566vw, 2.317383svh) 0 min(25.2px, 1.331220vw, 2.460938svh) !important; font-size: min(27.117px, 1.432488vw, 2.648145svh); }
+    /* (SIDE A) on the left; (PROJECTS) (DEETS) (SIDE B) together on the right. */
+    :global(body:has(.home-stage-reel) .site-header:not(.site-header--b) nav a:last-child) { margin-left: 0; }
+    :global(body:has(.home-stage-reel) .site-header:not(.site-header--b) nav a:first-child) { margin-left: auto; }
+
+    .home-stage-reel { --footer-wordmark-size: min(34.506587vw, 63.790015svh); } /* Figma 583.2px, 12% larger at Micki's request. */
+    .home-stage-reel .home-intro { font-size: min(30px, 1.584786vw, 2.929688svh); line-height: 1.1; letter-spacing: -.01em; }
+    .home-stage-reel .home-intro p { top: max(min(78.63px, 4.153725vw, 7.678711svh), calc(min(27.117px, 1.432488vw, 2.648145svh) * 1.25 + min(44px, 2.324353vw, 4.296875svh))); }
+    .home-stage-reel .home-intro p:first-child { left: min(25.2px, 1.331220vw, 2.460938svh); width: min(441.914px, 23.344638vw, 43.155664svh); }
+    .home-stage-reel .home-intro p:nth-child(2) { left: min(500.45px, 26.437401vw, 48.872070svh); width: min(704.492px, 37.215637vw, 68.797754svh); }
+
+    .home-reel { position: absolute; top: min(305px, 16.112018vw, 29.785156svh); left: 50%; width: min(674.76px, 35.646064vw, 65.894531svh); /* Figma 582.4px, enlarged at Micki's request. */ transform: translateX(-50%); }
+    /* The reel keeps the fade-in of the rest of the page without losing its centring. */
+    .home-stage .home-reel[data-reveal] { transform: translateX(-50%); }
+
+    .home-stage-reel .home-footer-meta { bottom: min(77.46px, 4.091970vw, 7.564453svh); font-size: min(21px, 1.109350vw, 2.050781svh); }
+    .home-stage-reel .footer-dev-name { left: min(66.03px, 3.488114vw, 6.448242svh); }
+    .home-stage-reel .footer-say-one { left: min(415.49px, 21.948759vw, 40.575195svh); }
+    .home-stage-reel .footer-say-two { left: min(560.17px, 29.591653vw, 54.704102svh); }
+    .home-stage-reel .footer-mail { left: min(731.02px, 38.617010vw, 71.388672svh); }
+    .home-stage-reel .footer-rights { left: min(1086.49px, 57.395140vw, 106.102539svh); }
+  }
+  /* Phones: the reel takes the carousel's place, full width between the gutters and just above the wordmark. */
+  @media (max-width: 760px) {
+    .home-reel { position: absolute; z-index: 4; bottom: var(--carousel-bottom); left: min(9px, 2.307692cqw); width: calc(100% - min(18px, 4.615385cqw)); }
+  }
 </style>
