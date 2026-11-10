@@ -20,7 +20,8 @@ export type HomeCard = {
   video?: string;
 };
 
-/** Looping GIF in place of the carousel: `<base>.gif`, with `<base>.webp` (its first frame) for reduced motion. */
+/** Looping GIF in place of the carousel: `<base>.gif`, with `<base>.webp` (its first frame) for reduced motion and
+    `<base>.mp4` (the same frames) that the hover effect draws, since WebGL only reads a GIF's first frame. */
 export type HomeReel = { base: string; label: string; width: number; height: number; /** Page the GIF opens. */ href: string };
 
 type Props = {
@@ -45,9 +46,10 @@ const loops = [0, 1, 2];
     {reel ? (
       <section class="home-reel" aria-label="Selected projects" data-reveal>
         <a class="home-reel-link" href={reel.href}>
-          <picture>
+          <picture class="home-reel-picture">
             <source srcset={`${reel.base}.webp`} type="image/webp" media="(prefers-reduced-motion: reduce)" />
             <img src={`${reel.base}.gif`} alt={reel.label} width={reel.width} height={reel.height} fetchpriority="high" decoding="async" />
+            <video class="home-reel-hover" src={`${reel.base}.mp4`} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-reel-hover></video>
           </picture>
         </a>
       </section>
@@ -92,6 +94,17 @@ const loops = [0, 1, 2];
     import { scrollLongNames } from '@/scripts/scrollLongNames';
 
     scrollLongNames();
+
+    // The home GIF's hover: its invisible video twin loads on desktop and plays only while the pointer is over it, so
+    // LiquidHover keeps the photos changing under the effect.
+    const reelVideo = document.querySelector<HTMLVideoElement>('[data-reel-hover]');
+    if (reelVideo && matchMedia('(hover: hover) and (pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      reelVideo.preload = 'auto';
+      reelVideo.load();
+      const link = reelVideo.closest('a');
+      link?.addEventListener('pointerenter', () => { reelVideo.play().catch(() => {}); });
+      link?.addEventListener('pointerleave', () => { reelVideo.pause(); });
+    }
 
     const carousel = document.querySelector<HTMLElement>('[data-carousel]');
     const track = document.querySelector<HTMLElement>('[data-carousel-track]');
@@ -151,7 +164,7 @@ const loops = [0, 1, 2];
       }, { passive: false });
     }
   </script>
-  {!reel && <LiquidHover />}
+  <LiquidHover />
 
 <style>
   /* Side A is light; Side B (`.home-stage-b`) is the same page in inverted colours. The footer labels are boxes in
@@ -333,7 +346,11 @@ const loops = [0, 1, 2];
   .home-reel { position: relative; z-index: 2; overflow: hidden; aspect-ratio: 582.4 / 327.6; background: var(--home-paper); }
   .home-reel-link { display: block; width: 100%; height: 100%; cursor: pointer; }
   .home-reel-link:focus-visible { outline: 2px solid var(--home-ink); outline-offset: -4px; }
-  .home-reel img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .home-reel-picture { position: relative; display: block; width: 100%; height: 100%; }
+  .home-reel :is(img, video) { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .8s cubic-bezier(.16,1,.3,1); }
+  .home-reel-hover { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+  /* Same hover as the old carousel covers: the photo zooms in and LiquidHover frosts it under the pointer. */
+  @media (hover: hover) and (pointer: fine) { .home-reel-link:is(:hover, :focus-visible) :is(img, video) { transform: scale(1.15); } }
   .home-stage-reel { font-family: 'OT Neue Montreal Home', 'Arial Narrow', sans-serif; }
 
   /* Side A desktop follows the 1893×1024 Figma frame: every length is its Figma value in px, capped by both viewport
