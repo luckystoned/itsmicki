@@ -1,5 +1,5 @@
 ---
-// Hover on the carousel covers (home and case pages). One small, soft spot follows the pointer (or, on touch screens,
+// Hover on the carousel covers (case pages) and on the home GIF. One small, soft spot follows the pointer (or, on touch screens,
 // the finger while it presses and drags on the photo) and turns
 // the photo into grainy frosted glass (scattered and blurred, never lightened), leaving a diffuse frosted trail. The
 // pointer's motion only nudges the photo a little, which can spill just past the card edges and flows back quickly.
@@ -12,8 +12,8 @@
 <script>
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
-  const CARDS = '.carousel-card, .more-carousel-card';
-  const VISUALS = '.carousel-picture, .more-carousel-picture';
+  const CARDS = '.carousel-card, .more-carousel-card, .home-reel-link';
+  const VISUALS = '.carousel-picture, .more-carousel-picture, .home-reel-picture';
 
   const SETTINGS = {
     field: 160, // Simulation grid over the canvas.
