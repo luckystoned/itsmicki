@@ -1075,6 +1075,24 @@ const laptop = image('/03_Deets/04_Deets.webp', 'An open laptop balanced on a pa
     }
   }
 
+  /* The photos show whole, film border included: each frame takes its photo's proportion and the parallax zoom is
+     off. On desktop (absolute layout) everything below a photo moves down by however much that photo grew; on phones
+     the page flows, so nothing else needs to move. */
+  .deets-page .deets-image-one { height: auto; aspect-ratio: 2000 / 1493; }
+  .deets-page .deets-image-two { height: auto; aspect-ratio: 2000 / 1116; }
+  .deets-page .deets-image-three, .deets-page .deets-image-four { height: auto; aspect-ratio: 1493 / 2000; }
+  .deets-page .deets-image img { height: 100%; translate: none; }
+  @media (min-width: 761px) {
+    .deets-page {
+      --d1: calc(62.118164vw * 1493 / 2000 - 46.301147vw);
+      --d2: calc((100cqw - 2 * var(--gutter)) * 1116 / 2000 - 46.301147vw);
+      height: calc(333.455vw + var(--d1) + var(--d2));
+    }
+    .deets-page .deets-skills-label, .deets-page .deets-skills-copy, .deets-page .deets-image-two { margin-top: var(--d1); }
+    .deets-page .deets-story-label-track, .deets-page .deets-story-column, .deets-page .deets-image-three,
+    .deets-page .deets-image-four, .deets-page .deets-story-row-late, .deets-page .deets-footer { margin-top: calc(var(--d1) + var(--d2)); }
+  }
+
   /* Justified copy, with the same criterion as the case pages: body copy everywhere, large copy on tablet and
      desktop; on phones the largest sentences stay left-aligned. Titles and labels keep theirs. */
   .deets-body,
