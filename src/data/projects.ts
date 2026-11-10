@@ -59,7 +59,7 @@ export const projects: Project[] = [
   {
     slug: 'blend360', number: '07', title: 'Blend360', year: '2023',
     role: 'Art Director, Branding & UX/UI Redesign, Motion', accent: '#d8c5ff',
-    cover: '/02_Projects/07_Blend360/01_Blend360_Cover.webp',
+    cover: '/02_Projects/07_Blend360/01_Blend360_Video.webp',
     summary: 'Branding redesign and UX/UI redesign for Blend360, bringing a more connected story to a fast-moving data and technology company.',
     synopsis: 'I led the art direction for the website redesign, translating the refreshed identity into an interactive experience with clearer navigation through Blend360’s capabilities, resources, case studies, and thought leadership.',
     conclusion: 'Launched in 2023, the redesigned website introduced Blend360’s new look and feel with more intuitive navigation, richer content, and a more connected story for the brand.',
