@@ -346,7 +346,8 @@ const loops = [0, 1, 2];
 
     .home-stage-reel { --footer-wordmark-size: min(34.506587vw, 63.790015svh); } /* Figma 583.2px, 12% larger at Micki's request. */
     .home-stage-reel .home-intro { font-size: min(30px, 1.584786vw, 2.929688svh); line-height: 1.1; letter-spacing: -.01em; }
-    .home-stage-reel .home-intro p { top: max(min(78.63px, 4.153725vw, 7.678711svh), calc(min(27.117px, 1.432488vw, 2.648145svh) * 1.25 + min(44px, 2.324353vw, 4.296875svh))); }
+    /* Never under the fixed navigation bar, which is at least 62px tall (global.css). */
+    .home-stage-reel .home-intro p { top: max(min(78.63px, 4.153725vw, 7.678711svh), calc(min(27.117px, 1.432488vw, 2.648145svh) * 1.25 + 44px), 70px); }
     .home-stage-reel .home-intro p:first-child { left: min(25.2px, 1.331220vw, 2.460938svh); width: min(441.914px, 23.344638vw, 43.155664svh); }
     .home-stage-reel .home-intro p:nth-child(2) { left: min(500.45px, 26.437401vw, 48.872070svh); width: min(704.492px, 37.215637vw, 68.797754svh); }
 
