@@ -6,7 +6,7 @@ Portfolio editorial de Miki, desarrollado en Astro a partir del diseño original
 
 - Home, índice de proyectos, detalle de casos, Deets y Side B implementados.
 - Casos publicados: Winona, Max Maher, Outliant y Lumen.
-- Genova, Amazon y Blend360 se conservan como próximos casos.
+- Genova y Amazon se conservan como próximos casos.
 - Videos: todos los videos se sirven desde el sitio, en `public/02_Projects/`, H.264 sin audio: portadas del carrusel (`*_Loop.mp4`, que el efecto de hover lee cuadro a cuadro), videos de casos agregados con `video()` (versión de escritorio hasta 2560px, `_Mobile.mp4` hasta 1280px y su primer cuadro en `.webp`) y clips cortos con `clip()`. Vimeo ya no se usa: su plan gratuito ignora la calidad pedida y entregaba 360p.
 - Las referencias y fuentes HTML originales viven fuera del repositorio, en `../Referencias originales`.
 - Las imágenes de producción están optimizadas en WebP, con dimensiones explícitas y carga diferida donde corresponde.

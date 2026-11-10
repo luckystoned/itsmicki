@@ -57,11 +57,12 @@ export const projects: Project[] = [
     synopsis: 'As the company evolved, a central challenge emerged: defining a clear identity, positioning and territory. The work turned that strategic foundation into a scalable visual and digital system.',
   },
   {
-    slug: 'blend360', number: '07', title: 'Blend360', year: '2024',
-    role: 'UX—UI Lead, Visual & Motion Designer', accent: '#d8c5ff', comingSoon: true,
+    slug: 'blend360', number: '07', title: 'Blend360', year: '2023',
+    role: 'Art Director, Branding & UX/UI Redesign, Motion', accent: '#d8c5ff',
     cover: '/02_Projects/07_Blend360/01_Blend360_Cover.webp',
-    summary: 'A digital and motion design case study currently being prepared for publication.',
-    synopsis: 'Full case study coming soon.',
+    summary: 'Branding redesign and UX/UI redesign for Blend360, bringing a more connected story to a fast-moving data and technology company.',
+    synopsis: 'I led the art direction for the website redesign, translating the refreshed identity into an interactive experience with clearer navigation through Blend360’s capabilities, resources, case studies, and thought leadership.',
+    conclusion: 'Launched in 2023, the redesigned website introduced Blend360’s new look and feel with more intuitive navigation, richer content, and a more connected story for the brand.',
   },
   {
     slug: 'textures-body', number: '08', title: 'Textures & Body', year: '2026',
