@@ -35,6 +35,7 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/02_Projects/01_Winona/01_Winona_Cover.webp': { width: 1520, height: 1511 },
   '/02_Projects/01_Winona/01_Winona_Projects.webp': { width: 1118, height: 1950 },
   '/02_Projects/07_Blend360/01_Blend360_Video.webp': { width: 1920, height: 1080 },
+  '/02_Projects/07_Blend360/01_Blend360_Cover.webp': { width: 3112, height: 2056 },
   '/02_Projects/07_Blend360/02_Blend360.webp': { width: 1992, height: 2000 },
   '/02_Projects/07_Blend360/09_Blend360.webp': { width: 2000, height: 1333 },
   '/02_Projects/07_Blend360/15_Blend360.gif': { width: 1600, height: 1018 },
