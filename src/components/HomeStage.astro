@@ -95,6 +95,22 @@ const loops = [0, 1, 2];
 
     scrollLongNames();
 
+    // Phones: the reel sits halfway between the intro copy and the wordmark, whatever the copy's length.
+    const reelBox = document.querySelector<HTMLElement>('.home-reel');
+    const introCopy = document.querySelector<HTMLElement>('.home-intro p');
+    const wordmarkBox = document.querySelector<HTMLElement>('.home-subfooter');
+    if (reelBox && introCopy && wordmarkBox) {
+      const phone = matchMedia('(max-width: 760px)');
+      const place = () => {
+        if (!phone.matches) { reelBox.style.top = ''; reelBox.style.marginTop = ''; return; }
+        const stage = reelBox.offsetParent?.getBoundingClientRect().top ?? 0;
+        const above = introCopy.getBoundingClientRect().bottom, below = wordmarkBox.getBoundingClientRect().top;
+        reelBox.style.marginTop = '0px';
+        reelBox.style.top = `${(above + below) / 2 - reelBox.offsetHeight / 2 - stage}px`;
+      };
+      place(); addEventListener('resize', place); document.fonts?.ready.then(place);
+    }
+
     // The home GIF's hover: its invisible video twin loads on desktop and plays only while the pointer is over it, so
     // LiquidHover keeps the photos changing under the effect.
     const reelVideo = document.querySelector<HTMLVideoElement>('[data-reel-hover]');
@@ -379,8 +395,9 @@ const loops = [0, 1, 2];
     .home-stage-reel .footer-mail { left: min(731.02px, 38.617010vw, 71.388672svh); }
     .home-stage-reel .footer-rights { left: min(1086.49px, 57.395140vw, 106.102539svh); }
   }
-  /* Phones: the reel takes the carousel's place, full width between the gutters and just above the wordmark. */
+  /* Phones: the reel is as wide as the intro copy, centred across (margins, not transforms, so the reveal can't undo
+     it); the script places it halfway between the copy and the wordmark. */
   @media (max-width: 760px) {
-    .home-reel { position: absolute; z-index: 4; bottom: var(--carousel-bottom); left: min(9px, 2.307692cqw); width: calc(100% - min(18px, 4.615385cqw)); }
+    .home-reel { --reel-w: calc(100cqw - min(18px, 4.615385cqw)); position: absolute; z-index: 4; top: 50%; left: 50%; width: var(--reel-w); margin: calc(var(--reel-w) * -327.6 / 582.4 / 2) 0 0 calc(var(--reel-w) / -2); }
   }
 </style>
