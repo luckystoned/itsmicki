@@ -26,7 +26,8 @@ export type CaseBlock =
   | {
       type: 'media';
       layout: 'pair';
-      items: [CaseMedia & { width: string; height: string }, CaseMedia & { width: string; height: string }];
+      /** Two items side by side, or a longer row of equal cells (row). */
+      items: Array<CaseMedia & { width: string; height: string }>;
       align?: 'start' | 'end';
     }
   | {
@@ -41,7 +42,7 @@ export type CaseBlock =
     };
 
 export type ProjectCase = {
-  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'textures-body' | 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls' | 'nostalgia-as-agony';
+  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'blend360' | 'textures-body' | 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls' | 'nostalgia-as-agony';
   title: string;
   year: string;
   role: string;
@@ -114,6 +115,14 @@ const pair = (
     { ...first, width: firstWidth, height: firstHeight },
     { ...second, width: secondWidth, height: secondHeight },
   ],
+});
+
+/** Several media side by side at the same size, each its own file (e.g. a row of social posts). */
+const row = (items: CaseMedia[], width: string, height: string): CaseBlock => ({
+  type: 'media',
+  layout: 'pair',
+  align: 'start',
+  items: items.map((item) => ({ ...item, width, height })),
 });
 
 const text = (
@@ -418,6 +427,62 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
       'Project Founders & Leads / <a href="https://www.instagram.com/luckystoned/" target="_blank" rel="noreferrer">Luckystoned</a> & <a href="https://www.instagram.com/1_n_d1_4_/" target="_blank" rel="noreferrer">1nd1a</a>',
       'Spatial Art Direction, Scenography & Production / <a href="https://www.instagram.com/guillermiiiina/" target="_blank" rel="noreferrer">Guillermina Arbos</a> & <a href="https://www.instagram.com/camiiselser/" target="_blank" rel="noreferrer">Camila Sesler</a>',
       'Photography & Film / <a href="https://www.instagram.com/glendalazart/" target="_blank" rel="noreferrer">Glenda Lazart</a>',
+    ],
+  },
+
+  blend360: {
+    slug: 'blend360',
+    title: 'Blend360',
+    year: '2023',
+    role: 'Art Director,<br>Branding & UX/UI<br>Redesign, Motion',
+    nutshell: `Bringing a more connected story to a fast-moving data and technology company: a branding redesign and a UX/UI redesign for <a href="https://www.blend360.com/" target="_blank" rel="noreferrer">Blend360</a>.`,
+    nutshellColumns: [
+      `Blend360 was evolving, and its digital presence needed to catch up.`,
+      `It needed a clearer way to navigate its offer, a more cohesive brand experience, and a website that could grow alongside the business.`,
+    ],
+    drags: [],
+    blocks: [
+      single(video('/02_Projects/07_Blend360/01_Blend360_Video', 'The Blend360 wordmark and its two-ring symbol drawing themselves in.', '1556 / 875')),
+      text('(the challenge)', [], {
+        variant: 'wide',
+        wide: `The previous website made it difficult for visitors to find their way through Blend360’s services and understand the breadth of its work. The brand also needed to express a more connected perspective—bringing people, data, technology, and AI together.`,
+      }),
+      pair(
+        image('/02_Projects/07_Blend360/02_Blend360.webp', 'Blend360 poster reading We integrate data, advanced analytics, technology & people, mounted on a brushed metal wall.', '40.5 / 47.55'), '40.5vw', '47.55vw',
+        video('/02_Projects/07_Blend360/03_Blend360_Video', 'Telegraf type specimen in cyan on dark teal: the words rise out and back in while the numerals roll like an odometer.', '55.26 / 65.26'), '55.26vw', '65.26vw',
+      ),
+      text('(the approach)', [
+        `The redesign translated the refreshed brand into an interactive digital experience, with clients and their challenges at its center. We shaped a clearer path through Blend360’s capabilities, resources, case studies, and thought leadership, helping visitors get a better sense of what the company does and how it works.`,
+        `The visual direction carried the new identity across the site while giving its content room to evolve. The result was designed to feel cohesive for visitors and more manageable for the marketing team.`,
+      ]),
+      pair(
+        video('/02_Projects/07_Blend360/06_Blend360_Video', 'The Blend360 symbol tracing itself in cyan on dark teal.', '47.62 / 47.62'), '47.62vw', '47.62vw',
+        video('/02_Projects/07_Blend360/07_Blend360_Video', 'Large outlines of the Blend360 symbol drawing in around the words People + AI.', '47.62 / 47.62'), '47.62vw', '47.62vw',
+      ),
+      text('(my role)', [], {
+        variant: 'wide',
+        wide: `I led the art direction for the website redesign, shaping how the refreshed identity came to life across the digital experience.`,
+      }),
+      pair(
+        video('/02_Projects/07_Blend360/08_Blend360_Video', 'Outlined dots hopping across a grid until two stretch into the pills Data science and solutions.', '1 / 1'), 'calc((97.23vw - 24px) * 2 / 5 + 6px)', 'calc((97.23vw - 24px) * 2 / 5 + 6px)',
+        image('/02_Projects/07_Blend360/15_Blend360.gif', 'Blend360 brand in use, cycling quickly: a phone and browser UI, a team meeting, a screen in a lobby, an app icon on a phone, an editorial page and the wordmark.', '3 / 2'), 'calc((97.23vw - 24px) * 3 / 5 + 12px)', 'calc((97.23vw - 24px) * 2 / 5 + 6px)',
+      ),
+      single(image('/02_Projects/07_Blend360/09_Blend360.webp', 'Blend360 brand screens on a large LED wall in a dark studio, with a person walking past: Data science solutions, People + AI and a laptop with the symbol.', '2000 / 1333')),
+      row([
+        video('/02_Projects/07_Blend360/10_Blend360_Video', 'Blend360 post: a photo of Dubai seen through the rings of the symbol, which close and reopen.', '1 / 1'),
+        video('/02_Projects/07_Blend360/11_Blend360_Video', 'Blend360 post: New Office + NYC in cyan over a grey Manhattan skyline, with the logo in a cyan box.', '1 / 1'),
+        video('/02_Projects/07_Blend360/12_Blend360_Video', 'Blend360 post: a statement about being a talent solutions company, leaving and returning line by line on black.', '1 / 1'),
+        video('/02_Projects/07_Blend360/13_Blend360_Video', 'Blend360 post: Advanced Analytics in large black type on cream, with the logo.', '1 / 1'),
+        video('/02_Projects/07_Blend360/14_Blend360_Video', 'Blend360 post: the Oculus hall inside the shape of the symbol, above New Office + NYC.', '1 / 1'),
+      ], 'calc((97.23vw - 24px) / 5)', 'calc((97.23vw - 24px) / 5)'),
+      text('(the result)', [], {
+        variant: 'wide',
+        wide: `Launched in 2023, the redesigned website introduced Blend360’s new look and feel with more intuitive navigation, richer content, and a more connected story for the brand.`,
+      }),
+    ],
+    credits: [
+      'Visual Design / <a href="https://rebeccaarnaud.com/" target="_blank" rel="noreferrer">Rebecca Arnaud</a>',
+      'Visual Design / <a href="https://www.behance.net/juliafranc2cc2" target="_blank" rel="noreferrer">Julia Franceschini</a>',
     ],
   },
 
