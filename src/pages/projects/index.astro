@@ -37,7 +37,10 @@ const definitions = [
   {
     slug: 'blend360',
     width: '100%', height: 'auto', ratio: '97.23 / 64.22',
-    video: '/02_Projects/07_Blend360/01_Blend360_Video.mp4',
+    // Rendered at 2x for this card's own proportion, so the logo's thin lines stay sharp at full width.
+    cover: '/02_Projects/07_Blend360/01_Blend360_Cover.webp',
+    video: '/02_Projects/07_Blend360/01_Blend360_Cover.mp4',
+    videoMobile: '/02_Projects/07_Blend360/01_Blend360_Cover_Mobile.mp4',
   },
   {
     slug: 'textures-body',
@@ -56,6 +59,7 @@ const cards = definitions.map((definition) => {
     eager: 'eager' in definition ? definition.eager : false,
     cover: 'cover' in definition ? definition.cover : undefined,
     video: 'video' in definition ? definition.video : undefined,
+    videoMobile: 'videoMobile' in definition ? definition.videoMobile : undefined,
     style: `--project-width:${definition.width};--project-height:${definition.height};--project-ratio:${definition.ratio}${'parallaxSpan' in definition ? `;--parallax-span:${definition.parallaxSpan}` : ''}${'parallaxStart' in definition ? `;--parallax-start:${definition.parallaxStart}` : ''}${'parallaxHeight' in definition ? `;--parallax-height:${definition.parallaxHeight}` : ''}`,
   };
 });
@@ -89,7 +93,7 @@ const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody
         <ProjectGridItem project={outliant.project} label={outliant.label} style={outliant.style} cover={outliant.cover} video={outliant.video} />
       </div>
 
-      <ProjectGridItem project={blend360.project} label={blend360.label} style={blend360.style} cover={blend360.cover} video={blend360.video} />
+      <ProjectGridItem project={blend360.project} label={blend360.label} style={blend360.style} cover={blend360.cover} video={blend360.video} videoMobile={blend360.videoMobile} />
       <ProjectGridItem project={texturesBody.project} label={texturesBody.label} style={texturesBody.style} cover={texturesBody.cover} video={texturesBody.video} />
   </ProjectsStage>
 </BaseLayout>
