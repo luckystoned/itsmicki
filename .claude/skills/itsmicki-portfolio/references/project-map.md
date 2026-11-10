@@ -15,7 +15,7 @@
 ## Content status
 
 - Published: Winona, Max Maher, Outliant, Lumen.
-- Coming soon: Genova, Amazon, Blend360.
+- Coming soon: Genova, Amazon.
 
 ## External sources
 
