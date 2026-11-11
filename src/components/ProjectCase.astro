@@ -28,7 +28,7 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
     <span class="case-mobile-socials">
       <a href="https://www.linkedin.com/in/itsmicki/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>,
       {" "}<a href="https://www.behance.net/itsmicki" target="_blank" rel="noopener noreferrer">BEHANCE</a>,
-      {" "}<a href="https://dribbble.com/micaelagalimberti" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
+      {" "}<a href="https://dribbble.com/itsmicki" target="_blank" rel="noopener noreferrer">DRIBBBLE</a>,
       {" "}<a href="https://www.instagram.com/its.micki/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>,
       {" "}<a href="https://www.tiktok.com/@mickivainillla" target="_blank" rel="noopener noreferrer">TIKTOK</a>
     </span>
@@ -1503,19 +1503,20 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       line-height: 1;
     }
 
+    /* MaxMaher on phones (Micki's reference): a bigger, less tilted tote over the role, the sticker beside the title. */
     .project-case-page[data-case='maxmaher'] .case-drag:nth-of-type(2) {
-      --drag-rotation: -12deg !important;
+      --drag-rotation: -4deg !important;
       z-index: 13;
-      top: min(21.88vw, 85.33px) !important;
-      left: min(45.15vw, 176.08px) !important;
-      width: min(44.88vw, 175.03px) !important;
+      top: min(13.32vw, 51.95px) !important;
+      left: min(40.99vw, 159.86px) !important;
+      width: min(56.1vw, 218.79px) !important;
     }
 
     .project-case-page[data-case='maxmaher'] .case-drag:nth-of-type(3) {
       --drag-rotation: 0deg !important;
       z-index: 12;
-      top: min(2.24vw, 8.74px) !important;
-      left: min(55.35vw, 215.87px) !important;
+      top: min(1.2vw, 4.68px) !important;
+      left: min(55.68vw, 217.15px) !important;
       width: min(41.93vw, 163.53px) !important;
     }
 
@@ -1805,6 +1806,12 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       margin: 0 0 14px;
       font-size: 24px;
       line-height: 29px;
+    }
+
+    /* Side B lead sections (Contained Alienation's "(art direction)") share .case-text-lead with their sentence, which
+       would drop their top margin: keep the 46px gap above every text section, as on MaxMaher. */
+    .project-case-page-b .case-flow > .case-text-lead {
+      margin: 46px 0 0;
     }
 
     .case-credit-list {
