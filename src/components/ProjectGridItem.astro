@@ -12,7 +12,7 @@ type Props = {
   cover?: string;
   /** Muted loop served from the site, over the cover. */
   video?: string;
-  /** Lighter version of `video` for phones. */
+  /** Video for phones: a lighter `video`, or (without `video`) a loop shown only on phones. */
   videoMobile?: string;
   /** Case page; defaults to /projects/{slug}. `null` keeps the card without a link. */
   href?: string | null;
@@ -41,8 +41,8 @@ if (!cover || !dimensions) {
           fetchpriority={eager ? 'high' : undefined}
           decoding="async"
         />
-        {video && (videoMobile
-          ? <video muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video><source src={videoMobile} type="video/mp4" media="(max-width: 760px)" /><source src={video} type="video/mp4" /></video>
+        {(video || videoMobile) && (videoMobile
+          ? <video muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video><source src={videoMobile} type="video/mp4" media="(max-width: 760px)" />{video && <source src={video} type="video/mp4" />}</video>
           : <video src={video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>)}
       </span>
       <span class="project-label">{label}</span>
@@ -59,8 +59,8 @@ if (!cover || !dimensions) {
           fetchpriority={eager ? 'high' : undefined}
           decoding="async"
         />
-        {video && (videoMobile
-          ? <video muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video><source src={videoMobile} type="video/mp4" media="(max-width: 760px)" /><source src={video} type="video/mp4" /></video>
+        {(video || videoMobile) && (videoMobile
+          ? <video muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video><source src={videoMobile} type="video/mp4" media="(max-width: 760px)" />{video && <source src={video} type="video/mp4" />}</video>
           : <video src={video} muted loop playsinline disablepictureinpicture preload="none" tabindex="-1" aria-hidden="true" data-autoplay-video></video>)}
       </span>
       <span class="project-label">{label}</span>

@@ -11,9 +11,12 @@ export type SideBProject = {
   gridCover: string;
   /** Muted loop over the cover on /sideb/projects. */
   gridVideo?: string;
+  /** Loop over the cover on phones only (desktop keeps the photo). */
+  gridVideoMobile?: string;
 };
 
-/** Mkp & Hair's muted 5-second loop (square), on its carousel card (the larger grid card keeps the sharper photo). */
+/** Mkp & Hair's muted 5-second loop (square): its carousel card, and its /sideb/projects card on phones (the larger
+    desktop card keeps the sharper photo). */
 const MKP_LOOP = '/04_SideB/Projects/01_MkpHair/00_MkpHair_Loop.mp4';
 /** Missing souls' muted 6-second loop (square), recorded from the piece: a close-up of two of its cross-shaped flowers,
     rust and pink on chocolate stems, swaying on a lime ground. */
@@ -25,7 +28,7 @@ const NOSTALGIA_LOOP = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Loop.mp4';
 const NOSTALGIA_CARD = '/04_SideB/Projects/05_Nostalgia/00_Nostalgia_Card.mp4';
 
 export const sideBProjects: SideBProject[] = [
-  { slug: 'mkp-hair', title: 'Mkp & Hair', label: '01_Mkp & Hair_Art Direction+AI Image Generation', gridCover: '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp' },
+  { slug: 'mkp-hair', title: 'Mkp & Hair', label: '01_Mkp & Hair_Art Direction+AI Image Generation', gridCover: '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp', gridVideoMobile: MKP_LOOP },
   { slug: 'contained-alienation', title: 'Contained Alienation', label: '02_Contained Alienation_Art Direction+Photography+Mkp & Styling', gridCover: '/04_SideB/Home/02_SideBProjects.webp' },
   { slug: 'general-immersive', title: 'General', label: '03_General_Art Direction+Immersive Interaction Design', gridCover: '/04_SideB/Home/03_SideBProjects.webp', gridVideo: '/04_SideB/Home/03_SideBProjects.mp4' },
   { slug: 'missing-souls', title: 'Missing souls', label: '04_Missing souls_Art Direction+Immersive Design', gridCover: '/04_SideB/Projects/04_MissingSouls/00_MissingSouls_Cover.webp', gridVideo: SOULS_LOOP },
