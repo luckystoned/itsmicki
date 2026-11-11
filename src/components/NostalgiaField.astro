@@ -6,11 +6,12 @@
 // it goes away; a closed fist (or a held press) breaks everything, image and sound: near the camera (or high in the
 // frame) the song breaks higher and harsher, far (or low) lower and ethereal. The camera image
 // stays on the device; the sound only starts when asked for. With reduced motion only the still shows.
-type Props = { label: string };
-const { label } = Astro.props;
+// `studio` (the recording page): the camera stays in its frame (no full screen) and the page reads the piece's state.
+type Props = { label: string; studio?: boolean };
+const { label, studio = false } = Astro.props;
 ---
 
-<div class="nostalgia-field" data-nostalgia-field>
+<div class="nostalgia-field" data-nostalgia-field data-studio={studio ? '' : undefined}>
   <video class="nostalgia-field-video" src="/04_SideB/Projects/05_Nostalgia/03_Nostalgia_Home.mp4" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true"></video>
   <canvas class="nostalgia-field-canvas" role="img" aria-label={label}></canvas>
   <!-- With the camera on it fills the screen (with a cross that closes it, camera and sound off) and this switch. -->
@@ -184,7 +185,7 @@ const { label } = Astro.props;
     audio.loop = true; audio.preload = 'none';
     (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
     (audio as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = false;
-    let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; bass: BiquadFilterNode; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode; ear: AnalyserNode } | null = null;
+    let graph: { ctx: AudioContext; glitch: AudioWorkletNode | null; bass: BiquadFilterNode; filter: BiquadFilterNode; wet: GainNode; dry: GainNode; master: GainNode; ear: AnalyserNode; out?: MediaStreamAudioDestinationNode } | null = null;
     let wave = new Float32Array(1024), loud = 0, floor = .02, lastOnset = 0;
     const breaks: Array<{ kind: string; step: number; bar: number; at: number }> = [];
     const build = async () => {
@@ -226,6 +227,8 @@ const { label } = Astro.props;
         graph!.master.gain.setTargetAtTime(.9, graph!.ctx.currentTime, .4);
         on = true;
       },
+      /** The broken song as a stream (to record it with the image). */
+      stream: () => { if (!graph) return null; graph.out ??= graph.ctx.createMediaStreamDestination(); graph.master.connect(graph.out); return graph.out.stream; },
       stop: () => { if (!graph) return; graph.master.gain.setTargetAtTime(0, graph.ctx.currentTime, .15); setTimeout(() => audio.pause(), 500); on = false; },
       /** The films' speed follows the song's (its glitches stretch and rush the image too). */
       get rate() { return audio.playbackRate; },
@@ -271,6 +274,7 @@ const { label } = Astro.props;
     const context = canvas.getContext('2d')!;
     const caption = root.closest('section') ?? document;
     let width = 0, height = 0, ratio = 1, U = 1;
+    const studio = root.hasAttribute('data-studio');
     const film = root.querySelector<HTMLVideoElement>('.nostalgia-field-video')!;
     const stills: Record<'wide' | 'tall', HTMLImageElement> = { wide: new Image(), tall: new Image() };
     stills.wide.src = SETTINGS.stills.wide; stills.tall.src = SETTINGS.stills.tall;
@@ -538,7 +542,7 @@ const { label } = Astro.props;
     const cameraHelp = caption.querySelector<HTMLElement>('[data-nostalgia-camera-help]');
     let camera: Awaited<ReturnType<typeof openCamera>> | null = null;
     let hands: { detectForVideo: (video: HTMLVideoElement, time: number) => { landmarks: Array<Array<{ x: number; y: number }>> } } | null = null;
-    let closed = false, lostSince = 0;
+    let closed = false, lostSince = 0, landmarks: Array<{ x: number; y: number }> | null = null;
     const setCameraLabel = (text: string, on: boolean) => cameraButtons.forEach((b) => { b.textContent = text; b.setAttribute('aria-pressed', String(on)); });
     const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
     const stopCamera = () => { full.close(); camera?.stop(); camera = null; cameraOn = false; hand = null; fistTarget = 0; closed = false; if (cameraHelp) cameraHelp.hidden = true; setCameraLabel('turn the camera on', false); };
@@ -546,6 +550,7 @@ const { label } = Astro.props;
       if (!camera) return;
       if (hands && camera.video.readyState >= 2) {
         const h = hands.detectForVideo(camera.video, performance.now()).landmarks[0];
+        landmarks = h ?? null;
         if (h) {
           lostSince = 0;
           const palm = distance(h[0], h[9]) || 1e-3;
@@ -567,11 +572,11 @@ const { label } = Astro.props;
     };
     const startCamera = async () => {
       setCameraLabel('starting the camera…', true);
-      full.open();
+      if (!studio) full.open();
       soundOn(); // The click that turns the camera on also starts the sound (browsers need one).
       try {
-        camera = await openCamera();
-        if (!full.isOpen()) { camera?.stop(); camera = null; return; } // Closed while the browser was asking.
+        camera = await openCamera(studio ? 1280 : 640);
+        if (!studio && !full.isOpen()) { camera?.stop(); camera = null; return; } // Closed while the browser was asking.
         if (!hands) {
           const { module, files } = await loadVision();
           hands = await module.HandLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: SETTINGS.hand, delegate: 'GPU' }, runningMode: 'VIDEO', numHands: 1 });
@@ -588,6 +593,19 @@ const { label } = Astro.props;
 
     if (!calm && 'mediaDevices' in navigator) caption.querySelectorAll<HTMLElement>('[data-nostalgia-camera-option]').forEach((o) => { o.hidden = false; });
     addEventListener('pagehide', () => { stopCamera(); sound.stop(); });
+
+    // What the recording page reads and drives.
+    if (studio) {
+      Object.assign(root, { nostalgia: {
+        canvas,
+        state: () => ({ hand, fist, near, cameraOn, landmarks, video: camera?.video ?? null }),
+        point: (at: { x: number; y: number } | null, pressed: boolean) => { if (cameraOn) return; hand = at; if (at) near = 1 - at.y; fistTarget = at && pressed ? 1 : 0; },
+        startCamera: () => (camera ? undefined : startCamera()),
+        stopCamera,
+        soundOn,
+        audio: () => sound.stream(),
+      } });
+    }
 
     // Running while on screen.
     let visible = false, running = false;
