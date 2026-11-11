@@ -13,7 +13,9 @@ const definitions = [
   },
   {
     slug: 'winona',
-    width: 'calc((97.23vw - 6px) * .49953)', height: 'auto', ratio: '47.48 / 47.19', eager: true,
+    // Frame at the cover's proportion with a lighter parallax (10% instead of 25%), so the photo shows almost whole.
+    width: 'calc((97.23vw - 6px) * .49953)', height: 'auto', ratio: '47.48 / 50.30', eager: true,
+    ratioMobile: '47.48 / 50.30', parallaxHeight: '110%', parallaxStart: '-9.0909%', parallaxSpan: '9.0909%',
   },
   {
     slug: 'amazon',
@@ -59,7 +61,7 @@ const cards = definitions.map((definition) => {
     cover: 'cover' in definition ? definition.cover : undefined,
     video: 'video' in definition ? definition.video : undefined,
     videoMobile: 'videoMobile' in definition ? definition.videoMobile : undefined,
-    style: `--project-width:${definition.width};--project-height:${definition.height};--project-ratio:${definition.ratio}${'parallaxSpan' in definition ? `;--parallax-span:${definition.parallaxSpan}` : ''}${'parallaxStart' in definition ? `;--parallax-start:${definition.parallaxStart}` : ''}${'parallaxHeight' in definition ? `;--parallax-height:${definition.parallaxHeight}` : ''}`,
+    style: `--project-width:${definition.width};--project-height:${definition.height};--project-ratio:${definition.ratio}${'parallaxSpan' in definition ? `;--parallax-span:${definition.parallaxSpan}` : ''}${'parallaxStart' in definition ? `;--parallax-start:${definition.parallaxStart}` : ''}${'parallaxHeight' in definition ? `;--parallax-height:${definition.parallaxHeight}` : ''}${'ratioMobile' in definition ? `;--project-ratio-mobile:${definition.ratioMobile}` : ''}`,
   };
 });
 

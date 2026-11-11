@@ -687,7 +687,8 @@ const { side = 'a', wordmark } = Astro.props;
        card keeps its own proportion. */
     .projects-row-primary .project-card:nth-child(2) .project-visual,
     .projects-row-secondary .project-card:nth-child(2) .project-visual {
-      aspect-ratio: 366 / 484.802429;
+      /* A card can bring its own phone proportion (Winona: its cover's, so the photo isn't zoomed in). */
+      aspect-ratio: var(--project-ratio-mobile, 366 / 484.802429);
     }
 
     .projects-row-primary .project-card:nth-child(1) .project-visual,
