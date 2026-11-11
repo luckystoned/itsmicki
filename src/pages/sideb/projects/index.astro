@@ -18,6 +18,7 @@ const cards = sideBProjects.map((project, index) => ({
   project: { slug: project.slug, title: project.title, comingSoon: project.comingSoon, cover: project.gridCover },
   label: project.label,
   video: project.gridVideo,
+  videoMobile: project.gridVideoMobile,
   href: project.comingSoon ? null : sideBHref(project.slug) ?? null,
   eager: 'eager' in slots[index] ? slots[index].eager : false,
   style: `--project-width:${slots[index].width};--project-height:auto;--project-ratio:${slots[index].ratio}`,

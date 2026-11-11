@@ -207,18 +207,21 @@ const { label } = Astro.props;
   const gridOf = (gw: number, gh: number): Cells => ({ cells: new Int16Array(gw * gh).fill(-1), gw, gh });
   /** Draws grid cells as one shape with rounded corners, like the motifs of the references: outer corners rounded,
       inner (concave) corners filleted, cells side by side merged; a lone cell becomes a dot. Colour seams inside the
-      shape stay square. (ox, oy): where the grid starts. */
-  const drawCells = (g: CanvasRenderingContext2D, { cells, gw, gh }: Cells, cell: number, colours: string[], ox = 0, oy = 0) => {
+      shape stay square. (ox, oy): where the grid starts. `joinDiagonals`: cells touching only at a corner keep that corner
+      square, so with the fillets around it the joint reads solid instead of a cross with empty triangles (flowers). */
+  const drawCells = (g: CanvasRenderingContext2D, { cells, gw, gh }: Cells, cell: number, colours: string[], ox = 0, oy = 0, joinDiagonals = false) => {
     const at = (i: number, j: number) => (i < 0 || j < 0 || i >= gw || j >= gh ? -1 : cells[j * gw + i]);
     const r = cell * .5, e = .6;
     for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
       const c = at(i, j), x = ox + i * cell, y = oy + j * cell;
       if (c >= 0) {
         const L = at(i - 1, j) >= 0, R = at(i + 1, j) >= 0, T = at(i, j - 1) >= 0, B = at(i, j + 1) >= 0;
+        // A corner stays square where it meets a diagonal neighbour (only when joining diagonals).
+        const D = (dx: number, dy: number) => joinDiagonals && at(i + dx, j + dy) >= 0;
         g.fillStyle = colours[c];
         g.beginPath();
         // Overlapping a touch where cells meet, so no hairline shows between them.
-        g.roundRect(x - (L ? e : 0), y - (T ? e : 0), cell + (L ? e : 0) + (R ? e : 0), cell + (T ? e : 0) + (B ? e : 0), [!L && !T ? r : 0, !R && !T ? r : 0, !R && !B ? r : 0, !L && !B ? r : 0]);
+        g.roundRect(x - (L ? e : 0), y - (T ? e : 0), cell + (L ? e : 0) + (R ? e : 0), cell + (T ? e : 0) + (B ? e : 0), [!L && !T && !D(-1, -1) ? r : 0, !R && !T && !D(1, -1) ? r : 0, !R && !B && !D(1, 1) ? r : 0, !L && !B && !D(-1, 1) ? r : 0]);
         g.fill();
       } else {
         // Inner corners: where two sides of an empty cell meet filled ones, a fillet rounds the notch.
@@ -676,7 +679,7 @@ const { label } = Astro.props;
         for (let j = 2; j < gh - 3; j += 3 + Math.floor(random() * 2)) { const side = (j % 2 ? 1 : -1); grid.cells[j * gw + 2 + side] = 0; grid.cells[j * gw + 2 + side * 2] = 0; }
       }
       const sprite = canvasOf(grid.gw * cell * ratio, grid.gh * cell * ratio);
-      drawCells(sprite.getContext('2d')!, grid, cell * ratio, colours);
+      drawCells(sprite.getContext('2d')!, grid, cell * ratio, colours, 0, 0, kind === 'flower');
       return { sprite, w: grid.gw * cell, h: grid.gh * cell };
     };
     const growPlants = () => {

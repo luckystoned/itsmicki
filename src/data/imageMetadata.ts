@@ -32,8 +32,7 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/04_SideB/Projects/01_MkpHair/00_MkpHair_Cover.webp': { width: 1520, height: 1510 },
   '/02_Projects/01_Winona/01_Winona_Drag.webp': { width: 790, height: 790 },
   '/02_Projects/01_Winona/02_Winona_Drag.webp': { width: 780, height: 787 },
-  '/02_Projects/01_Winona/01_Winona_Cover.webp': { width: 1520, height: 1511 },
-  '/02_Projects/01_Winona/01_Winona_Projects.webp': { width: 1118, height: 1950 },
+  '/02_Projects/01_Winona/01_Winona_Cover.webp': { width: 1287, height: 1500 },
   '/02_Projects/07_Blend360/01_Blend360_Video.webp': { width: 1920, height: 1080 },
   '/02_Projects/07_Blend360/01_Blend360_Cover.webp': { width: 3112, height: 2056 },
   '/02_Projects/07_Blend360/02_Blend360.webp': { width: 1992, height: 2000 },
@@ -159,6 +158,6 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/04_SideB/Film_05b_SideB.webp': { width: 541, height: 676 },
   '/04_SideB/Film_06a_SideB.webp': { width: 712, height: 676 },
   '/04_SideB/Film_06b_SideB.webp': { width: 541, height: 676 },
-  '/04_SideB/Home/02_SideBProjects.webp': { width: 1522, height: 2016 },
+  '/04_SideB/Projects/02_ContainedAlienation/00_ContainedAlienation_Cover.webp': { width: 756, height: 928 },
   '/04_SideB/Home/03_SideBProjects.webp': { width: 1556, height: 1028 },
 };

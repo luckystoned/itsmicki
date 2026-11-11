@@ -8,7 +8,7 @@ export const DEFAULT_SOCIAL_IMAGE = '/og.jpg';
 export const socialProfiles = [
   'https://www.linkedin.com/in/itsmicki/',
   'https://www.behance.net/itsmicki',
-  'https://dribbble.com/micaelagalimberti',
+  'https://dribbble.com/itsmicki',
   'https://www.instagram.com/its.micki/',
   'https://www.tiktok.com/@mickivainillla',
 ];
