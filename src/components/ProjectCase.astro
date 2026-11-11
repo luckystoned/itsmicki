@@ -1807,6 +1807,12 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       line-height: 29px;
     }
 
+    /* Side B lead sections (Contained Alienation's "(art direction)") share .case-text-lead with their sentence, which
+       would drop their top margin: keep the 46px gap above every text section, as on MaxMaher. */
+    .project-case-page-b .case-flow > .case-text-lead {
+      margin: 46px 0 0;
+    }
+
     .case-credit-list {
       gap: 0;
       text-align: left;
