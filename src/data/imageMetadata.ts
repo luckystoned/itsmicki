@@ -158,6 +158,6 @@ export const imageMetadata: Record<string, { width: number; height: number }> = 
   '/04_SideB/Film_05b_SideB.webp': { width: 541, height: 676 },
   '/04_SideB/Film_06a_SideB.webp': { width: 712, height: 676 },
   '/04_SideB/Film_06b_SideB.webp': { width: 541, height: 676 },
-  '/04_SideB/Home/02_SideBProjects.webp': { width: 1522, height: 2016 },
+  '/04_SideB/Projects/02_ContainedAlienation/00_ContainedAlienation_Cover.webp': { width: 756, height: 928 },
   '/04_SideB/Home/03_SideBProjects.webp': { width: 1556, height: 1028 },
 };
