@@ -455,6 +455,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
         `The redesign translated the refreshed brand into an interactive digital experience, with clients and their challenges at its center. We shaped a clearer path through Blend360’s capabilities, resources, case studies, and thought leadership, helping visitors get a better sense of what the company does and how it works.`,
         `The visual direction carried the new identity across the site while giving its content room to evolve. The result was designed to feel cohesive for visitors and more manageable for the marketing team.`,
       ]),
+      single(video('/02_Projects/07_Blend360/16_Blend360_Video', 'Walkthrough of the redesigned Blend360 website: the loader drawing the symbol over New York, the liquid hero type, the manifesto lighting up, our work, news, partners and awards, testimonials, the world map and the contact footer.', '2560 / 1440')),
       pair(
         video('/02_Projects/07_Blend360/06_Blend360_Video', 'The Blend360 symbol tracing itself in cyan on dark teal.', '47.62 / 47.62'), '47.62vw', '47.62vw',
         video('/02_Projects/07_Blend360/07_Blend360_Video', 'Large outlines of the Blend360 symbol drawing in around the words People + AI.', '47.62 / 47.62'), '47.62vw', '47.62vw',
