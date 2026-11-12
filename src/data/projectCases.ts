@@ -15,6 +15,13 @@ export type CaseMedia = {
   }>;
   ratio: string;
   caption?: string;
+  /** Another cut of the video for tablets and phones (≤1024px), at its own ratio, e.g. without a desktop frame. */
+  compact?: {
+    src: string;
+    mobileSrc: string;
+    poster: string;
+    ratio: string;
+  };
 };
 
 export type CaseBlock =
@@ -69,6 +76,15 @@ const image = (src: string, alt: string, ratio: string, caption?: string): CaseM
  */
 const video = (base: string, alt: string, ratio: string, caption?: string): CaseMedia => ({
   type: 'video', src: `${base}.mp4`, mobileSrc: `${base}_Mobile.mp4`, poster: `${base}.webp`, alt, ratio, caption,
+});
+
+/**
+ * Site video framed for desktop, with a bare cut for tablets and phones: `base` as in `video()` (desktop only),
+ * `bare` names `<bare>.mp4` (tablets), `<bare>_Mobile.mp4` (phones) and `<bare>.webp`.
+ */
+const framedVideo = (base: string, bare: string, alt: string, ratio: string, bareRatio: string): CaseMedia => ({
+  type: 'video', src: `${base}.mp4`, poster: `${base}.webp`, alt, ratio,
+  compact: { src: `${bare}.mp4`, mobileSrc: `${bare}_Mobile.mp4`, poster: `${bare}.webp`, ratio: bareRatio },
 });
 
 /** Short video served from the site, muted and looping, over its still frame. */
@@ -455,7 +471,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
         `The redesign translated the refreshed brand into an interactive digital experience, with clients and their challenges at its center. We shaped a clearer path through Blend360’s capabilities, resources, case studies, and thought leadership, helping visitors get a better sense of what the company does and how it works.`,
         `The visual direction carried the new identity across the site while giving its content room to evolve. The result was designed to feel cohesive for visitors and more manageable for the marketing team.`,
       ]),
-      single(video('/02_Projects/07_Blend360/16_Blend360_Video', 'Walkthrough of the redesigned Blend360 website: the loader drawing the symbol over New York, the liquid hero type, the manifesto lighting up, our work, news, partners and awards, testimonials, the world map and the contact footer.', '2560 / 1440')),
+      single(framedVideo('/02_Projects/07_Blend360/16_Blend360_Video', '/02_Projects/07_Blend360/16_Blend360_Video_Bare', 'Walkthrough of the redesigned Blend360 website: the loader drawing the symbol over New York, the liquid hero type, the manifesto lighting up, our work, news, partners and awards, testimonials, the world map and the contact footer.', '2560 / 1440', '1920 / 1366')),
       pair(
         video('/02_Projects/07_Blend360/06_Blend360_Video', 'The Blend360 symbol tracing itself in cyan on dark teal.', '47.62 / 47.62'), '47.62vw', '47.62vw',
         video('/02_Projects/07_Blend360/07_Blend360_Video', 'Large outlines of the Blend360 symbol drawing in around the words People + AI.', '47.62 / 47.62'), '47.62vw', '47.62vw',

@@ -15,7 +15,7 @@ interface Props {
 
 const { caseStudy, side = 'a' } = Astro.props;
 
-const mediaStyle = (media: CaseMedia) => `--media-ratio:${media.ratio}`;
+const mediaStyle = (media: CaseMedia) => `--media-ratio:${media.ratio}${media.compact ? `;--media-ratio-compact:${media.compact.ratio}` : ''}`;
 const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
   `--cell-width:${media.width};--cell-height:${media.height};${mediaStyle(media)}`;
 ---
@@ -167,7 +167,9 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
                       </span>
                     </div>
                   ) : item.type === 'video' && item.src ? (
-                    <video poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video>
+                    <video poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video data-compact-poster={item.compact?.poster}>
+                      {item.compact && <source src={item.compact.mobileSrc} type="video/mp4" media="(max-width: 760px)" />}
+                      {item.compact && <source src={item.compact.src} type="video/mp4" media="(max-width: 1024px)" />}
                       {item.mobileSrc && <source src={item.mobileSrc} type="video/mp4" media="(max-width: 760px)" />}
                       <source src={item.src} type="video/mp4" />
                     </video>
@@ -299,6 +301,13 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
 
 <script>
   import { playVisibleVideos } from '@/scripts/playVisibleVideos';
+
+  /* Videos with a compact cut show its own still frame on tablets and phones (the sources already switch by media). */
+  if (matchMedia('(max-width: 1024px)').matches) {
+    document.querySelectorAll<HTMLVideoElement>('video[data-compact-poster]').forEach((video) => {
+      video.poster = video.dataset.compactPoster ?? video.poster;
+    });
+  }
 
   /* Native scroll plus the same frame-rate-independent damping as the reference. */
   (function () {
@@ -1028,6 +1037,13 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
 
   .case-media-single .case-media-surface {
     aspect-ratio: var(--media-ratio);
+  }
+
+  /* Tablets and phones: a video with a compact cut (no desktop frame) takes that cut's ratio. */
+  @media (max-width: 1024px) {
+    .case-media-single .case-media-surface {
+      aspect-ratio: var(--media-ratio-compact, var(--media-ratio));
+    }
   }
 
   .case-media-surface {
