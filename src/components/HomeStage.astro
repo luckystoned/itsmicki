@@ -111,15 +111,14 @@ const loops = [0, 1, 2];
       place(); addEventListener('resize', place); document.fonts?.ready.then(place);
     }
 
-    // The home GIF's hover: its invisible video twin loads on desktop and plays only while the pointer is over it, so
-    // LiquidHover keeps the photos changing under the effect.
+    // The home GIF's hover: its invisible video twin loads on desktop and starts when the pointer comes in, so LiquidHover
+    // keeps the photos changing under the effect; LiquidHover pauses it once the effect has settled and the GIF is back.
     const reelVideo = document.querySelector<HTMLVideoElement>('[data-reel-hover]');
     if (reelVideo && matchMedia('(hover: hover) and (pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       reelVideo.preload = 'auto';
       reelVideo.load();
       const link = reelVideo.closest('a');
       link?.addEventListener('pointerenter', () => { reelVideo.play().catch(() => {}); });
-      link?.addEventListener('pointerleave', () => { reelVideo.pause(); });
     }
 
     const carousel = document.querySelector<HTMLElement>('[data-carousel]');
