@@ -210,7 +210,9 @@
       running = false;
       previous = 0;
       canvas.remove();
-      if (visual) visual.style.opacity = '';
+      // The home GIF's video twin only plays while the effect draws it; pausing it on pointer leave froze the
+      // picture during the seconds the oil keeps flowing, so it pauses here, once the GIF is back.
+      if (visual) { visual.style.opacity = ''; visual.querySelector<HTMLVideoElement>('[data-reel-hover]')?.pause(); }
       visual = null;
       image = null;
     };
