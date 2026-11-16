@@ -166,6 +166,16 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
                         ))}
                       </span>
                     </div>
+                  ) : item.type === 'video' && item.src && item.browser ? (
+                    <div class="case-browser" style={`--browser-backdrop:${item.browser.backdrop};--browser-bar:${item.browser.bar};--browser-ink:${item.browser.ink};--browser-video-ratio:${item.browser.videoRatio}`}>
+                      <div class="case-browser-window">
+                        <div class="case-browser-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+                        <video poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video>
+                          {item.mobileSrc && <source src={item.mobileSrc} type="video/mp4" media="(max-width: 760px)" />}
+                          <source src={item.src} type="video/mp4" />
+                        </video>
+                      </div>
+                    </div>
                   ) : item.type === 'video' && item.src ? (
                     <video poster={item.poster} muted loop playsinline disablepictureinpicture preload="none" aria-label={item.alt} data-autoplay-video data-compact-poster={item.compact?.poster}>
                       {item.compact && <source src={item.compact.mobileSrc} type="video/mp4" media="(max-width: 760px)" />}
@@ -1068,6 +1078,62 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
     object-fit: cover;
   }
 
+  /* Website walkthrough in a browser window (outlined bar and dots) over a flat backdrop, on every screen. */
+  .case-browser {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    --browser-stroke: .5px;
+    background: var(--browser-backdrop);
+  }
+
+  .case-browser-window {
+    width: 60%;
+    overflow: hidden;
+    border: var(--browser-stroke) solid var(--browser-ink);
+    background: var(--browser-bar);
+  }
+
+  .case-browser-bar {
+    display: flex;
+    gap: .55vw;
+    align-items: center;
+    height: 2.5vw;
+    padding: 0 1.1vw;
+    border-bottom: var(--browser-stroke) solid var(--browser-ink);
+  }
+
+  .case-browser-bar i {
+    width: .85vw;
+    height: .85vw;
+    border: var(--browser-stroke) solid var(--browser-ink);
+    border-radius: 50%;
+  }
+
+  .case-media-content .case-browser video {
+    height: auto;
+    aspect-ratio: var(--browser-video-ratio);
+  }
+
+  /* Tablets and phones: a taller block (compact ratio) so the window can take most of the width. */
+  @media (max-width: 1024px) {
+    .case-browser-window {
+      width: 86%;
+    }
+
+    .case-browser-bar {
+      gap: 1.2vw;
+      height: 5vw;
+      padding: 0 2.4vw;
+    }
+
+    .case-browser-bar i {
+      width: 1.8vw;
+      height: 1.8vw;
+    }
+  }
+
   .case-reveal-caption {
     margin-top: .6vw;
     font-size: 1.25vw;
@@ -1519,21 +1585,20 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       line-height: 1;
     }
 
-    /* MaxMaher on phones (Micki's reference): a bigger, less tilted tote over the role, the sticker beside the title. */
+    /* MaxMaher on phones (Micki's reference): the tote tilted as on desktop, hanging off the right edge beside the role;
+       the sticker, tilted the other way, beside the year with the tote's straps over it. */
     .project-case-page[data-case='maxmaher'] .case-drag:nth-of-type(2) {
-      --drag-rotation: -4deg !important;
       z-index: 13;
-      top: min(13.32vw, 51.95px) !important;
-      left: min(40.99vw, 159.86px) !important;
-      width: min(56.1vw, 218.79px) !important;
+      top: min(13vw, 50.7px) !important;
+      left: min(51vw, 198.9px) !important;
+      width: min(51vw, 198.9px) !important;
     }
 
     .project-case-page[data-case='maxmaher'] .case-drag:nth-of-type(3) {
-      --drag-rotation: 0deg !important;
       z-index: 12;
-      top: min(1.2vw, 4.68px) !important;
-      left: min(55.68vw, 217.15px) !important;
-      width: min(41.93vw, 163.53px) !important;
+      top: min(5vw, 19.5px) !important;
+      left: min(47vw, 183.3px) !important;
+      width: min(39vw, 152.1px) !important;
     }
 
     .project-case-page[data-case='outliant'] .case-title {
@@ -1598,8 +1663,9 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       margin-top: 40px;
     }
 
-    /* MaxMaher's lead sections share the .case-text-lead class with their sentence; keep the 46px gap of the other sections. */
-    .project-case-page[data-case='maxmaher'] .case-flow > .case-text-lead {
+    /* Lead sections (MaxMaher, Textures & Body's "(synthetic bodies)") share the .case-text-lead class with their
+       sentence; keep the 46px gap of the other sections. */
+    :is(.project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body']) .case-flow > .case-text-lead {
       margin: 46px 0 0;
     }
 
@@ -1651,17 +1717,18 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       content: " ";
     }
 
+    /* Micki's reference: the pouch beside the year, the DHEA jar in front of it, over the end of the role. */
     .project-case-page[data-case='winona'] .case-drag:nth-of-type(2) {
       z-index: 13;
-      top: 28.13vw !important;
-      left: 53.36vw !important;
-      width: 37.9vw !important;
+      top: 30vw !important;
+      left: 59.5vw !important;
+      width: 43.6vw !important;
     }
 
     .project-case-page[data-case='winona'] .case-drag:nth-of-type(3) {
       z-index: 12;
-      top: 1.95vw !important;
-      left: 57.9vw !important;
+      top: 6vw !important;
+      left: 54vw !important;
       width: 38.38vw !important;
     }
 
