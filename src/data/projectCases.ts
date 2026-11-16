@@ -22,6 +22,13 @@ export type CaseMedia = {
     poster: string;
     ratio: string;
   };
+  /** The video sits in a browser window (title bar with three dots) over a flat backdrop. */
+  browser?: {
+    backdrop: string;
+    bar: string;
+    ink: string;
+    videoRatio: string;
+  };
 };
 
 export type CaseBlock =
@@ -79,12 +86,21 @@ const video = (base: string, alt: string, ratio: string, caption?: string): Case
 });
 
 /**
- * Site video framed for desktop, with a bare cut for tablets and phones: `base` as in `video()` (desktop only),
- * `bare` names `<bare>.mp4` (tablets), `<bare>_Mobile.mp4` (phones) and `<bare>.webp`.
+ * A website walkthrough inside a browser window over a flat backdrop, on every screen. `ratio` is the whole block on
+ * desktop and `compactRatio` on tablets and phones (taller, so the window can be wider); `videoRatio` is the video's own.
+ * `base` names `<base>.mp4`, `<base>_Mobile.mp4` and `<base>.webp`.
  */
-const framedVideo = (base: string, bare: string, alt: string, ratio: string, bareRatio: string): CaseMedia => ({
-  type: 'video', src: `${base}.mp4`, poster: `${base}.webp`, alt, ratio,
-  compact: { src: `${bare}.mp4`, mobileSrc: `${bare}_Mobile.mp4`, poster: `${bare}.webp`, ratio: bareRatio },
+const browserVideo = (
+  base: string,
+  alt: string,
+  ratio: string,
+  compactRatio: string,
+  videoRatio: string,
+  browser: Omit<NonNullable<CaseMedia['browser']>, 'videoRatio'>,
+): CaseMedia => ({
+  type: 'video', src: `${base}.mp4`, mobileSrc: `${base}_Mobile.mp4`, poster: `${base}.webp`, alt, ratio,
+  browser: { ...browser, videoRatio },
+  compact: { src: `${base}.mp4`, mobileSrc: `${base}_Mobile.mp4`, poster: `${base}.webp`, ratio: compactRatio },
 });
 
 /** Short video served from the site, muted and looping, over its still frame. */
@@ -471,7 +487,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
         `The redesign translated the refreshed brand into an interactive digital experience, with clients and their challenges at its center. We shaped a clearer path through Blend360’s capabilities, resources, case studies, and thought leadership, helping visitors get a better sense of what the company does and how it works.`,
         `The visual direction carried the new identity across the site while giving its content room to evolve. The result was designed to feel cohesive for visitors and more manageable for the marketing team.`,
       ]),
-      single(framedVideo('/02_Projects/07_Blend360/16_Blend360_Video', '/02_Projects/07_Blend360/16_Blend360_Video_Bare', 'Walkthrough of the redesigned Blend360 website: the loader drawing the symbol over New York, the liquid hero type, the manifesto lighting up, our work, news, partners and awards, testimonials, the world map and the contact footer.', '2560 / 1440', '1920 / 1366')),
+      single(browserVideo('/02_Projects/07_Blend360/16_Blend360_Video_Bare', 'Walkthrough of the redesigned Blend360 website: the loader drawing the symbol over New York, the liquid hero type, the manifesto lighting up, our work, news, partners and awards, testimonials, the world map and the contact footer.', '1556 / 875', '5 / 4', '1920 / 1366', { backdrop: '#f4f3ef', bar: '#f4f3ef', ink: '#1a1a1a' })),
       pair(
         video('/02_Projects/07_Blend360/06_Blend360_Video', 'The Blend360 symbol tracing itself in cyan on dark teal.', '47.62 / 47.62'), '47.62vw', '47.62vw',
         video('/02_Projects/07_Blend360/07_Blend360_Video', 'Large outlines of the Blend360 symbol drawing in around the words People + AI.', '47.62 / 47.62'), '47.62vw', '47.62vw',
