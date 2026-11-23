@@ -27,8 +27,8 @@ const structuredData = {
 ---
 
 <BaseLayout
-  title={`${caseStudy.title} — Itsmicki`}
-  description={project.summary}
+  title={project.seoTitle ?? `${caseStudy.title} — Itsmicki`}
+  description={project.seoDescription ?? project.summary}
   image={project.cover}
   imageAlt={`${caseStudy.title} project by Micaela Galimberti`}
   ogType="article"

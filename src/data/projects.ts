@@ -7,6 +7,9 @@ export type Project = {
   summary: string;
   synopsis: string;
   conclusion?: string;
+  /** Lowercase share title and description, used by Pinterest rich pins and other link previews. */
+  seoTitle?: string;
+  seoDescription?: string;
   cover?: string;
   accent: string;
   comingSoon?: boolean;
@@ -23,6 +26,8 @@ export const projects: Project[] = [
   {
     slug: 'winona', number: '02', title: 'Winona', year: '2023',
     role: 'UX—UI Lead, Visual & Motion Designer', accent: '#ecb2c5',
+    seoTitle: 'winona — wellness rebrand & web art direction | itsmicki',
+    seoDescription: 'rebrand and website art direction for winona, a women’s wellness and menopause care brand: warm color, elegant serif typography, packaging and ux/ui by micki.',
     cover: '/02_Projects/01_Winona/01_Winona_Cover.webp',
     summary: "Winona is a women’s wellness center that provides support and care via educational resources and hormone replacement therapy.",
     synopsis: "After collaborating closely with the marketing team to understand the brand, its pain points and strengths, we embarked on a complete rebranding project. I led the art direction for the website and helped the UX/UI team scale the chosen concept across its many pages.",
@@ -38,6 +43,8 @@ export const projects: Project[] = [
   {
     slug: 'maxmaher', number: '04', title: 'Max Maher', year: '2023',
     role: 'Art Director & Visual Designer', accent: '#9fb0ff',
+    seoTitle: 'max maher — content system & social media design | itsmicki',
+    seoDescription: 'art direction and visual design for max maher: a bold content system for financial education with strong typography, stickers and flexible social templates.',
     cover: '/02_Projects/04_MaxMaher/01_MaxMaher_Portada.webp',
     summary: 'A bold content system designed to turn financial education into a recognizable, fast-moving visual world.',
     synopsis: 'The system brings together strong typography, energetic graphics and flexible templates to create consistency across a high-volume content ecosystem.',
@@ -45,6 +52,8 @@ export const projects: Project[] = [
   {
     slug: 'lumen', number: '05', title: 'Lumen', year: '2025',
     role: 'Art Direction, Brand Strategy, Visual Identity', accent: '#f6a66d',
+    seoTitle: 'lumen — brand identity for an art & tech experience | itsmicki',
+    seoDescription: 'art direction, brand strategy and visual identity for lumen, an art and technology experience: posters, tickets, merch and playful graphic systems by micki.',
     cover: '/02_Projects/06_Lumen/01_Lumen_Cover.webp',
     summary: 'An art and technology experience shaped through tactile digital storytelling, playful systems and expressive interaction.',
     synopsis: 'Lumen explores the meeting point between physical sensation and screen-based experiences through a flexible visual language built for discovery.',
@@ -52,6 +61,8 @@ export const projects: Project[] = [
   {
     slug: 'outliant', number: '06', title: 'Outliant', year: '2024',
     role: 'Art Director, Brand Strategist & UX/UI Design Lead', accent: '#ddff55',
+    seoTitle: 'outliant — agency rebrand, art direction & ux/ui | itsmicki',
+    seoDescription: 'brand strategy, art direction and ux/ui for outliant’s rebrand: a remote digital agency turned into a clear, confident and scalable visual and digital system.',
     cover: '/02_Projects/05_Outliant/01_Outliant_Cover.webp',
     summary: 'Outliant is a remote digital agency bringing together strategy, design, technology and growth.',
     synopsis: 'As the company evolved, a central challenge emerged: defining a clear identity, positioning and territory. The work turned that strategic foundation into a scalable visual and digital system.',
