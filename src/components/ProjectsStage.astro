@@ -705,10 +705,10 @@ const { side = 'a', wordmark } = Astro.props;
       aspect-ratio: 366 / 363.042419;
     }
 
-    /* Side A: Genova and Rocket share the first row (the rules above); Winona then sits on its own before Amazon,
-       Max Maher and Blend360, so the loose cards keep the proportions of their Figma places one step later. */
+    /* Side A: Genova and Winona share the first row (the rules above); Rocket then sits on its own, at its own
+       proportion, before Amazon, Max Maher and Blend360, which keep the proportions of their Figma places. */
     .projects-page:not(.projects-page-b) .projects-grid > .project-card:nth-of-type(1) .project-visual {
-      aspect-ratio: var(--project-ratio-mobile, 366 / 484.802429);
+      aspect-ratio: var(--project-ratio);
     }
 
     .projects-page:not(.projects-page-b) .projects-grid > .project-card:nth-of-type(2) .project-visual,
