@@ -37,7 +37,7 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
   <article class="project-case-canvas" aria-labelledby="case-title">
     <header class="editorial-case-hero">
       <div class="case-title-line" data-case-text-reveal>
-        <h1 class="case-title" id="case-title">({caseStudy.title})</h1>
+        <h1 class="case-title" id="case-title">({caseStudy.title}<span class="case-title-close">)</span></h1>
         <span class="case-year">{caseStudy.year}</span>
       </div>
 
@@ -868,6 +868,9 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
     letter-spacing: -.04em;
   }
 
+  /* Rocket: its final "t" touches the closing parenthesis, so the parenthesis moves a little to the right. */
+  .project-case-page[data-case='rocket'] .case-title-close { margin-left: .04em; }
+
   .case-year {
     margin-left: .33vw;
     font-family: var(--case-display);
@@ -915,7 +918,7 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
     margin-top: 2.5vw;
   }
 
-  .project-case-page[data-case='winona'] .case-intro {
+  :is(.project-case-page[data-case='winona'], .project-case-page[data-case='rocket']) .case-intro {
     margin-top: 3.25vw;
   }
 
@@ -1418,7 +1421,7 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
 
   /* Winona, Outliant and MaxMaher on tablet and desktop: body and large copy justified, as on Lumen. */
   @media (min-width: 761px) {
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='contained-alienation'], .project-case-page[data-case='missing-souls'], .project-case-page[data-case='nostalgia-as-agony']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='rocket'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='contained-alienation'], .project-case-page[data-case='missing-souls'], .project-case-page[data-case='nostalgia-as-agony']) :is(.case-nutshell, .case-intro-columns p, .case-text-content > .case-text-columns p, .case-text-content > .case-text-lead, .case-text-wide-copy) {
       text-align: justify;
     }
   }
@@ -1590,7 +1593,7 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
     }
 
     /* Body copy justified on phones, as on Lumen; role and headings keep their alignment. */
-    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='missing-souls']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='outliant'], .project-case-page[data-case='maxmaher'], .project-case-page[data-case='textures-body'], .project-case-page[data-case='rocket'], .project-case-page[data-case='general-immersive'], .project-case-page[data-case='mkp-hair'], .project-case-page[data-case='missing-souls']) :is(.case-nutshell, .case-text-content p, .case-text-content > .case-text-columns, .case-text-wide-copy, .case-outliant-mobile-visual p) {
       text-align: justify;
     }
 
@@ -1651,14 +1654,14 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       content: " ";
     }
 
-    .project-case-page[data-case='winona'] .case-drag:nth-of-type(2) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='rocket']) .case-drag:nth-of-type(2) {
       z-index: 13;
       top: 28.13vw !important;
       left: 53.36vw !important;
       width: 37.9vw !important;
     }
 
-    .project-case-page[data-case='winona'] .case-drag:nth-of-type(3) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='rocket']) .case-drag:nth-of-type(3) {
       z-index: 12;
       top: 1.95vw !important;
       left: 57.9vw !important;
@@ -1674,7 +1677,7 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       margin-left: auto;
     }
 
-    .project-case-page[data-case='winona'] .case-intro {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='rocket']) .case-intro {
       margin-top: 30px;
     }
 

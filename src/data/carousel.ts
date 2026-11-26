@@ -4,12 +4,13 @@ import { projects } from '@/data/projects';
 const carouselLayout: Record<string, { width: number; height: number; label: string; cover?: string; caseCover?: string; video?: string }> = {
   genova: { width: 430.937, height: 570.818, label: '01_Genova_Art Direction+Visual Design' },
   winona: { width: 430.069, height: 427.462, label: '02_Winona_UX—UI Lead, Visual & Motion Designer', cover: '/02_Projects/01_Winona/01_Winona_Cover.webp' },
-  amazon: { width: 427.462, height: 282.368, label: '03_Amazon_UXUI Lead+Art Direction+Visual Design', cover: '/02_Projects/03_Amazon/01_Amazon_Video.webp', video: '/02_Projects/03_Amazon/01_Amazon_Loop.mp4' },
-  maxmaher: { width: 430.069, height: 426.593, label: '04_MaxMaher_Art Direction+Visual Design' },
-  lumen: { width: 430.069, height: 257.354, label: '05_Lumen_Art Direction+Visual Design', video: '/02_Projects/06_Lumen/01_Lumen_Loop.mp4' },
-  outliant: { width: 429.582, height: 508.909, label: '06_Outliant_Art Direction+Visual Design+UXUI Lead' },
-  blend360: { width: 430.937, height: 570.818, label: '07_Blend360_Art Director, Branding & UX/UI Redesign, Motion', video: '/02_Projects/07_Blend360/01_Blend360_Video.mp4' },
-  'textures-body': { width: 430.069, height: 315.29, label: '08_Textures & Body_Art Direction+AI Image Generation', video: '/02_Projects/08_TexturesBody/01_TexturesBody_Loop.mp4' },
+  amazon: { width: 427.462, height: 282.368, label: '04_Amazon_UXUI Lead+Art Direction+Visual Design', cover: '/02_Projects/03_Amazon/01_Amazon_Video.webp', video: '/02_Projects/03_Amazon/01_Amazon_Loop.mp4' },
+  maxmaher: { width: 430.069, height: 426.593, label: '05_MaxMaher_Art Direction+Visual Design' },
+  lumen: { width: 430.069, height: 257.354, label: '06_Lumen_Art Direction+Visual Design', video: '/02_Projects/06_Lumen/01_Lumen_Loop.mp4' },
+  outliant: { width: 429.582, height: 508.909, label: '07_Outliant_Art Direction+Visual Design+UXUI Lead' },
+  blend360: { width: 430.937, height: 570.818, label: '08_Blend360_Art Director, Branding & UX/UI Redesign, Motion', video: '/02_Projects/07_Blend360/01_Blend360_Video.mp4' },
+  'textures-body': { width: 430.069, height: 315.29, label: '09_Textures & Body_Art Direction+AI Image Generation', video: '/02_Projects/08_TexturesBody/01_TexturesBody_Loop.mp4' },
+  rocket: { width: 430.069, height: 537.586, label: '03_Rocket_Visual Identity+Art Direction+Motion & Sound', cover: '/02_Projects/09_Rocket/01_Rocket.webp' },
 };
 
 const COMING_SOON = ' — (Coming soon) !!!!!^*^';
