@@ -255,7 +255,7 @@ const loops = [0, 1, 2];
 
     /* The same bar as every other page (Figma 392:10179, 922:1494): on Side A, (SIDE A) (PROJECTS) (DEETS) on the
        left and (SIDE B) on the right; on Side B, (SIDE A) on the left and (PROJECTS) (DEETS) (SIDE B) on the right. */
-    :global(body:has(.home-stage) .site-header) { position: fixed; inset: 0 0 auto; display: flex; align-items: baseline; gap: 10px; width: 100vw; height: auto; max-height: none; min-height: 0; padding: 18px var(--gutter) !important; background: transparent; backdrop-filter: none; font-size: clamp(14px, 1.74vw, 27.117px); font-weight: 500; line-height: normal; letter-spacing: -.02em; transform: none; pointer-events: none; }
+    :global(body:has(.home-stage) .site-header) { position: fixed; inset: 0 0 auto; display: flex; align-items: center; gap: 10px; width: 100vw; height: auto; max-height: none; min-height: 0; padding: 18px var(--gutter) !important; background: transparent; backdrop-filter: none; font-size: clamp(14px, 1.74vw, 27.117px); font-weight: 500; line-height: normal; letter-spacing: -.02em; transform: none; pointer-events: none; }
     :global(body:has(.home-stage) .site-header nav) { display: contents; }
     :global(body:has(.home-stage) .site-header a) { position: static; pointer-events: auto; }
     /* The current side is underlined like the current page elsewhere. */

@@ -88,8 +88,8 @@ p, h1, h2, figure, dl, dd { margin: 0; }
 .site-header--b { flex-direction: row-reverse !important; }
 /* On desktop, every page's links sit as on its home (Figma 392:10179, 922:1494): on Side A, (SIDE A) (PROJECTS)
    (DEETS) on the left and (SIDE B) on the right; on Side B, (SIDE A) on the left and (PROJECTS) (DEETS) (SIDE B) on
-   the right. */
-@media (min-width: 801px) {
+   the right. From 761px, where the home switches to its desktop bar too. */
+@media (min-width: 761px) {
   .site-header[data-header] { justify-content: flex-start; gap: 10px; }
   .site-header[data-header] nav { display: contents; }
   .site-header[data-header]:not(.site-header--b) nav a:last-child { margin-left: auto; }
