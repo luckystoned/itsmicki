@@ -18,6 +18,11 @@ const definitions = [
     ratioMobile: '47.48 / 50.30', parallaxHeight: '110%', parallaxStart: '-9.0909%', parallaxSpan: '9.0909%',
   },
   {
+    // On its own under the first pair, at Max Maher's width and its cover's 4:5.
+    slug: 'rocket',
+    width: '40.58vw', height: 'auto', ratio: '4 / 5',
+  },
+  {
     slug: 'amazon',
     width: '100%', height: 'auto', ratio: '97.23 / 64.22',
     video: '/02_Projects/03_Amazon/01_Amazon_Loop.mp4',
@@ -65,7 +70,7 @@ const cards = definitions.map((definition) => {
   };
 });
 
-const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody] = cards;
+const [genova, winona, rocket, amazon, maxMaher, outliant, lumen, blend360, texturesBody] = cards;
 ---
 
 <BaseLayout
@@ -85,6 +90,8 @@ const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody
         <ProjectGridItem project={genova.project} label={genova.label} style={genova.style} cover={genova.cover} video={genova.video} eager={genova.eager} />
         <ProjectGridItem project={winona.project} label={winona.label} style={winona.style} cover={winona.cover} video={winona.video} eager={winona.eager} />
       </div>
+
+      <ProjectGridItem project={rocket.project} label={rocket.label} style={rocket.style} cover={rocket.cover} video={rocket.video} />
 
       <ProjectGridItem project={amazon.project} label={amazon.label} style={amazon.style} cover={amazon.cover} video={amazon.video} />
       <ProjectGridItem project={maxMaher.project} label={maxMaher.label} style={maxMaher.style} cover={maxMaher.cover} video={maxMaher.video} />

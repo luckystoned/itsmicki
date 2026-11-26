@@ -49,7 +49,7 @@ export type CaseBlock =
     };
 
 export type ProjectCase = {
-  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'blend360' | 'textures-body' | 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls' | 'nostalgia-as-agony';
+  slug: 'winona' | 'maxmaher' | 'outliant' | 'lumen' | 'blend360' | 'textures-body' | 'rocket' | 'mkp-hair' | 'contained-alienation' | 'general-immersive' | 'missing-souls' | 'nostalgia-as-agony';
   title: string;
   year: string;
   role: string;
@@ -555,6 +555,54 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
         image('/02_Projects/08_TexturesBody/15_TexturesBody.webp', 'Glossy lips and neck with a soft red blush.', '773 / 955'), '48.3125vw', '59.6875vw',
         image('/02_Projects/08_TexturesBody/16_TexturesBody.webp', 'A finger pulling at glossy lips under bold blush.', '773 / 955'), '48.3125vw', '59.6875vw',
       ),
+    ],
+    credits: [],
+  },
+  rocket: {
+    slug: 'rocket',
+    title: 'Rocket',
+    year: '2025—2026',
+    role: 'Visual Identity,<br>Art Direction,<br>Motion &amp; Sound',
+    nutshell: `Rocket is a house music cycle in Buenos Aires, born at Otra Historia Club Cultural. I created its full visual identity, building a flexible system for the cycle’s posters, flyers, social media, save the dates and stickers.`,
+    // Placed like Winona's stickers, with the same halftone baked in.
+    drags: [
+      { src: '/02_Projects/09_Rocket/01_Rocket_Drag.webp', left: '73.18vw', top: '.23vw', width: '24.5894vw', rotation: '0deg' },
+      { src: '/02_Projects/09_Rocket/02_Rocket_Drag.webp', left: '56vw', top: '8.26vw', width: '24.6656vw', rotation: '0deg' },
+    ],
+    // In the order of the Behance layout (Figma Rocket_Identidad Visual 265:2); the animated frames play as video.
+    blocks: [
+      single(image('/02_Projects/09_Rocket/01_Rocket.webp', 'A person carrying a canvas tote printed with ROCKET in black, the letters circled like stickers, full of records.', '1400 / 953')),
+      single(image('/02_Projects/09_Rocket/02_Rocket.webp', 'Type specimens: Neue Montreal Squeezed on black and OT 2049 on white, each with its alphabet and a large Aa.', '1400 / 875')),
+      text('(the challenge)', [], {
+        variant: 'wide',
+        wide: `Rocket needed an identity that could carry the energy of the music and the feeling of the nights, while working across very different formats. The idea was to create a visual world that felt bold and immediate, but still left room for each event to have its own character.`,
+      }),
+      single(video('/02_Projects/09_Rocket/03_Rocket_Video', 'The red dotted Rocket wordmark in white on red, its letters jittering like stop motion.', '1400 / 875')),
+      single(image('/02_Projects/09_Rocket/04_Rocket.webp', 'A black cap with the red dotted R and the ROCKET stickers, beside a DJ wearing the A (house) of our own T-shirt.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/05_Rocket_Video', 'The red dotted R with (HOUSE) over it on paper, the letter and the word moving apart in stop motion.', '1400 / 875')),
+      text('(the approach)', [
+        `The system began with a red dotted R, built to feel like a series of stickers placed one by one. The rest of the name follows that same logic: each letter of ROCKET sits inside its own black circle, ready to move around the composition. “(House)” brings the genre into the name while hinting at the idea of a place to belong.`,
+        `Bold typography, sticker-like shapes and analog textures—grain, ink bleed and print imperfections—give the identity its raw, handmade quality. These elements come together differently across each piece, keeping the system recognizable without making every application feel the same.`,
+      ]),
+      single(image('/02_Projects/09_Rocket/06_Rocket.webp', 'The Rocket House poster held up in front of a DJ booth, beside the red LINE UP post for Gogódansey.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/07_Rocket_Video', 'Posters reading A (house) of our own with the red dotted R, sliding up a paper wall in stop motion.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/08_Rocket_Video', 'The Save the date poster wobbling over a grainy photo of a rocket launch while the ROCKET stickers pop in.', '1400 / 875')),
+      single(image('/02_Projects/09_Rocket/09_Rocket.webp', 'A large A (house) of our own poster with the red dotted R pasted on a wall.', '1400 / 875')),
+      text('(the system)', [
+        `I carried the identity across the cycle’s event posters, flyers, social media, save the dates and stickers. The pieces were designed to work both on screen and in print, so the visual language could travel from the feed to the club.`,
+        `Motion and sound extended the system beyond the static compositions, giving the identity another way to build atmosphere around each event.`,
+      ]),
+      single(video('/02_Projects/09_Rocket/10_Rocket_Video', 'Three LINE UP posts on red, for Gaboojim, the line-up and FAR, their letters and photos moving in stop motion.', '1400 / 875')),
+      single(image('/02_Projects/09_Rocket/11_Rocket.webp', 'Flash photos of people dancing at Rocket beside a turntable with the ROCKET (HOUSE) label.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/12_Rocket_Video', 'A grainy black-and-white photo of the crowd at Rocket, its frame wobbling like stop motion.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/13_Rocket_Video', 'Rocket stickers jittering over a turntable, beside the red Vol. 01 announcement with its centre image changing.', '1400 / 875')),
+      single(image('/02_Projects/09_Rocket/14_Rocket.webp', 'Three Instagram highlight covers: (07/12) in red, (11/09) in black and (Tickets) in grey.', '1400 / 875')),
+      text('(my role)', [], {
+        variant: 'wide',
+        wide: `I led the project from concept to final applications, shaping the visual direction and creating the identity and its supporting pieces. Working on Rocket was especially meaningful because I got to build it for a friend. It was a pleasure to spend time understanding his vision and finding the right visual language to bring it into the world.`,
+      }),
+      single(video('/02_Projects/09_Rocket/16_Rocket_Video', 'Screen recording of the Rocket identity being built in Figma: the line-up poster, the stickers and the mockups opening one after another.', '1920 / 1080')),
+      single(video('/02_Projects/09_Rocket/15_Rocket_Video', 'The red dotted Rocket wordmark on black, moving in stop motion, with Rocket (House) — Buenos Aires, 2025—2026 below.', '1400 / 875')),
     ],
     credits: [],
   },
