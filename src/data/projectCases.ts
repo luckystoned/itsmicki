@@ -565,48 +565,39 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
     role: 'Visual Identity,<br>Art Direction,<br>Motion &amp; Sound',
     nutshell: `Rocket is a house music cycle in Buenos Aires, born at Otra Historia Club Cultural. I created its full visual identity, building a flexible system for the cycle’s posters, flyers, social media, save the dates and stickers.`,
     drags: [],
+    // In the order of the Behance layout (Figma Rocket_Identidad Visual 265:2); the animated frames play as video.
     blocks: [
-      pair(
-        video('/02_Projects/09_Rocket/01_Rocket_Video', 'Stop motion of posters reading A (house) of our own, with the red dotted R, sliding across a paper wall.', '4 / 5'), '48.3125vw', '60.39vw',
-        image('/02_Projects/09_Rocket/07_Rocket.webp', 'A DJ seen from behind at the decks, wearing a grey T-shirt printed with A (house) of our own.', '4 / 5'), '48.3125vw', '60.39vw',
-      ),
+      single(image('/02_Projects/09_Rocket/01_Rocket.webp', 'A person carrying a canvas tote printed with ROCKET in black, the letters circled like stickers, full of records.', '1400 / 953')),
+      single(image('/02_Projects/09_Rocket/02_Rocket.webp', 'Type specimens: Neue Montreal Squeezed on black and OT 2049 on white, each with its alphabet and a large Aa.', '1400 / 875')),
       text('(the challenge)', [], {
         variant: 'wide',
         wide: `Rocket needed an identity that could carry the energy of the music and the feeling of the nights, while working across very different formats. The idea was to create a visual world that felt bold and immediate, but still left room for each event to have its own character.`,
       }),
-      pair(
-        image('/02_Projects/09_Rocket/06_Rocket.webp', 'Person carrying a canvas tote bag printed with ROCKET in black, the letters circled like stickers.', '4 / 5'), '48.3125vw', '60.39vw',
-        image('/02_Projects/09_Rocket/10_Rocket.webp', 'Black cap with the red dotted R and (House) on the front and the round ROCKET stickers on the brim.', '4 / 5'), '48.3125vw', '60.39vw',
-      ),
+      single(video('/02_Projects/09_Rocket/03_Rocket_Video', 'The red dotted Rocket wordmark in white on red, its letters jittering like stop motion.', '1400 / 875')),
+      single(image('/02_Projects/09_Rocket/04_Rocket.webp', 'A black cap with the red dotted R and the ROCKET stickers, beside a DJ wearing the A (house) of our own T-shirt.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/05_Rocket_Video', 'The red dotted R with (HOUSE) over it on paper, the letter and the word moving apart in stop motion.', '1400 / 875')),
       text('(the approach)', [
         `The system began with a red dotted R, built to feel like a series of stickers placed one by one. The rest of the name follows that same logic: each letter of ROCKET sits inside its own black circle, ready to move around the composition. “(House)” brings the genre into the name while hinting at the idea of a place to belong.`,
         `Bold typography, sticker-like shapes and analog textures—grain, ink bleed and print imperfections—give the identity its raw, handmade quality. These elements come together differently across each piece, keeping the system recognizable without making every application feel the same.`,
       ]),
-      pair(
-        image('/02_Projects/09_Rocket/08_Rocket.webp', 'LINE UP in white condensed letters over a red block, on a black-and-white photo of a DJ’s hands on the mixer.', '4 / 5'), '48.3125vw', '60.39vw',
-        image('/02_Projects/09_Rocket/09_Rocket.webp', 'A turntable with a Rocket record label: the letters of ROCKET in black circles around (House).', '4 / 5'), '48.3125vw', '60.39vw',
-      ),
-      single(video('/02_Projects/09_Rocket/02_Rocket_Video', 'Screen recording of the Rocket identity being built in Figma: the line-up poster, the stickers and the mockups opening one after another.', '1920 / 1080')),
+      single(image('/02_Projects/09_Rocket/06_Rocket.webp', 'The Rocket House poster held up in front of a DJ booth, beside the red LINE UP post for Gogódansey.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/07_Rocket_Video', 'Posters reading A (house) of our own with the red dotted R, sliding up a paper wall in stop motion.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/08_Rocket_Video', 'The Save the date poster wobbling over a grainy photo of a rocket launch while the ROCKET stickers pop in.', '1400 / 875')),
+      single(image('/02_Projects/09_Rocket/09_Rocket.webp', 'A large A (house) of our own poster with the red dotted R pasted on a wall.', '1400 / 875')),
       text('(the system)', [
         `I carried the identity across the cycle’s event posters, flyers, social media, save the dates and stickers. The pieces were designed to work both on screen and in print, so the visual language could travel from the feed to the club.`,
         `Motion and sound extended the system beyond the static compositions, giving the identity another way to build atmosphere around each event.`,
       ]),
-      pair(
-        video('/02_Projects/09_Rocket/03_Rocket_Video', 'Save the date poster in rough white letters on black, with the ROCKET stickers popping in and three DJ portraits below.', '4 / 5'), '48.3125vw', '60.39vw',
-        video('/02_Projects/09_Rocket/04_Rocket_Video', 'Rocket stickers, white, black and red, piling up over a turntable.', '4 / 5'), '48.3125vw', '60.39vw',
-      ),
-      pair(
-        video('/02_Projects/09_Rocket/05_Rocket_Video', 'Vol. 01 announcement in red condensed type around a black-and-white photo of a parachute: see you there.', '4 / 5'), '46.4vw', '58vw',
-        image('/02_Projects/09_Rocket/13_Rocket.webp', 'Rocket House poster for Sunday 7 December 2025, with the line-up portraits above the large black wordmark and its round stickers.', '3 / 4'), '43.5vw', '58vw',
-      ),
+      single(video('/02_Projects/09_Rocket/10_Rocket_Video', 'Three LINE UP posts on red, for Gaboojim, the line-up and FAR, their letters and photos moving in stop motion.', '1400 / 875')),
+      single(image('/02_Projects/09_Rocket/11_Rocket.webp', 'Flash photos of people dancing at Rocket beside a turntable with the ROCKET (HOUSE) label.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/12_Rocket_Video', 'A grainy black-and-white photo of the crowd at Rocket, its frame wobbling like stop motion.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/13_Rocket_Video', 'Rocket stickers jittering over a turntable, beside the red Vol. 01 announcement with its centre image changing.', '1400 / 875')),
+      single(image('/02_Projects/09_Rocket/14_Rocket.webp', 'Three Instagram highlight covers: (07/12) in red, (11/09) in black and (Tickets) in grey.', '1400 / 875')),
       text('(my role)', [], {
         variant: 'wide',
         wide: `I led the project from concept to final applications, shaping the visual direction and creating the identity and its supporting pieces. Working on Rocket was especially meaningful because I got to build it for a friend. It was a pleasure to spend time understanding his vision and finding the right visual language to bring it into the world.`,
       }),
-      pair(
-        image('/02_Projects/09_Rocket/11_Rocket.webp', 'Someone holding the Rocket House poster in front of a DJ booth.', '4 / 5'), '48.3125vw', '60.39vw',
-        image('/02_Projects/09_Rocket/12_Rocket.webp', 'Flash photos of people dancing at Rocket, printed on paper strips beside the red dotted R.', '4 / 5'), '48.3125vw', '60.39vw',
-      ),
+      single(video('/02_Projects/09_Rocket/15_Rocket_Video', 'The red dotted Rocket wordmark on black, moving in stop motion, with Rocket (House) — Buenos Aires, 2025—2026 below.', '1400 / 875')),
     ],
     credits: [],
   },

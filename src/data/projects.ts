@@ -38,7 +38,7 @@ export const projects: Project[] = [
     role: 'Visual Identity, Art Direction, Motion & Sound', accent: '#d9332b',
     seoTitle: 'rocket — visual identity for a house music cycle | itsmicki',
     seoDescription: 'visual identity, art direction, motion and sound for rocket, a house music cycle in buenos aires: a red dotted r, sticker letters and grainy print textures across posters, flyers and social media by micki.',
-    cover: '/02_Projects/09_Rocket/06_Rocket.webp',
+    cover: '/02_Projects/09_Rocket/01_Rocket.webp',
     summary: 'Rocket is a house music cycle in Buenos Aires, born at Otra Historia Club Cultural.',
     synopsis: 'I created its full visual identity, building a flexible system for the cycle’s posters, flyers, social media, save the dates and stickers.',
   },
