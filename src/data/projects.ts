@@ -24,7 +24,16 @@ export const projects: Project[] = [
     synopsis: 'Full case study coming soon.',
   },
   {
-    slug: 'winona', number: '02', title: 'Winona', year: '2023',
+    slug: 'rocket', number: '02', title: 'Rocket', year: '2025—2026',
+    role: 'Visual Identity, Art Direction, Motion & Sound', accent: '#d9332b',
+    seoTitle: 'rocket — visual identity for a house music cycle | itsmicki',
+    seoDescription: 'visual identity, art direction, motion and sound for rocket, a house music cycle in buenos aires: a red dotted r, sticker letters and grainy print textures across posters, flyers and social media by micki.',
+    cover: '/02_Projects/09_Rocket/06_Rocket.webp',
+    summary: 'Rocket is a house music cycle in Buenos Aires, born at Otra Historia Club Cultural.',
+    synopsis: 'I created its full visual identity, building a flexible system for the cycle’s posters, flyers, social media, save the dates and stickers.',
+  },
+  {
+    slug: 'winona', number: '03', title: 'Winona', year: '2023',
     role: 'UX—UI Lead, Visual & Motion Designer', accent: '#ecb2c5',
     seoTitle: 'winona — wellness rebrand & web art direction | itsmicki',
     seoDescription: 'rebrand and website art direction for winona, a women’s wellness and menopause care brand: warm color, elegant serif typography, packaging and ux/ui by micki.',
@@ -34,14 +43,14 @@ export const projects: Project[] = [
     conclusion: "A collaborative process created a cohesive and engaging online presence that reflects Winona’s mission while improving the experience across the full product.",
   },
   {
-    slug: 'amazon', number: '03', title: 'Amazon', year: '2024',
+    slug: 'amazon', number: '04', title: 'Amazon', year: '2024',
     role: 'UX/UI Lead + Art Direction + Visual Design', accent: '#f0c54b', comingSoon: true,
     cover: '/02_Projects/03_Amazon/01_Amazon_Portada.jpg',
     summary: 'A product and visual design project currently being prepared for publication.',
     synopsis: 'Full case study coming soon.',
   },
   {
-    slug: 'maxmaher', number: '04', title: 'Max Maher', year: '2023',
+    slug: 'maxmaher', number: '05', title: 'Max Maher', year: '2023',
     role: 'Art Director & Visual Designer', accent: '#9fb0ff',
     seoTitle: 'max maher — content system & social media design | itsmicki',
     seoDescription: 'art direction and visual design for max maher: a bold content system for financial education with strong typography, stickers and flexible social templates.',
@@ -50,7 +59,7 @@ export const projects: Project[] = [
     synopsis: 'The system brings together strong typography, energetic graphics and flexible templates to create consistency across a high-volume content ecosystem.',
   },
   {
-    slug: 'lumen', number: '05', title: 'Lumen', year: '2025',
+    slug: 'lumen', number: '06', title: 'Lumen', year: '2025',
     role: 'Art Direction, Brand Strategy, Visual Identity', accent: '#f6a66d',
     seoTitle: 'lumen — brand identity for an art & tech experience | itsmicki',
     seoDescription: 'art direction, brand strategy and visual identity for lumen, an art and technology experience: posters, tickets, merch and playful graphic systems by micki.',
@@ -59,7 +68,7 @@ export const projects: Project[] = [
     synopsis: 'Lumen explores the meeting point between physical sensation and screen-based experiences through a flexible visual language built for discovery.',
   },
   {
-    slug: 'outliant', number: '06', title: 'Outliant', year: '2024',
+    slug: 'outliant', number: '07', title: 'Outliant', year: '2024',
     role: 'Art Director, Brand Strategist & UX/UI Design Lead', accent: '#ddff55',
     seoTitle: 'outliant — agency rebrand, art direction & ux/ui | itsmicki',
     seoDescription: 'brand strategy, art direction and ux/ui for outliant’s rebrand: a remote digital agency turned into a clear, confident and scalable visual and digital system.',
@@ -68,7 +77,7 @@ export const projects: Project[] = [
     synopsis: 'As the company evolved, a central challenge emerged: defining a clear identity, positioning and territory. The work turned that strategic foundation into a scalable visual and digital system.',
   },
   {
-    slug: 'blend360', number: '07', title: 'Blend360', year: '2023',
+    slug: 'blend360', number: '08', title: 'Blend360', year: '2023',
     role: 'Art Director, Branding & UX/UI Redesign, Motion', accent: '#d8c5ff',
     cover: '/02_Projects/07_Blend360/01_Blend360_Video.webp',
     summary: 'Branding redesign and UX/UI redesign for Blend360, bringing a more connected story to a fast-moving data and technology company.',
@@ -76,7 +85,7 @@ export const projects: Project[] = [
     conclusion: 'Launched in 2023, the redesigned website introduced Blend360’s new look and feel with more intuitive navigation, richer content, and a more connected story for the brand.',
   },
   {
-    slug: 'textures-body', number: '08', title: 'Textures & Body', year: '2026',
+    slug: 'textures-body', number: '09', title: 'Textures & Body', year: '2026',
     role: 'Art Direction & AI Image Generation', accent: '#e9d6b4',
     cover: '/02_Projects/08_TexturesBody/01_TexturesBody_Cover.webp',
     summary: 'An exploration of ingredient textures and human skin through AI-generated imagery and video, focused on realistic surfaces and fine micro-detail.',

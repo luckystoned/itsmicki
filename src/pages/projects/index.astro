@@ -12,9 +12,15 @@ const definitions = [
     width: 'calc((97.23vw - 6px) * .50047)', height: 'auto', ratio: '47.57 / 63.01', eager: true,
   },
   {
+    // Beside Genova in the first pair, in Winona's old place, at its cover's 4:5.
+    slug: 'rocket',
+    width: 'calc((97.23vw - 6px) * .49953)', height: 'auto', ratio: '4 / 5', eager: true,
+  },
+  {
     slug: 'winona',
-    // Frame at the cover's proportion with a lighter parallax (10% instead of 25%), so the photo shows almost whole.
-    width: 'calc((97.23vw - 6px) * .49953)', height: 'auto', ratio: '47.48 / 50.30', eager: true,
+    // On its own at Max Maher's width; frame at the cover's proportion with a lighter parallax (10% instead of 25%),
+    // so the photo shows almost whole.
+    width: '40.58vw', height: 'auto', ratio: '47.48 / 50.30',
     ratioMobile: '47.48 / 50.30', parallaxHeight: '110%', parallaxStart: '-9.0909%', parallaxSpan: '9.0909%',
   },
   {
@@ -65,7 +71,7 @@ const cards = definitions.map((definition) => {
   };
 });
 
-const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody] = cards;
+const [genova, rocket, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody] = cards;
 ---
 
 <BaseLayout
@@ -83,8 +89,10 @@ const [genova, winona, amazon, maxMaher, outliant, lumen, blend360, texturesBody
   <ProjectsStage wordmark="Itsmicki">
       <div class="projects-row projects-row-primary">
         <ProjectGridItem project={genova.project} label={genova.label} style={genova.style} cover={genova.cover} video={genova.video} eager={genova.eager} />
-        <ProjectGridItem project={winona.project} label={winona.label} style={winona.style} cover={winona.cover} video={winona.video} eager={winona.eager} />
+        <ProjectGridItem project={rocket.project} label={rocket.label} style={rocket.style} cover={rocket.cover} video={rocket.video} eager={rocket.eager} />
       </div>
+
+      <ProjectGridItem project={winona.project} label={winona.label} style={winona.style} cover={winona.cover} video={winona.video} />
 
       <ProjectGridItem project={amazon.project} label={amazon.label} style={amazon.style} cover={amazon.cover} video={amazon.video} />
       <ProjectGridItem project={maxMaher.project} label={maxMaher.label} style={maxMaher.style} cover={maxMaher.cover} video={maxMaher.video} />
