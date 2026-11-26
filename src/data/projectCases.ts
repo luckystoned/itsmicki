@@ -571,7 +571,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
     ],
     // In the order of the Behance layout (Figma Rocket_Identidad Visual 265:2); the animated frames play as video.
     blocks: [
-      single(image('/02_Projects/09_Rocket/01_Rocket.webp', 'A person carrying a canvas tote printed with ROCKET in black, the letters circled like stickers, full of records.', '1400 / 953')),
+      single(image('/02_Projects/09_Rocket/01_Rocket.webp', 'A person carrying a canvas tote printed with ROCKET in black, the letters circled like stickers, full of records.', '1400 / 1100')),
       single(image('/02_Projects/09_Rocket/02_Rocket.webp', 'Type specimens: Neue Montreal Squeezed on black and OT 2049 on white, each with its alphabet and a large Aa.', '1400 / 875')),
       text('(the challenge)', [], {
         variant: 'wide',
@@ -586,7 +586,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
       ]),
       single(image('/02_Projects/09_Rocket/06_Rocket.webp', 'The Rocket House poster held up in front of a DJ booth, beside the red LINE UP post for Gogódansey.', '1400 / 875')),
       single(video('/02_Projects/09_Rocket/07_Rocket_Video', 'Posters reading A (house) of our own with the red dotted R, sliding up a paper wall in stop motion.', '1400 / 875')),
-      single(video('/02_Projects/09_Rocket/08_Rocket_Video', 'The Save the date poster wobbling over a grainy photo of a rocket launch while the ROCKET stickers pop in.', '1400 / 875')),
+      single(video('/02_Projects/09_Rocket/08_Rocket_Video', 'The Save the date poster with the ROCKET stickers, tilted and wobbling in stop motion over a grainy photo of a rocket launch.', '1400 / 875')),
       single(image('/02_Projects/09_Rocket/09_Rocket.webp', 'A large A (house) of our own poster with the red dotted R pasted on a wall.', '1400 / 875')),
       text('(the system)', [
         `I carried the identity across the cycle’s event posters, flyers, social media, save the dates and stickers. The pieces were designed to work both on screen and in print, so the visual language could travel from the feed to the club.`,
