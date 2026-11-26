@@ -918,7 +918,7 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
     margin-top: 2.5vw;
   }
 
-  .project-case-page[data-case='winona'] .case-intro {
+  :is(.project-case-page[data-case='winona'], .project-case-page[data-case='rocket']) .case-intro {
     margin-top: 3.25vw;
   }
 
@@ -1654,14 +1654,14 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       content: " ";
     }
 
-    .project-case-page[data-case='winona'] .case-drag:nth-of-type(2) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='rocket']) .case-drag:nth-of-type(2) {
       z-index: 13;
       top: 28.13vw !important;
       left: 53.36vw !important;
       width: 37.9vw !important;
     }
 
-    .project-case-page[data-case='winona'] .case-drag:nth-of-type(3) {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='rocket']) .case-drag:nth-of-type(3) {
       z-index: 12;
       top: 1.95vw !important;
       left: 57.9vw !important;
@@ -1677,7 +1677,7 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       margin-left: auto;
     }
 
-    .project-case-page[data-case='winona'] .case-intro {
+    :is(.project-case-page[data-case='winona'], .project-case-page[data-case='rocket']) .case-intro {
       margin-top: 30px;
     }
 

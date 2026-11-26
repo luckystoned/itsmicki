@@ -564,7 +564,11 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
     year: '2025—2026',
     role: 'Visual Identity,<br>Art Direction,<br>Motion &amp; Sound',
     nutshell: `Rocket is a house music cycle in Buenos Aires, born at Otra Historia Club Cultural. I created its full visual identity, building a flexible system for the cycle’s posters, flyers, social media, save the dates and stickers.`,
-    drags: [],
+    // Placed like Winona's stickers, with the same halftone baked in.
+    drags: [
+      { src: '/02_Projects/09_Rocket/01_Rocket_Drag.webp', left: '73.18vw', top: '.23vw', width: '24.5894vw', rotation: '0deg' },
+      { src: '/02_Projects/09_Rocket/02_Rocket_Drag.webp', left: '56vw', top: '8.26vw', width: '24.6656vw', rotation: '0deg' },
+    ],
     // In the order of the Behance layout (Figma Rocket_Identidad Visual 265:2); the animated frames play as video.
     blocks: [
       single(image('/02_Projects/09_Rocket/01_Rocket.webp', 'A person carrying a canvas tote printed with ROCKET in black, the letters circled like stickers, full of records.', '1400 / 953')),
@@ -597,6 +601,7 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
         variant: 'wide',
         wide: `I led the project from concept to final applications, shaping the visual direction and creating the identity and its supporting pieces. Working on Rocket was especially meaningful because I got to build it for a friend. It was a pleasure to spend time understanding his vision and finding the right visual language to bring it into the world.`,
       }),
+      single(video('/02_Projects/09_Rocket/16_Rocket_Video', 'Screen recording of the Rocket identity being built in Figma: the line-up poster, the stickers and the mockups opening one after another.', '1920 / 1080')),
       single(video('/02_Projects/09_Rocket/15_Rocket_Video', 'The red dotted Rocket wordmark on black, moving in stop motion, with Rocket (House) — Buenos Aires, 2025—2026 below.', '1400 / 875')),
     ],
     credits: [],
