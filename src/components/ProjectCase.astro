@@ -901,6 +901,10 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
   .project-case-page[data-case='outliant'] .case-drag:nth-of-type(2) { z-index: 13; }
   .project-case-page[data-case='outliant'] .case-drag:nth-of-type(3) { z-index: 12; }
 
+  /* Rocket: the R (House) sits in front of the cap until another sticker is picked up. */
+  .project-case-page[data-case='rocket'] .case-drag:nth-of-type(2) { z-index: 13; }
+  .project-case-page[data-case='rocket'] .case-drag:nth-of-type(3) { z-index: 12; }
+
   :root:not(.site-pointer-on) .case-drag.is-dragging {
     cursor: grabbing !important;
   }
@@ -1666,6 +1670,13 @@ const cellStyle = (media: CaseMedia & { width: string; height: string }) =>
       top: 1.95vw !important;
       left: 57.9vw !important;
       width: 38.38vw !important;
+    }
+
+    /* Rocket's cap is 5% smaller than Winona's envelope, on the same centre. */
+    .project-case-page[data-case='rocket'] .case-drag:nth-of-type(3) {
+      top: 2.92vw !important;
+      left: 58.86vw !important;
+      width: 36.46vw !important;
     }
 
     .case-intro {

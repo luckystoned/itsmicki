@@ -564,10 +564,10 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
     year: '2025—2026',
     role: 'Visual Identity,<br>Art Direction,<br>Motion &amp; Sound',
     nutshell: `Rocket is a house music cycle in Buenos Aires, born at Otra Historia Club Cultural. I created its full visual identity, building a flexible system for the cycle’s posters, flyers, social media, save the dates and stickers.`,
-    // Placed like Winona's stickers, with the same halftone baked in.
+    // Desktop and tablet: the R overlapping the lower left of the cap, as Micki arranged them. Mobile keeps Winona's spots.
     drags: [
-      { src: '/02_Projects/09_Rocket/01_Rocket_Drag.webp', left: '73.18vw', top: '.23vw', width: '24.5894vw', rotation: '0deg' },
-      { src: '/02_Projects/09_Rocket/02_Rocket_Drag.webp', left: '56vw', top: '8.26vw', width: '24.6656vw', rotation: '0deg' },
+      { src: '/02_Projects/09_Rocket/01_Rocket_Drag.webp', left: '63.91vw', top: '7.35vw', width: '24.5894vw', rotation: '0deg' },
+      { src: '/02_Projects/09_Rocket/02_Rocket_Drag.webp', left: '76.41vw', top: '.33vw', width: '23.4323vw', rotation: '0deg' },
     ],
     // In the order of the Behance layout (Figma Rocket_Identidad Visual 265:2); the animated frames play as video.
     blocks: [
@@ -604,7 +604,11 @@ export const projectCases: Record<Exclude<ProjectCase['slug'], SideBCaseSlug>, P
       single(video('/02_Projects/09_Rocket/16_Rocket_Video', 'Screen recording of the Rocket identity being built in Figma: the line-up poster, the stickers and the mockups opening one after another.', '1920 / 1080')),
       single(video('/02_Projects/09_Rocket/15_Rocket_Video', 'The red dotted Rocket wordmark on black, moving in stop motion, with Rocket (House) — Buenos Aires, 2025—2026 below.', '1400 / 875')),
     ],
-    credits: [],
+    credits: [
+      'Typeface / <a href="https://off-type.com/products/neue-montreal" target="_blank" rel="noreferrer">OT Neue Montreal Squeezed</a> — <a href="https://instagram.com/matdesjardins" target="_blank" rel="noreferrer">Mat Desjardins</a> & <a href="https://www.instagram.com/morula_type" target="_blank" rel="noreferrer">Valerio Monopoli</a>',
+      'Typeface / <a href="https://off-type.com/products/2049" target="_blank" rel="noreferrer">OT 2049</a> — <a href="https://instagram.com/matdesjardins" target="_blank" rel="noreferrer">Mat Desjardins</a>, <a href="https://instagram.com/francescab_type" target="_blank" rel="noreferrer">Francesca Bolognini</a> & <a href="https://instagram.com/fredsfonts" target="_blank" rel="noreferrer">Fred Wiltshire</a>',
+      'Type Foundry / <a href="https://instagram.com/off____type" target="_blank" rel="noreferrer">Off Type</a>',
+    ],
   },
 };
 
