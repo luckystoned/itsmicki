@@ -10,7 +10,7 @@ const carouselLayout: Record<string, { width: number; height: number; label: str
   outliant: { width: 429.582, height: 508.909, label: '07_Outliant_Art Direction+Visual Design+UXUI Lead' },
   blend360: { width: 430.937, height: 570.818, label: '08_Blend360_Art Director, Branding & UX/UI Redesign, Motion', video: '/02_Projects/07_Blend360/01_Blend360_Video.mp4' },
   'textures-body': { width: 430.069, height: 315.29, label: '09_Textures & Body_Art Direction+AI Image Generation', video: '/02_Projects/08_TexturesBody/01_TexturesBody_Loop.mp4' },
-  rocket: { width: 430.069, height: 537.586, label: '03_Rocket_Visual Identity+Art Direction+Motion & Sound', cover: '/02_Projects/09_Rocket/01_Rocket.webp' },
+  rocket: { width: 430.069, height: 537.586, label: '03_Rocket_Visual Identity+Art Direction+Motion & Sound', cover: '/02_Projects/09_Rocket/01_Rocket_Cover.webp' },
 };
 
 const COMING_SOON = ' — (Coming soon) !!!!!^*^';
